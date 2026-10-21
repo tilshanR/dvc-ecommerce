@@ -1,16 +1,33 @@
-import { useState } from "react";
-import "./App.css";
+
+import { Routes, Route } from "react-router-dom";
 import NavBar from "./components/Navbar";
+import About from "./pages/About";
+
 function App() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
-       <NavBar />
-      <header className="p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-dvcGreen">DVC E-Commerce</h1>
-      </header>
-      <main className="p-6">
-        <p>Welcome to the store! Ready to build components.</p>
-      </main>
+      <NavBar />
+
+      <Routes>
+        <Route
+          path="/aboutus"
+          element={<About />}
+        />
+
+        <Route
+          path="/"
+          element={
+            <main className="p-6">
+              <h1 className="text-2xl font-bold text-dvcGreen">
+                DVC E-Commerce
+              </h1>
+              <p className="mt-3">
+                Welcome to the store!
+              </p>
+            </main>
+          }
+        />
+      </Routes>
     </div>
   );
 }

@@ -1,12 +1,11 @@
 import { useState } from "react";
 import "./App.css";
-import Navbar from "./components/Navbar";
-
-
+// import { NavBar } from "./components/Navbar";
+import NavBar from "./components/Navbar";
 function App() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <Navbar />
+       <NavBar />
       <header className="p-6 shadow-sm">
         <h1 className="text-2xl font-bold text-dvcGreen">DVC E-Commerce</h1>
       </header>

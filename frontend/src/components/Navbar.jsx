@@ -68,7 +68,7 @@ export const NavBar = () => {
           </div>
 
           <Link
-            to="/Cart"
+            to="/cart"
             className="flex shrink-0 items-center gap-2 rounded-md px-2 py-2 text-sm transition hover:bg-white/10 sm:px-3"
           >
             <ShoppingCart size={21} />

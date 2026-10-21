@@ -1,6 +1,5 @@
 import { useState } from "react";
 import "./App.css";
-// import { NavBar } from "./components/Navbar";
 import NavBar from "./components/Navbar";
 function App() {
   return (

@@ -1,5 +1,6 @@
 
 import { Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
 import NavBar from "./components/Navbar";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -21,16 +22,9 @@ function App() {
         />
         <Route
           path="/"
-          element={
-            <main className="p-6">
-              <h1 className="text-2xl font-bold text-dvcGreen">
-                DVC E-Commerce
-              </h1>
-              <p className="mt-3">
-                Welcome to the store!
-              </p>
-            </main>
-          }
+          element=
+        {<Home/>}
+      
         />
       </Routes>
             <Footer />

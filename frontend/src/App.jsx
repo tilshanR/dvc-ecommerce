@@ -2,6 +2,7 @@
 import { Routes, Route } from "react-router-dom";
 import NavBar from "./components/Navbar";
 import About from "./pages/About";
+import Footer from "./components/Footer";
 
 function App() {
   return (
@@ -28,6 +29,8 @@ function App() {
           }
         />
       </Routes>
+            <Footer />
+
     </div>
   );
 }

@@ -24,11 +24,13 @@ const NewArrivals = ({ onAddToCart }) => {
         );
 
         if (!response.ok) {
-          throw new Error("Unable to load new arrivals.");
+        //   throw new Error("Unable to load new arrivals.");
+        //return dummy product array
+           
         }
 
         const data = await response.json();
-
+       
         // Supports either an array or { products: [...] }.
         const productList = Array.isArray(data)
           ? data

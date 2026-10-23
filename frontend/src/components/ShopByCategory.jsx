@@ -87,7 +87,7 @@ const ShopByCategory = () => {
               className="group flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white transition duration-300 hover:-translate-y-1 hover:border-dvcGreen hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-dvcGreen"
             >
               {/* Category image */}
-              <div className="aspect-[4/3] overflow-hidden bg-gray-100">
+              <div className="aspect-4/3 overflow-hidden bg-gray-100">
                 <img
                   src={category.image}
                   alt={category.imageAlt}

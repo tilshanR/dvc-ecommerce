@@ -137,7 +137,7 @@ export const NavBar = () => {
               </button>
 
               {categoriesOpen && (
-                <div className="absolute left-0 top-full z-[60] w-72 rounded-b-lg border border-gray-200 bg-white py-2 text-gray-800 shadow-xl">
+                <div className="absolute left-0 top-full z-60 w-72 rounded-b-lg border border-gray-200 bg-white py-2 text-gray-800 shadow-xl">
                   {categories.map((category) => {
                     const Icon = category.icon;
 
@@ -170,7 +170,7 @@ export const NavBar = () => {
                           </button>
 
                           {computerOpen && (
-                            <div className="absolute left-full top-0 z-[70] w-60 rounded-lg border border-gray-200 bg-white py-2 shadow-xl">
+                            <div className="absolute left-full top-0 z-70 w-60 rounded-lg border border-gray-200 bg-white py-2 shadow-xl">
                               {category.children.map((child) => (
                                 <Link
                                   key={child.label}

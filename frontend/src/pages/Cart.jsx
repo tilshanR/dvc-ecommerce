@@ -1,4 +1,3 @@
-
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -43,8 +42,7 @@ const initialCartItems = [
   },
 ];
 
-const formatPrice = (price) =>
-  `LKR ${Number(price).toLocaleString("en-LK")}`;
+const formatPrice = (price) => `LKR ${Number(price).toLocaleString("en-LK")}`;
 
 const checkoutOptions = [
   {
@@ -74,28 +72,21 @@ export default function Cart() {
   const navigate = useNavigate();
 
   const [cartItems, setCartItems] = useState(initialCartItems);
-  const [selectedCheckout, setSelectedCheckout] =
-    useState("delivery-online");
+  const [selectedCheckout, setSelectedCheckout] = useState("delivery-online");
 
   const subtotal = useMemo(
     () =>
-      cartItems.reduce(
-        (total, item) => total + item.price * item.quantity,
-        0
-      ),
-    [cartItems]
+      cartItems.reduce((total, item) => total + item.price * item.quantity, 0),
+    [cartItems],
   );
 
   const totalQuantity = useMemo(
-    () =>
-      cartItems.reduce((total, item) => total + item.quantity, 0),
-    [cartItems]
+    () => cartItems.reduce((total, item) => total + item.quantity, 0),
+    [cartItems],
   );
 
   const shippingCost =
-    selectedCheckout === "delivery-online" && cartItems.length > 0
-      ? 300
-      : 0;
+    selectedCheckout === "delivery-online" && cartItems.length > 0 ? 300 : 0;
 
   const total = subtotal + shippingCost;
 
@@ -111,7 +102,7 @@ export default function Cart() {
         }
 
         return { ...item, quantity: newQuantity };
-      })
+      }),
     );
   };
 
@@ -134,7 +125,7 @@ export default function Cart() {
   };
 
   const selectedOption = checkoutOptions.find(
-    (option) => option.id === selectedCheckout
+    (option) => option.id === selectedCheckout,
   );
 
   return (
@@ -142,18 +133,13 @@ export default function Cart() {
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <div className="mb-6 flex items-center gap-2 text-sm text-gray-500">
-          <Link
-            to="/"
-            className="transition hover:text-[#183d3d]"
-          >
+          <Link to="/" className="transition hover:text-[#183d3d]">
             Home
           </Link>
 
           <ChevronRight size={15} />
 
-          <span className="font-medium text-[#183d3d]">
-            Shopping Cart
-          </span>
+          <span className="font-medium text-[#183d3d]">Shopping Cart</span>
         </div>
 
         {/* Page heading */}
@@ -175,8 +161,8 @@ export default function Cart() {
           </div>
 
           <div className="text-sm font-medium text-gray-500">
-            {totalQuantity} {totalQuantity === 1 ? "item" : "items"} in
-            your cart
+            {totalQuantity} {totalQuantity === 1 ? "item" : "items"} in your
+            cart
           </div>
         </div>
 
@@ -192,8 +178,8 @@ export default function Cart() {
             </h2>
 
             <p className="mx-auto mb-7 max-w-md text-sm leading-6 text-gray-500">
-              You haven't added any products yet. Explore our store and
-              find something you like.
+              You haven't added any products yet. Explore our store and find
+              something you like.
             </p>
 
             <Link
@@ -210,9 +196,7 @@ export default function Cart() {
             <div className="space-y-6 lg:col-span-2">
               <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 sm:px-6">
-                  <h2 className="font-bold text-[#183d3d]">
-                    Cart Items
-                  </h2>
+                  <h2 className="font-bold text-[#183d3d]">Cart Items</h2>
 
                   <span className="rounded-full bg-[#e8f0ef] px-3 py-1 text-xs font-semibold text-[#183d3d]">
                     {cartItems.length} products
@@ -268,9 +252,7 @@ export default function Cart() {
                           <div className="inline-flex items-center rounded-xl border border-gray-200 bg-white">
                             <button
                               type="button"
-                              onClick={() =>
-                                updateQuantity(item.id, -1)
-                              }
+                              onClick={() => updateQuantity(item.id, -1)}
                               disabled={item.quantity <= 1}
                               aria-label={`Decrease quantity of ${item.name}`}
                               className="flex h-10 w-10 items-center justify-center rounded-l-xl text-gray-600 transition hover:bg-[#e8f0ef] hover:text-[#183d3d] disabled:cursor-not-allowed disabled:opacity-40"
@@ -284,9 +266,7 @@ export default function Cart() {
 
                             <button
                               type="button"
-                              onClick={() =>
-                                updateQuantity(item.id, 1)
-                              }
+                              onClick={() => updateQuantity(item.id, 1)}
                               disabled={item.quantity >= item.stock}
                               aria-label={`Increase quantity of ${item.name}`}
                               className="flex h-10 w-10 items-center justify-center rounded-r-xl text-gray-600 transition hover:bg-[#e8f0ef] hover:text-[#183d3d] disabled:cursor-not-allowed disabled:opacity-40"
@@ -296,9 +276,7 @@ export default function Cart() {
                           </div>
 
                           <div className="text-right">
-                            <p className="text-xs text-gray-500">
-                              Item total
-                            </p>
+                            <p className="text-xs text-gray-500">Item total</p>
 
                             <p className="mt-1 font-bold text-gray-900">
                               {formatPrice(item.price * item.quantity)}
@@ -308,7 +286,7 @@ export default function Cart() {
                           <button
                             type="button"
                             onClick={() => removeItem(item.id)}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700"
+                            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#183d3d] focus-visible:ring-offset-2"
                           >
                             <Trash2 size={15} />
                             Remove
@@ -331,160 +309,167 @@ export default function Cart() {
               </section>
 
               {/* Checkout method */}
-              <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-                <div className="mb-5 flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e8f0ef] text-[#183d3d]">
-                    <MapPin size={20} />
+
+              {/* Delivery & Payment */}
+              <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                {/* Section heading */}
+                <div className="flex items-center gap-3 border-b border-gray-200 bg-gray-50 px-5 py-5 sm:px-6">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#183d3d] text-white">
+                    <MapPin size={21} />
                   </div>
 
                   <div>
-                    <h2 className="font-bold text-[#183d3d]">
+                    <h2 className="text-lg font-bold text-[#183d3d]">
                       Delivery & Payment
                     </h2>
-
                     <p className="mt-1 text-sm text-gray-500">
-                      Choose how you would like to receive your order.
+                      Choose how to receive and pay for your order.
                     </p>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  {checkoutOptions.map((option) => {
-                    const Icon = option.icon;
-                    const isSelected =
-                      selectedCheckout === option.id;
+                <div className="space-y-4 p-5 sm:p-6">
+                  {/* Method selection heading */}
+                  <p className="text-xs font-bold uppercase tracking-wider text-gray-500">
+                    Select a method
+                  </p>
 
-                    return (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() =>
-                          setSelectedCheckout(option.id)
-                        }
-                        className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-[#183d3d] focus:ring-offset-2 ${
-                          isSelected
-                            ? "border-[#183d3d] bg-[#e8f0ef] ring-1 ring-[#183d3d]"
-                            : "border-gray-200 bg-white hover:border-[#183d3d]/40 hover:bg-gray-50"
-                        }`}
-                      >
-                        <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                  {/* Delivery options */}
+                  <div className="space-y-3">
+                    {checkoutOptions.map((option) => {
+                      const Icon = option.icon;
+                      const isSelected = selectedCheckout === option.id;
+
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          aria-pressed={isSelected}
+                          onClick={() => setSelectedCheckout(option.id)}
+                          className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#183d3d] focus-visible:ring-offset-2 ${
                             isSelected
-                              ? "bg-[#183d3d] text-white"
-                              : "bg-gray-100 text-gray-600"
+                              ? "border-[#183d3d] bg-[#e8f0ef] shadow-sm"
+                              : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
                           }`}
                         >
-                          <Icon size={20} />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-bold text-gray-900">
-                              {option.title}
-                            </span>
-
-                            {isSelected && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-[#183d3d]">
-                                <Check size={12} />
-                                Selected
-                              </span>
-                            )}
+                          {/* Icon */}
+                          <div
+                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                              isSelected
+                                ? "bg-[#183d3d] text-white"
+                                : "bg-gray-100 text-gray-600"
+                            }`}
+                          >
+                            <Icon size={21} />
                           </div>
 
-                          <p className="mt-1 text-sm text-gray-500">
-                            {option.subtitle}
-                          </p>
+                          {/* Option information */}
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-gray-900">
+                              {option.title}
+                            </p>
 
-                          <p className="mt-2 text-xs font-semibold text-[#183d3d]">
-                            {option.detail}
-                          </p>
-                        </div>
+                            <p className="mt-1 text-sm leading-5 text-gray-600">
+                              {option.subtitle}
+                            </p>
 
-                        <span
-                          className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                            isSelected
-                              ? "border-[#183d3d] bg-[#183d3d]"
-                              : "border-gray-300 bg-white"
-                          }`}
-                        >
-                          {isSelected && (
-                            <span className="h-2 w-2 rounded-full bg-white" />
-                          )}
-                        </span>
-                      </button>
-                    );
-                  })}
+                            <p
+                              className={`mt-2 text-sm font-semibold ${
+                                isSelected ? "text-[#183d3d]" : "text-gray-500"
+                              }`}
+                            >
+                              {option.detail}
+                            </p>
+                          </div>
+
+                          {/* Selection indicator */}
+                          <div
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                              isSelected
+                                ? "border-[#183d3d] bg-[#183d3d]"
+                                : "border-gray-300 bg-white"
+                            }`}
+                            aria-hidden="true"
+                          >
+                            {isSelected && (
+                              <Check size={12} strokeWidth={3} color="white" />
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Separate explanation panel */}
+                  <div
+                    aria-live="polite"
+                    className="rounded-xl border border-[#b9d0cd] bg-white"
+                  >
+                    <div className="flex items-center gap-2 border-b border-[#e8f0ef] bg-[#e8f0ef] px-4 py-3">
+                      <AlertCircle size={17} className="text-[#183d3d]" />
+
+                      <h3 className="text-sm font-bold text-[#183d3d]">
+                        About your selected method
+                      </h3>
+                    </div>
+
+                    <div className="flex items-start gap-3 p-4">
+                      {(() => {
+                        const selectedOption = checkoutOptions.find(
+                          (option) => option.id === selectedCheckout,
+                        );
+
+                        const SelectedIcon = selectedOption?.icon || Truck;
+
+                        const descriptions = {
+                          "delivery-online": {
+                            title: "Home delivery",
+                            description:
+                              "A flat delivery fee of LKR 300 will be added to your order total.",
+                          },
+                          "pickup-online": {
+                            title: "Store pickup with online payment",
+                            description:
+                              "Pay online during checkout and collect your order from the store. There is no delivery fee.",
+                          },
+                          "pickup-store": {
+                            title: "Store pickup with payment at collection",
+                            description:
+                              "Your order will be reserved for store pickup. Pay when you collect your order. There is no delivery fee.",
+                          },
+                        };
+
+                        const details = descriptions[selectedCheckout];
+
+                        return (
+                          <>
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#e8f0ef] text-[#183d3d]">
+                              <SelectedIcon size={20} />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-bold text-gray-900">
+                                {details.title}
+                              </p>
+
+                              <p className="mt-1 text-sm leading-6 text-gray-600">
+                                {details.description}
+                              </p>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
                 </div>
-
-                {selectedCheckout === "delivery-online" && (
-                  <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#e8f0ef] bg-[#e8f0ef] p-4">
-                    <Truck
-                      size={18}
-                      className="mt-0.5 shrink-0 text-[#183d3d]"
-                    />
-
-                    <div>
-                      <p className="text-sm font-semibold text-[#183d3d]">
-                        Home delivery
-                      </p>
-
-                      <p className="mt-1 text-xs leading-5 text-gray-600">
-                        A flat delivery fee of LKR 300 will be added to
-                        your order total.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {selectedCheckout === "pickup-online" && (
-                  <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#e8f0ef] bg-[#e8f0ef] p-4">
-                    <PackageCheck
-                      size={18}
-                      className="mt-0.5 shrink-0 text-[#183d3d]"
-                    />
-
-                    <div>
-                      <p className="text-sm font-semibold text-[#183d3d]">
-                        Free store pickup
-                      </p>
-
-                      <p className="mt-1 text-xs leading-5 text-gray-600">
-                        Complete payment online and collect your order
-                        from the store.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {selectedCheckout === "pickup-store" && (
-                  <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#e8f0ef] bg-[#e8f0ef] p-4">
-                    <Store
-                      size={18}
-                      className="mt-0.5 shrink-0 text-[#183d3d]"
-                    />
-
-                    <div>
-                      <p className="text-sm font-semibold text-[#183d3d]">
-                        Pay when collecting
-                      </p>
-
-                      <p className="mt-1 text-xs leading-5 text-gray-600">
-                        Your order will be reserved for store pickup.
-                        Payment is made when you collect it.
-                      </p>
-                    </div>
-                  </div>
-                )}
               </section>
             </div>
 
             {/* Order summary */}
-          <aside className="self-start lg:sticky lg:top-32 lg:z-20 lg:h-fit">
-             <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
+            <aside className="self-start lg:sticky lg:top-32 lg:z-20 lg:h-fit">
+              <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
                 <div className="bg-[#183d3d] px-5 py-5 text-white sm:px-6">
-                  <h2 className="text-lg font-bold">
-                    Order Summary
-                  </h2>
+                  <h2 className="text-lg font-bold">Order Summary</h2>
 
                   <p className="mt-1 text-sm text-white/75">
                     Review your order total
@@ -506,9 +491,7 @@ export default function Cart() {
                     <span className="text-gray-500">Shipping</span>
 
                     <span className="font-semibold text-gray-900">
-                      {shippingCost === 0
-                        ? "FREE"
-                        : formatPrice(shippingCost)}
+                      {shippingCost === 0 ? "FREE" : formatPrice(shippingCost)}
                     </span>
                   </div>
 
@@ -533,9 +516,7 @@ export default function Cart() {
 
                   <div className="border-t border-dashed border-gray-200 pt-4">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="font-semibold text-gray-800">
-                        Total
-                      </span>
+                      <span className="font-semibold text-gray-800">Total</span>
 
                       <span className="text-2xl font-bold tracking-tight text-[#183d3d]">
                         {formatPrice(total)}
@@ -565,8 +546,8 @@ export default function Cart() {
                     />
 
                     <p className="text-xs leading-5 text-gray-500">
-                      Your order details will be reviewed before you
-                      complete your purchase.
+                      Your order details will be reviewed before you complete
+                      your purchase.
                     </p>
                   </div>
 

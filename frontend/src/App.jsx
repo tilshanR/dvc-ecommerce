@@ -1,10 +1,10 @@
-
 import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import NavBar from "./components/Navbar";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Footer from "./components/Footer";
+import ProductDetails from "./pages/ProductDetails";
 
 function App() {
   return (
@@ -12,23 +12,12 @@ function App() {
       <NavBar />
 
       <Routes>
-        <Route
-          path="/aboutus"
-          element={<About />}
-        />
-        <Route
-          path="/contact-us"
-          element={<Contact/>}
-        />
-        <Route
-          path="/"
-          element=
-        {<Home/>}
-      
-        />
+        <Route path="/aboutus" element={<About />} />
+        <Route path="/contact-us" element={<Contact />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/products/:productId" element={<ProductDetails />} />
       </Routes>
-            <Footer />
-
+      <Footer />
     </div>
   );
 }

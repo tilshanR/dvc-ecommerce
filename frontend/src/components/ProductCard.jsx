@@ -77,7 +77,9 @@ const ProductCard = ({ product, onAddToCart, index = 0 }) => {
     "computer-hardware-accessories",
   ].includes(categorySlug);
 
-  const stockStatus = getStockStatus(product.availableStock);
+ const stockStatus = getStockStatus(
+  product.availableStock ?? product.stock
+);
   const isUsed = product.condition === "used";
 
   const showCondition =

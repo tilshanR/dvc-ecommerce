@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useCart } from "../context/CartContext";
 import {
   ArrowLeft,
   Check,
@@ -16,31 +17,6 @@ import {
   PackageCheck,
   AlertCircle,
 } from "lucide-react";
-
-const initialCartItems = [
-  {
-    id: 1,
-    name: "Mechanical Gaming Keyboard",
-    category: "Keyboards",
-    description: "RGB backlit mechanical keyboard",
-    price: 12500,
-    quantity: 1,
-    stock: 5,
-    image:
-      "https://images.unsplash.com/photo-1595225476474-87563907a212?auto=format&fit=crop&w=400&q=80",
-  },
-  {
-    id: 2,
-    name: "Wireless Gaming Mouse",
-    category: "Gaming Accessories",
-    description: "High-precision wireless mouse",
-    price: 7500,
-    quantity: 1,
-    stock: 3,
-    image:
-      "https://images.unsplash.com/photo-1527814050087-3793815479db?auto=format&fit=crop&w=400&q=80",
-  },
-];
 
 const formatPrice = (price) => `LKR ${Number(price).toLocaleString("en-LK")}`;
 
@@ -68,10 +44,12 @@ const checkoutOptions = [
   },
 ];
 
+
 export default function Cart() {
   const navigate = useNavigate();
 
-  const [cartItems, setCartItems] = useState(initialCartItems);
+  const { cartItems, updateQuantity, removeItem } = useCart();
+
   const [selectedCheckout, setSelectedCheckout] = useState("delivery-online");
 
   const subtotal = useMemo(
@@ -89,26 +67,6 @@ export default function Cart() {
     selectedCheckout === "delivery-online" && cartItems.length > 0 ? 300 : 0;
 
   const total = subtotal + shippingCost;
-
-  const updateQuantity = (id, change) => {
-    setCartItems((items) =>
-      items.map((item) => {
-        if (item.id !== id) return item;
-
-        const newQuantity = item.quantity + change;
-
-        if (newQuantity < 1 || newQuantity > item.stock) {
-          return item;
-        }
-
-        return { ...item, quantity: newQuantity };
-      }),
-    );
-  };
-
-  const removeItem = (id) => {
-    setCartItems((items) => items.filter((item) => item.id !== id));
-  };
 
   const handleCheckout = () => {
     if (cartItems.length === 0) return;

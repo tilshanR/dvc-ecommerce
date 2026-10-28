@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Search,
-  RotateCcw,
   ChevronDown,
   SlidersHorizontal,
   PackageSearch,
 } from "lucide-react";
 import ProductCard from "../components/ProductCard";
+import { useCart } from "../context/CartContext";
 
 const DEMO_PRODUCTS = [
   {
@@ -297,19 +297,6 @@ const FILTER_CONFIG = {
   stationery: ["Product type", "Brand", "Color", "Paper size", "Pack size"],
 };
 
-// const normalizeCategory = (category) => {
-//   const value =
-//     typeof category === "string"
-//       ? category
-//       : typeof category?.name === "string"
-//         ? category.name
-//         : "";
-
-//   return value
-//     .toLowerCase()
-//     .trim()
-//     .replace(/[\s_]+/g, "-");
-// };
 
 const normalizeCategory = (category) => {
   const value =
@@ -385,13 +372,14 @@ function formatPrice(value) {
   }).format(price);
 }
 
-// Demo-only data loader. Replace this with your Express API request later.
+// Demo-only data loader. Need to replace with the express api
 async function loadProducts(signal) {
   if (signal.aborted) throw new DOMException("Aborted", "AbortError");
   return DEMO_PRODUCTS;
 }
 
 export default function Shop() {
+  const { addToCart } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -700,13 +688,7 @@ export default function Shop() {
               <h2 className="flex items-center gap-2 font-semibold text-gray-900">
                 <SlidersHorizontal size={17} /> Filters
               </h2>
-              {/* <button
-                type="button"
-                onClick={clearFilters}
-                className="text-xs font-semibold text-dvcGreen hover:underline"
-              >
-                Reset
-              </button> */}
+              
               <button
                 type="button"
                 onClick={clearFilters}
@@ -1046,6 +1028,7 @@ export default function Shop() {
                     key={product._id || product.id}
                     product={product}
                     index={index}
+                    onAddToCart={addToCart}
                   />
                 ))}
               </div>

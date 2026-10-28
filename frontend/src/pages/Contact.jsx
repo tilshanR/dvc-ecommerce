@@ -28,20 +28,25 @@ const STORE = {
   phone: "+94 66 228 4xxx",
   phoneSecondary: "+94 77 xxx xxxx",
   email: "info@dvcecommerce.lk",
-  address: "No. 8 Dambulla Road, Palapathwela, Matale 21070, Sri Lanka",
-  mapQuery: "No. 8 Dambulla Road, Palapathwela, Matale, Sri Lanka",
+  address:
+    "No. 8 Dambulla Road, Palapathwela, Matale 21070, Sri Lanka",
 };
 
-// Replace these placeholders with the real WhatsApp number.
-// Use international format without +, spaces, or dashes.
-const WHATSAPP_NUMBER = "";
+// Read public configuration from the Vite environment.
+const MAPS_URL = import.meta.env.VITE_MAP_URL;
+
+// Google Maps iframe embed URL.
+const MAPS_EMBED_URL =
+  import.meta.env.VITE_MAP_EMBED_URL?.trim() || "";
+
+const WHATSAPP_NUMBER =
+  import.meta.env.VITE_WHATSAPP_NUMBER || "";
+
+// Create the WhatsApp URL only when a number is configured.
 const WHATSAPP_URL = WHATSAPP_NUMBER
-  ? `https://wa.me/${WHATSAPP_NUMBER}`
+  ? `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, "")}`
   : null;
 
-const MAPS_URL = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-  STORE.mapQuery
-)}`;
 
 const subjects = [
   "General Inquiry",
@@ -350,8 +355,6 @@ const handleSubmit = async (event) => {
   // Prevent the browser from refreshing the page.
   event.preventDefault();
 
-  // Keep your existing form validation here, if you have it.
-  // For example, return early if your validation fails.
 
   setIsSubmitting(true);
 
@@ -382,14 +385,7 @@ const handleSubmit = async (event) => {
       );
     }
 
-    // Clear the form only after the backend confirms success.
-    setFormData({
-      fullName: "",
-      phone: "",
-      email: "",
-      subject: "General Inquiry",
-      message: "",
-    });
+
 
     // Display a real success message.
     setToast({

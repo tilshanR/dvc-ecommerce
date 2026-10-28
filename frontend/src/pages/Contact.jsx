@@ -28,20 +28,25 @@ const STORE = {
   phone: "+94 66 228 4xxx",
   phoneSecondary: "+94 77 xxx xxxx",
   email: "info@dvcecommerce.lk",
-  address: "No. 8 Dambulla Road, Palapathwela, Matale 21070, Sri Lanka",
-  mapQuery: "No. 8 Dambulla Road, Palapathwela, Matale, Sri Lanka",
+  address:
+    "No. 8 Dambulla Road, Palapathwela, Matale 21070, Sri Lanka",
 };
 
-// Replace these placeholders with the real WhatsApp number.
-// Use international format without +, spaces, or dashes.
-const WHATSAPP_NUMBER = "";
+// Read public configuration from the Vite environment.
+const MAPS_URL = import.meta.env.VITE_MAP_URL;
+
+// Google Maps iframe embed URL.
+const MAPS_EMBED_URL =
+  import.meta.env.VITE_MAP_EMBED_URL?.trim() || "";
+
+const WHATSAPP_NUMBER =
+  import.meta.env.VITE_WHATSAPP_NUMBER || "";
+
+// Create the WhatsApp URL only when a number is configured.
 const WHATSAPP_URL = WHATSAPP_NUMBER
-  ? `https://wa.me/${WHATSAPP_NUMBER}`
+  ? `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, "")}`
   : null;
 
-const MAPS_URL = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
-  STORE.mapQuery
-)}`;
 
 const subjects = [
   "General Inquiry",
@@ -345,54 +350,60 @@ export default function Contact() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  
+const handleSubmit = async (event) => {
+  // Prevent the browser from refreshing the page.
+  event.preventDefault();
 
-    if (isSubmitting || !validateForm()) return;
 
-    setIsSubmitting(true);
-    setToast(null);
+  setIsSubmitting(true);
 
-    try {
-      // BACKEND INTEGRATION:
-      // Replace this demo submission with your Django API request.
-      //
-      // Example:
-      // const response = await fetch("/api/contact/", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(formData),
-      // });
-      //
-      // if (!response.ok) {
-      //   throw new Error("Message submission failed.");
-      // }
+  try {
+    // Send the form data to the Express backend.
+    const response = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/contact`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      }
+    );
 
-      await new Promise((resolve) => setTimeout(resolve, 900));
+    // Convert the backend's JSON response into a JavaScript object.
+    const result = await response.json();
 
-      setFormData({
-        fullName: "",
-        phone: "",
-        email: "",
-        subject: "General Inquiry",
-        message: "",
-      });
+    // Handle validation errors and other unsuccessful responses.
+    if (!response.ok) {
+      const errorMessage = result.errors
+        ?.map((error) => error.message)
+        .join(", ");
 
-      setToast({
-        type: "success",
-        message:
-          "Thank you for reaching out! Your demo submission was successful.",
-      });
-    } catch {
-      setToast({
-        type: "error",
-        message:
-          "We couldn't send your message. Please try again later.",
-      });
-    } finally {
-      setIsSubmitting(false);
+      throw new Error(
+        errorMessage || result.message || "Message submission failed."
+      );
     }
-  };
+
+
+
+    // Display a real success message.
+    setToast({
+      type: "success",
+      message: result.message || "Your message was submitted successfully.",
+    });
+  } catch (error) {
+    // Handle network errors and backend errors.
+    setToast({
+      type: "error",
+      message:
+        error.message || "We couldn't send your message. Please try again.",
+    });
+  } finally {
+    // Re-enable the submit button.
+    setIsSubmitting(false);
+  }
+};
 
   const inputClasses =
     "mt-2 block min-h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20";
@@ -504,7 +515,7 @@ export default function Contact() {
           </motion.div>
         </div>
 
-        <div className="h-1 bg-gradient-to-r from-emerald-700 via-emerald-500 to-amber-500" />
+        <div className="h-1 bg-linear-to-r from-emerald-700 via-emerald-500 to-amber-500" />
       </section>
 
       {/* 2. CONTACT INFORMATION CARDS */}
@@ -533,10 +544,10 @@ export default function Contact() {
               accent="emerald"
               delay={0}
             >
-              <p className="break-words text-sm font-bold text-slate-800">
+              <p className="wrap-break-words text-sm font-bold text-slate-800">
                 {STORE.phone}
               </p>
-              <p className="mt-1 break-words text-sm text-slate-600">
+              <p className="mt-1 wrap-break-words text-sm text-slate-600">
                 {STORE.phoneSecondary}
               </p>
 
@@ -907,10 +918,10 @@ export default function Contact() {
               transition={{ duration: 0.5 }}
               className="min-w-0 space-y-5"
             >
-              <div className="relative isolate flex min-h-[300px] items-center justify-center overflow-hidden rounded-3xl bg-slate-900 p-6 sm:min-h-[360px] sm:p-10">
+              <div className="relative isolate flex min-h-75 items-center justify-center overflow-hidden rounded-3xl bg-slate-900 p-6 sm:min-h-90 sm:p-10">
                 <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(46,125,50,0.35),transparent_65%)]" />
 
-                <div className="pointer-events-none absolute inset-0 -z-10 opacity-20 [background-image:linear-gradient(rgba(255,255,255,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.15)_1px,transparent_1px)] [background-size:32px_32px]" />
+                <div className="pointer-events-none absolute inset-0 -z-10 opacity-20 [bg-[linear-gradient(rgba(255,255,255,0.15)_1px,_transparent_1px),_linear-gradient(90deg,_rgba(255,255,255,0.15)_1px,_transparent_1px)]] [bg-size:32px_32px]" />
 
                 <div className="absolute left-5 top-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs font-semibold text-white backdrop-blur-md">
                   <span className="h-2 w-2 rounded-full bg-emerald-400" />

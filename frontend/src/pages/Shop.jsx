@@ -297,7 +297,6 @@ const FILTER_CONFIG = {
   stationery: ["Product type", "Brand", "Color", "Paper size", "Pack size"],
 };
 
-
 const normalizeCategory = (category) => {
   const value =
     typeof category === "string"
@@ -611,11 +610,33 @@ export default function Shop() {
             DVC Store
           </p>
           <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
-            Shop all products
+            {category === "all"
+              ? "Shop all products"
+              : `Shop ${
+                  category === "mobile"
+                    ? "mobile phones"
+                    : category === "accessories"
+                      ? "mobile accessories"
+                      : category === "computer"
+                        ? "computer parts"
+                        : category === "stationery"
+                          ? "stationery and books"
+                          : "all products"
+                }`}
           </h1>
+
           <p className="mt-3 max-w-2xl text-sm text-gray-200 sm:text-base">
-            Explore mobile phones, computer parts, stationery, books, and
-            accessories.
+            {category === "all"
+              ? "Explore mobile phones, computer parts, stationery, books, and accessories."
+              : category === "mobile"
+                ? "Explore our range of mobile phones for your everyday needs."
+                : category === "accessories"
+                  ? "Discover chargers, audio devices, and other mobile accessories."
+                  : category === "computer"
+                    ? "Explore computer parts and hardware for your setup."
+                    : category === "stationery"
+                      ? "Find stationery, books, and educational supplies."
+                      : "Explore products available at DVC Store."}
           </p>
         </div>
       </section>
@@ -688,7 +709,7 @@ export default function Shop() {
               <h2 className="flex items-center gap-2 font-semibold text-gray-900">
                 <SlidersHorizontal size={17} /> Filters
               </h2>
-              
+
               <button
                 type="button"
                 onClick={clearFilters}

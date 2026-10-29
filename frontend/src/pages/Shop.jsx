@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Search,
@@ -379,6 +379,7 @@ async function loadProducts(signal) {
 
 export default function Shop() {
   const { addToCart } = useCart();
+  const productsSectionRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -445,6 +446,15 @@ export default function Shop() {
     setPaperSize(searchParams.get("paperSize") || "");
     setPackSize(searchParams.get("packSize") || "");
   }, [searchParams]);
+  useEffect(() => {
+    if (!productsSectionRef.current) return;
+
+    const frameId = requestAnimationFrame(() => {
+      scrollToProducts();
+    });
+
+    return () => cancelAnimationFrame(frameId);
+  }, [category]);
 
   function updateQuery(values) {
     const next = new URLSearchParams(searchParams);
@@ -480,6 +490,43 @@ export default function Shop() {
       accessoryType: "",
       paperSize: "",
       packSize: "",
+    });
+  }
+  //   function scrollToProducts() {
+  //   requestAnimationFrame(() => {
+  //     if (productsSectionRef.current) {
+  //       const top =
+  //         productsSectionRef.current.getBoundingClientRect().top +
+  //         window.scrollY -
+  //         180;
+
+  //       window.scrollTo({
+  //         top: Math.max(0, top),
+  //         behavior: "smooth",
+  //       });
+  //     }
+  //   });
+  // }
+  //
+  function scrollToProducts() {
+    if (!productsSectionRef.current) return;
+
+    const section = productsSectionRef.current;
+
+    const stickyControls = document.querySelector(
+      '[data-shop-sticky-controls="true"]',
+    );
+
+    const stickyHeight = stickyControls
+      ? stickyControls.getBoundingClientRect().height
+      : 0;
+
+    const top =
+      section.getBoundingClientRect().top + window.scrollY - stickyHeight - 24;
+
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: "auto",
     });
   }
 
@@ -643,7 +690,10 @@ export default function Shop() {
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* stickey product filters */}
-        <div className="sticky top-64 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3 shadow-sm lg:top-32">
+        <div
+          data-shop-sticky-controls="true"
+          className="sticky top-64 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3 shadow-sm lg:top-32"
+        >
           <div className="mb-3 flex flex-wrap gap-2">
             {CATEGORIES.map((item) => (
               <button
@@ -976,7 +1026,10 @@ export default function Shop() {
             )}
           </aside>
 
-          <section>
+          {/* <section>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+             */}
+          <section ref={productsSectionRef} id="shop-products">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">

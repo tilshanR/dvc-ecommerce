@@ -642,8 +642,9 @@ export default function Shop() {
       </section>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <div className="mb-4 flex flex-wrap gap-2">
+        {/* stickey product filters */}
+        <div className="sticky top-64 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3 shadow-sm lg:top-32">
+          <div className="mb-3 flex flex-wrap gap-2">
             {CATEGORIES.map((item) => (
               <button
                 key={item.value}
@@ -704,7 +705,7 @@ export default function Shop() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[245px_minmax(0,1fr)]">
-          <aside className="h-fit rounded-xl border border-gray-200 bg-white p-4">
+          <aside className="h-fit rounded-xl border border-gray-200 bg-white p-4 lg:sticky lg:top-64 lg:max-h-[calc(100vh-270px)] lg:overflow-y-auto">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 font-semibold text-gray-900">
                 <SlidersHorizontal size={17} /> Filters

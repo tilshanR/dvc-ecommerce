@@ -508,27 +508,52 @@ export default function Shop() {
   //   });
   // }
   //
-  function scrollToProducts() {
-    if (!productsSectionRef.current) return;
+  // function scrollToProducts() {
+  //   if (!productsSectionRef.current) return;
 
-    const section = productsSectionRef.current;
+  //   const section = productsSectionRef.current;
 
-    const stickyControls = document.querySelector(
-      '[data-shop-sticky-controls="true"]',
-    );
+  //   const stickyControls = document.querySelector(
+  //     '[data-shop-sticky-controls="true"]',
+  //   );
 
-    const stickyHeight = stickyControls
-      ? stickyControls.getBoundingClientRect().height
-      : 0;
+  //   const stickyHeight = stickyControls
+  //     ? stickyControls.getBoundingClientRect().height
+  //     : 0;
 
-    const top =
-      section.getBoundingClientRect().top + window.scrollY - stickyHeight - 24;
+  //   const top =
+  //     section.getBoundingClientRect().top + window.scrollY - stickyHeight - 24;
 
-    window.scrollTo({
-      top: Math.max(0, top),
-      behavior: "auto",
-    });
-  }
+  //   window.scrollTo({
+  //     top: Math.max(0, top),
+  //     behavior: "auto",
+  //   });
+  // }
+
+
+function scrollToProducts() {
+  if (!productsSectionRef.current) return;
+
+  const section = productsSectionRef.current;
+  const stickyControls = document.querySelector(
+    '[data-shop-sticky-controls="true"]'
+  );
+
+  const stickyBottom = stickyControls
+    ? stickyControls.getBoundingClientRect().bottom
+    : 0;
+
+  const top =
+    window.scrollY +
+    section.getBoundingClientRect().top -
+    stickyBottom -
+    40;
+
+  window.scrollTo({
+    top: Math.max(0, top),
+    behavior: "auto",
+  });
+}
 
   const visibleProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -692,7 +717,7 @@ export default function Shop() {
         {/* stickey product filters */}
         <div
           data-shop-sticky-controls="true"
-          className="sticky top-64 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3 shadow-sm lg:top-32"
+          className="sticky top-20 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3  lg:top-30"
         >
           <div className="mb-3 flex flex-wrap gap-2">
             {CATEGORIES.map((item) => (

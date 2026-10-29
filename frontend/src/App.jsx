@@ -8,9 +8,11 @@ import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
 import Shop from "./pages/Shop";
 import { CartProvider } from "./context/CartContext";
+import { ToastProvider } from "./context/ToastContext";
 
 function App() {
   return (
+        <ToastProvider>
     <CartProvider>
       <div className="min-h-screen bg-white text-gray-900">
         <NavBar />
@@ -26,6 +28,7 @@ function App() {
         <Footer />
       </div>
     </CartProvider>
+    </ToastProvider>
   );
 }
 

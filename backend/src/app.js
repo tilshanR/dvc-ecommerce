@@ -1,10 +1,10 @@
-
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import errorMiddleware from "./middleware/errorMiddleware.js";
 
-// Import Contact Us API routes
+// Import API routes
 import contactRoutes from "./modules/contact/contactRoutes.js";
 import categoryRoutes from "./modules/catalog/category/categoryRoutes.js";
 
@@ -17,7 +17,7 @@ app.use(helmet());
 app.use(
   cors({
     origin: process.env.CLIENT_ORIGIN || "http://localhost:5173",
-  })
+  }),
 );
 
 //  Parse incoming JSON request bodies
@@ -46,5 +46,7 @@ app.get("/api/health", (req, res) => {
     message: "DVC Ecommerce server Running",
   });
 });
+// Global error-handling middleware
+app.use(errorMiddleware);
 
 export default app;

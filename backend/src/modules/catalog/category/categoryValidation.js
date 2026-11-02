@@ -125,6 +125,26 @@ export const updateCategorySchema = categorySchema
     "At least one field must be provided for updating.",
   );
 
+/* RESTORE CATEGORY VALIDATION */
+
+export const restoreCategorySchema = z
+  .object({
+    subcategoryIds: z
+      .array(objectIdSchema)
+      .default([])
+      .superRefine((ids, ctx) => {
+        const uniqueIds = new Set(ids);
+
+        if (uniqueIds.size !== ids.length) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Duplicate subcategory IDs are not allowed.",
+          });
+        }
+      }),
+  })
+  .strict();
+
 /* EXPORT ATTRIBUTE VALIDATION */
 
 export { categoryAttributeSchema };

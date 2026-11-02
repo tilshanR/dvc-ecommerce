@@ -1,4 +1,3 @@
-
 import {
   createCategory,
   findAllCategories,
@@ -7,6 +6,7 @@ import {
   findSubcategories,
   updateCategoryById,
   archiveCategoryById,
+  restoreCategoryWithSubcategories,
 } from "./categoryRepository.js";
 
 // --------------------------------------------------
@@ -79,9 +79,7 @@ const validateParentCategory = async (parentId) => {
   }
 
   if (parentCategory.parent) {
-    throw createError(
-      "Subcategories cannot have their own subcategories."
-    );
+    throw createError("Subcategories cannot have their own subcategories.");
   }
 
   return parentCategory;
@@ -158,10 +156,7 @@ export const getSubcategoriesService = async (parentId) => {
 // --------------------------------------------------
 // UPDATE CATEGORY
 // --------------------------------------------------
-export const updateCategoryService = async (
-  categoryId,
-  updateData
-) => {
+export const updateCategoryService = async (categoryId, updateData) => {
   const existingCategory = await findCategoryById(categoryId);
 
   if (!existingCategory) {
@@ -186,7 +181,7 @@ export const updateCategoryService = async (
 
       if (children.length > 0) {
         throw createError(
-          "A category with subcategories cannot become a subcategory."
+          "A category with subcategories cannot become a subcategory.",
         );
       }
     }
@@ -196,10 +191,7 @@ export const updateCategoryService = async (
   let finalSlug = existingCategory.slug;
 
   if (name || slug) {
-    finalSlug = await generateUniqueSlug(
-      slug || finalName,
-      categoryId
-    );
+    finalSlug = await generateUniqueSlug(slug || finalName, categoryId);
   }
 
   const dataToUpdate = {
@@ -208,9 +200,7 @@ export const updateCategoryService = async (
     ...(Object.hasOwn(updateData, "parent") && {
       parent: parent || null,
     }),
-    ...(name !== undefined || slug !== undefined
-      ? { slug: finalSlug }
-      : {}),
+    ...(name !== undefined || slug !== undefined ? { slug: finalSlug } : {}),
   };
 
   return await updateCategoryById(categoryId, dataToUpdate);
@@ -236,15 +226,77 @@ export const archiveCategoryService = async (categoryId) => {
     const children = await findSubcategories(categoryId);
 
     const hasActiveChildren = children.some(
-      (child) => child.status === "active"
+      (child) => child.status === "active",
     );
 
     if (hasActiveChildren) {
       throw createError(
-        "Archive the active subcategories before archiving this category."
+        "Archive the active subcategories before archiving this category.",
       );
     }
   }
 
   return await archiveCategoryById(categoryId);
+};
+
+// RESTORE CATEGORY
+export const restoreCategoryService = async (
+  categoryId,
+  subcategoryIds = [],
+) => {
+  // 1. Find the category.
+  const category = await findCategoryById(categoryId);
+
+  if (!category) {
+    throw createError("Category not found.", 404);
+  }
+
+  // 2. Prevent restoring an already active category.
+  if (category.status === "active") {
+    throw createError("Category is already active.");
+  }
+
+  // 3. Handle subcategory restoration.
+  if (category.parent) {
+    // A subcategory cannot be restored while its parent is archived.
+    const parentCategory = await findCategoryById(category.parent._id);
+
+    if (!parentCategory || parentCategory.status !== "active") {
+      throw createError(
+        "Restore the parent category before restoring this subcategory.",
+      );
+    }
+
+    if (subcategoryIds.length > 0) {
+      throw createError(
+        "You cannot select subcategories when restoring a subcategory.",
+      );
+    }
+  } else {
+    // 4. Validate selected subcategories of a main category.
+    if (subcategoryIds.length > 0) {
+      const children = await findSubcategories(categoryId);
+
+      const childMap = new Map(
+        children.map((child) => [child._id.toString(), child]),
+      );
+
+      for (const subcategoryId of subcategoryIds) {
+        const child = childMap.get(subcategoryId.toString());
+
+        if (!child) {
+          throw createError(
+            "One or more selected subcategories do not belong to this category.",
+          );
+        }
+
+        if (child.status !== "archived") {
+          throw createError(`Subcategory "${child.name}" is already active.`);
+        }
+      }
+    }
+  }
+
+  // 5. Restore the category and selected subcategories.
+  return await restoreCategoryWithSubcategories(categoryId, subcategoryIds);
 };

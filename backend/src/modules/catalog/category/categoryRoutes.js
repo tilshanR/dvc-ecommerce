@@ -1,4 +1,3 @@
-
 import express from "express";
 
 import {
@@ -9,6 +8,7 @@ import {
   getSubcategoriesController,
   updateCategoryController,
   archiveCategoryController,
+  restoreCategoryController,
 } from "./categoryController.js";
 
 const router = express.Router();
@@ -33,5 +33,8 @@ router.patch("/:id", updateCategoryController);
 
 // Archive a category
 router.patch("/:id/archive", archiveCategoryController);
+
+// Restore a category 
+router.patch("/:id/restore", restoreCategoryController);
 
 export default router;

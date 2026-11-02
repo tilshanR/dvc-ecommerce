@@ -155,7 +155,7 @@ categorySchema.virtual("subcategories", {
 
 // Check whether this is a main category.
 categorySchema.virtual("isMainCategory").get(function () {
-  return this.parent === null;
+    return !this.parent;
 });
 
 /* INDEXES */

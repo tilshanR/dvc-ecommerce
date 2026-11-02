@@ -1,4 +1,3 @@
-
 import {
   createCategoryService,
   getAllCategoriesService,
@@ -7,17 +6,16 @@ import {
   getSubcategoriesService,
   updateCategoryService,
   archiveCategoryService,
+  restoreCategoryService,
 } from "./categoryService.js";
 
 import {
   createCategorySchema,
   updateCategorySchema,
+  restoreCategorySchema,
 } from "./categoryValidation.js";
 
-import {
-  categoryDTO,
-  categoryDTOs,
-} from "./categorySerializer.js";
+import { categoryDTO, categoryDTOs } from "./categorySerializer.js";
 
 // CREATE CATEGORY
 export const createCategoryController = async (req, res, next) => {
@@ -52,8 +50,7 @@ export const getAllCategoriesController = async (req, res, next) => {
     };
 
     if (req.query.parent !== undefined) {
-      filters.parent =
-        req.query.parent === "null" ? null : req.query.parent;
+      filters.parent = req.query.parent === "null" ? null : req.query.parent;
     }
 
     const categories = await getAllCategoriesService(filters);
@@ -99,9 +96,7 @@ export const getCategoryBySlugController = async (req, res, next) => {
 // GET SUBCATEGORIES
 export const getSubcategoriesController = async (req, res, next) => {
   try {
-    const categories = await getSubcategoriesService(
-      req.params.parentId
-    );
+    const categories = await getSubcategoriesService(req.params.parentId);
 
     return res.status(200).json({
       success: true,
@@ -128,7 +123,7 @@ export const updateCategoryController = async (req, res, next) => {
 
     const category = await updateCategoryService(
       req.params.id,
-      validation.data
+      validation.data,
     );
 
     return res.status(200).json({
@@ -149,6 +144,34 @@ export const archiveCategoryController = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "Category archived successfully.",
+      category: categoryDTO(category),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// RESTORE CATEGORY
+export const restoreCategoryController = async (req, res, next) => {
+  try {
+    const validation = restoreCategorySchema.safeParse(req.body);
+
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed.",
+        errors: validation.error.flatten(),
+      });
+    }
+
+    const category = await restoreCategoryService(
+      req.params.id,
+      validation.data.subcategoryIds,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Category restored successfully.",
       category: categoryDTO(category),
     });
   } catch (error) {

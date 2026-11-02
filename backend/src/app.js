@@ -6,6 +6,7 @@ import rateLimit from "express-rate-limit";
 
 // Import Contact Us API routes
 import contactRoutes from "./modules/contact/contactRoutes.js";
+import categoryRoutes from "./modules/catalog/category/categoryRoutes.js";
 
 const app = express();
 
@@ -32,7 +33,7 @@ const apiLimiter = rateLimit({
 
 // Apply the rate limiter to all API endpoints
 app.use("/api", apiLimiter);
-
+app.use("/api/categories", categoryRoutes);
 // Register Contact Us API routes
 // POST /api/contact submits a new contact message
 app.use("/api/contact", contactRoutes);

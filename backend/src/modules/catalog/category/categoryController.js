@@ -1,3 +1,4 @@
+
 import {
   createCategoryService,
   getAllCategoriesService,
@@ -13,10 +14,12 @@ import {
   updateCategorySchema,
 } from "./categoryValidation.js";
 
-// --------------------------------------------------
+import {
+  categoryDTO,
+  categoryDTOs,
+} from "./categorySerializer.js";
+
 // CREATE CATEGORY
-// POST /api/categories
-// --------------------------------------------------
 export const createCategoryController = async (req, res, next) => {
   try {
     const validation = createCategorySchema.safeParse(req.body);
@@ -34,30 +37,23 @@ export const createCategoryController = async (req, res, next) => {
     return res.status(201).json({
       success: true,
       message: "Category created successfully.",
-      category,
+      category: categoryDTO(category),
     });
   } catch (error) {
     next(error);
   }
 };
 
-// --------------------------------------------------
 // GET ALL CATEGORIES
-// GET /api/categories
-// --------------------------------------------------
 export const getAllCategoriesController = async (req, res, next) => {
   try {
     const filters = {
       ...(req.query.status && { status: req.query.status }),
     };
 
-    // Support main categories and subcategories
     if (req.query.parent !== undefined) {
-      if (req.query.parent === "null") {
-        filters.parent = null;
-      } else {
-        filters.parent = req.query.parent;
-      }
+      filters.parent =
+        req.query.parent === "null" ? null : req.query.parent;
     }
 
     const categories = await getAllCategoriesService(filters);
@@ -65,79 +61,61 @@ export const getAllCategoriesController = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       count: categories.length,
-      categories,
+      categories: categoryDTOs(categories),
     });
   } catch (error) {
     next(error);
   }
 };
 
-// --------------------------------------------------
 // GET CATEGORY BY ID
-// GET /api/categories/id/:id
-// --------------------------------------------------
 export const getCategoryByIdController = async (req, res, next) => {
   try {
-    const { id } = req.params;
-
-    const category = await getCategoryByIdService(id);
+    const category = await getCategoryByIdService(req.params.id);
 
     return res.status(200).json({
       success: true,
-      category,
+      category: categoryDTO(category),
     });
   } catch (error) {
     next(error);
   }
 };
 
-// --------------------------------------------------
 // GET CATEGORY BY SLUG
-// GET /api/categories/slug/:slug
-// --------------------------------------------------
 export const getCategoryBySlugController = async (req, res, next) => {
   try {
-    const { slug } = req.params;
-
-    const category = await getCategoryBySlugService(slug);
+    const category = await getCategoryBySlugService(req.params.slug);
 
     return res.status(200).json({
       success: true,
-      category,
+      category: categoryDTO(category),
     });
   } catch (error) {
     next(error);
   }
 };
 
-// --------------------------------------------------
 // GET SUBCATEGORIES
-// GET /api/categories/:parentId/subcategories
-// --------------------------------------------------
 export const getSubcategoriesController = async (req, res, next) => {
   try {
-    const { parentId } = req.params;
-
-    const categories = await getSubcategoriesService(parentId);
+    const categories = await getSubcategoriesService(
+      req.params.parentId
+    );
 
     return res.status(200).json({
       success: true,
       count: categories.length,
-      categories,
+      categories: categoryDTOs(categories),
     });
   } catch (error) {
     next(error);
   }
 };
 
-// --------------------------------------------------
 // UPDATE CATEGORY
-// PATCH /api/categories/:id
-// --------------------------------------------------
 export const updateCategoryController = async (req, res, next) => {
   try {
-    const { id } = req.params;
-
     const validation = updateCategorySchema.safeParse(req.body);
 
     if (!validation.success) {
@@ -148,32 +126,30 @@ export const updateCategoryController = async (req, res, next) => {
       });
     }
 
-    const category = await updateCategoryService(id, validation.data);
+    const category = await updateCategoryService(
+      req.params.id,
+      validation.data
+    );
 
     return res.status(200).json({
       success: true,
       message: "Category updated successfully.",
-      category,
+      category: categoryDTO(category),
     });
   } catch (error) {
     next(error);
   }
 };
 
-// --------------------------------------------------
 // ARCHIVE CATEGORY
-// PATCH /api/categories/:id/archive
-// --------------------------------------------------
 export const archiveCategoryController = async (req, res, next) => {
   try {
-    const { id } = req.params;
-
-    const category = await archiveCategoryService(id);
+    const category = await archiveCategoryService(req.params.id);
 
     return res.status(200).json({
       success: true,
       message: "Category archived successfully.",
-      category,
+      category: categoryDTO(category),
     });
   } catch (error) {
     next(error);

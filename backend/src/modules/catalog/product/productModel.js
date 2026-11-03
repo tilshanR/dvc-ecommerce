@@ -1,4 +1,3 @@
-
 import mongoose from "mongoose";
 
 const { Schema } = mongoose;
@@ -29,15 +28,12 @@ const productImageSchema = new Schema(
       min: 0,
     },
   },
-  { _id: false }
+  { _id: false },
 );
-
-
 
 //product inventory schema
 const inventorySchema = new Schema(
   {
-    
     // total physical stock currently owned by the store.
     onHand: {
       type: Number,
@@ -60,18 +56,14 @@ const inventorySchema = new Schema(
       },
     },
   },
-  { _id: false }
+  { _id: false },
 );
-// Pre-validate hook 
+// Pre-validate hook
 inventorySchema.pre("validate", function () {
   if (this.reserved > this.onHand) {
-    this.invalidate(
-      "reserved",
-      "Reserved stock cannot exceed on-hand stock."
-    );
+    this.invalidate("reserved", "Reserved stock cannot exceed on-hand stock.");
   }
 });
-
 
 //main product schema
 const productSchema = new Schema(
@@ -97,6 +89,13 @@ const productSchema = new Schema(
       trim: true,
       uppercase: true,
       default: undefined,
+      set: (value) => {
+        if (typeof value === "string" && value.trim() === "") {
+          return undefined;
+        }
+
+        return value;
+      },
     },
 
     description: {
@@ -106,14 +105,14 @@ const productSchema = new Schema(
       maxlength: 10000,
     },
 
-//category and brand
-// ==========================================
-  // PRICING & FINANCIALS
-  // - price: Current active customer selling price.
-  // - originalPrice: Pre-discount "compare-at" price for sales.
-  // - costPrice: Wholesale/acquisition cost (hidden by default 
-  //   via select: false for margin calculations & admin eyes only).
-  // ==========================================
+    //category and brand
+    // ==========================================
+    // PRICING & FINANCIALS
+    // - price: Current active customer selling price.
+    // - originalPrice: Pre-discount "compare-at" price for sales.
+    // - costPrice: Wholesale/acquisition cost (hidden by default
+    //   via select: false for margin calculations & admin eyes only).
+    // ==========================================
 
     category: {
       type: Schema.Types.ObjectId,
@@ -149,23 +148,19 @@ const productSchema = new Schema(
       select: false,
     },
 
-
     // product imgs
     images: {
       type: [productImageSchema],
       default: [],
       validate: {
         validator: function (images) {
-          const primaryCount = images.filter(
-            (image) => image.isPrimary
-          ).length;
+          const primaryCount = images.filter((image) => image.isPrimary).length;
 
           return primaryCount <= 1;
         },
         message: "A product can have only one primary image.",
       },
     },
-
 
     // inventory
     inventory: {
@@ -176,14 +171,12 @@ const productSchema = new Schema(
       }),
     },
 
-
     // Product condition
     condition: {
       type: String,
       enum: ["new", "used", null],
       default: null,
     },
-
 
     // DYNAMIC CATEGORY-SPECIFIC ATTRIBUTES
     //
@@ -209,7 +202,6 @@ const productSchema = new Schema(
       default: null,
       maxlength: 300,
     },
-
 
     // PRODUCT RATINGS
     averageRating: {
@@ -242,9 +234,8 @@ const productSchema = new Schema(
     toObject: {
       virtuals: true,
     },
-  }
+  },
 );
-
 
 /* --------------------------------
    VIRTUAL FIELDS
@@ -260,23 +251,14 @@ const productSchema = new Schema(
 
 // Stock that can currently be sold.
 productSchema.virtual("availableStock").get(function () {
-  return Math.max(
-    0,
-    this.inventory.onHand - this.inventory.reserved
-  );
+  return Math.max(0, this.inventory.onHand - this.inventory.reserved);
 });
 
 // Convenient primary image URL.
 productSchema.virtual("mainImage").get(function () {
-  const primaryImage = this.images.find(
-    (image) => image.isPrimary
-  );
+  const primaryImage = this.images.find((image) => image.isPrimary);
 
-  return (
-    primaryImage?.url ||
-    this.images[0]?.url ||
-    ""
-  );
+  return primaryImage?.url || this.images[0]?.url || "";
 });
 
 // Compatibility with frontend components that use `image`.
@@ -293,7 +275,6 @@ productSchema.virtual("specifications").get(function () {
 productSchema.virtual("stock").get(function () {
   return this.availableStock;
 });
-
 
 /* --------------------------------
    INDEXES
@@ -332,16 +313,14 @@ productSchema.index(
     partialFilterExpression: {
       sku: { $type: "string" },
     },
-  }
+  },
 );
-
 
 /* --------------------------------
    EXPORT MODEL
 --------------------------------- */
 
 const Product =
-  mongoose.models.Product ||
-  mongoose.model("Product", productSchema);
+  mongoose.models.Product || mongoose.model("Product", productSchema);
 
 export default Product;

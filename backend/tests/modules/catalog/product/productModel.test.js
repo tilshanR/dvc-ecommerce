@@ -81,3 +81,26 @@ describe("Product inventory validation", () => {
     },
   );
 });
+
+
+describe("Product SKU normalization", () => {
+  it.each([
+    ["lowercase SKU", "sam-s24-128", "SAM-S24-128"],
+    ["uppercase SKU", "SAM-S24-128", "SAM-S24-128"],
+    ["empty SKU", "", undefined],
+    ["whitespace SKU", "   ", undefined],
+  ])("normalizes %s correctly", (_name, input, expected) => {
+    const product = new Product({
+      sku: input,
+    });
+
+    expect(product.sku).toBe(expected);
+  });
+
+  it("uses undefined when SKU is omitted", () => {
+    const product = new Product({});
+
+    expect(product.sku).toBeUndefined();
+  });
+});
+

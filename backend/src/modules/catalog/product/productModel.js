@@ -37,6 +37,7 @@ const productImageSchema = new Schema(
 //product inventory schema
 const inventorySchema = new Schema(
   {
+    
     // total physical stock currently owned by the store.
     onHand: {
       type: Number,
@@ -61,6 +62,16 @@ const inventorySchema = new Schema(
   },
   { _id: false }
 );
+// Pre-validate hook 
+inventorySchema.pre("validate", function () {
+  if (this.reserved > this.onHand) {
+    this.invalidate(
+      "reserved",
+      "Reserved stock cannot exceed on-hand stock."
+    );
+  }
+});
+
 
 //main product schema
 const productSchema = new Schema(

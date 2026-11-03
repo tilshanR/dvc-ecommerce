@@ -1,4 +1,3 @@
-
 import Product from "./productModel.js";
 
 /**
@@ -8,7 +7,7 @@ import Product from "./productModel.js";
 const populateProductReferences = (query) => {
   return query
     .populate("category", "name slug status")
-    // .populate("brand", "name slug");
+   // .populate("brand", "name slug");
 };
 
 /**
@@ -113,6 +112,34 @@ export const findProductById = async (productId) => {
 export const findProductBySlug = async (slug) => {
   return await populateProductReferences(
     Product.findOne({ slug }),
+  );
+};
+
+/**
+ * Find an active product by MongoDB ObjectId.
+ *
+ * Public Shop queries must only return active products.
+ */
+export const findActiveProductById = async (productId) => {
+  return await populateProductReferences(
+    Product.findOne({
+      _id: productId,
+      status: "active",
+    }),
+  );
+};
+
+/**
+ * Find an active product by slug.
+ *
+ * Public Shop queries must only return active products.
+ */
+export const findActiveProductBySlug = async (slug) => {
+  return await populateProductReferences(
+    Product.findOne({
+      slug,
+      status: "active",
+    }),
   );
 };
 

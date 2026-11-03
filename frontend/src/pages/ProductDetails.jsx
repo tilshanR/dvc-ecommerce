@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import { getProduct, addProductToCart } from "../services/productApi";
+import { getProduct } from "../services/productApi";
+import { addProductToCart } from "../services/cartService";
 import { normalizeProduct } from "../utils/productUtils";
 import ProductBreadcrumbs from "../components/ProductBreadcrumbs";
 import ProductGallery from "../components/ProductGallery";

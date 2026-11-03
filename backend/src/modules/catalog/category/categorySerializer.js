@@ -1,4 +1,3 @@
-
 /**
  * Convert a Category database document into
  * the API response format.
@@ -14,9 +13,7 @@ export const categoryDTO = (category) => {
       : category;
 
   // Handle both populated and unpopulated parent references.
-  const parentId = data.parent
-    ? String(data.parent._id ?? data.parent)
-    : null;
+  const parentId = data.parent ? String(data.parent._id ?? data.parent) : null;
 
   return {
     id: String(data._id),
@@ -37,6 +34,57 @@ export const categoryDTO = (category) => {
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   };
+};
+
+/**
+ * Convert a category into a public Shop response.
+ *
+ * Only filterable attributes are exposed as filters.
+ * Subcategories are converted recursively.
+ */
+export const shopCategoryDTO = (category) => {
+  if (!category) return null;
+
+  const parentId = category.parent
+    ? String(category.parent._id ?? category.parent)
+    : null;
+
+  return {
+    id: String(category._id),
+
+    name: category.name,
+    slug: category.slug,
+    description: category.description,
+    sortOrder: category.sortOrder,
+
+    allowCondition: category.allowCondition,
+
+    attributes: (category.attributes ?? [])
+      .filter((attribute) => attribute.isFilterable)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((attribute) => ({
+        key: attribute.key,
+        label: attribute.label,
+        type: attribute.type,
+        options: attribute.options,
+        unit: attribute.unit,
+        isFilterable: attribute.isFilterable,
+        sortOrder: attribute.sortOrder,
+      })),
+
+    parent: parentId,
+
+    isMainCategory: parentId === null,
+
+    subcategories: (category.subcategories ?? []).map(shopCategoryDTO),
+  };
+};
+
+/**
+ * Convert multiple categories into Shop response objects.
+ */
+export const shopCategoryDTOs = (categories) => {
+  return categories.map(shopCategoryDTO);
 };
 
 /**

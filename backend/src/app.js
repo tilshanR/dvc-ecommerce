@@ -7,6 +7,7 @@ import errorMiddleware from "./middleware/errorMiddleware.js";
 // Import API routes
 import contactRoutes from "./modules/contact/contactRoutes.js";
 import categoryRoutes from "./modules/catalog/category/categoryRoutes.js";
+import productRoutes from "./modules/catalog/product/productRoutes.js"
 
 const app = express();
 
@@ -37,6 +38,8 @@ app.use("/api/categories", categoryRoutes);
 // Register Contact Us API routes
 // POST /api/contact submits a new contact message
 app.use("/api/contact", contactRoutes);
+
+app.use("/api/products", productRoutes);
 
 //  Health-check endpoint
 // GET /api/health checks whether the API is responding

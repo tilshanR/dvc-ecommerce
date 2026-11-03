@@ -9,6 +9,7 @@ import {
   updateCategoryController,
   archiveCategoryController,
   restoreCategoryController,
+  getShopCategoriesController,
 } from "./categoryController.js";
 
 const router = express.Router();
@@ -18,6 +19,9 @@ router.post("/", createCategoryController);
 
 // Get all categories (supports query filters)
 router.get("/", getAllCategoriesController);
+
+// Get active category hierarchy for public Shop
+router.get("/shop", getShopCategoriesController);
 
 // Get category by slug
 router.get("/slug/:slug", getCategoryBySlugController);
@@ -34,7 +38,7 @@ router.patch("/:id", updateCategoryController);
 // Archive a category
 router.patch("/:id/archive", archiveCategoryController);
 
-// Restore a category 
+// Restore a category
 router.patch("/:id/restore", restoreCategoryController);
 
 export default router;

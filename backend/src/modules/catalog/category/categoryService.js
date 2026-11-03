@@ -7,6 +7,7 @@ import {
   updateCategoryById,
   archiveCategoryById,
   restoreCategoryWithSubcategories,
+  findActiveCategoryTree,
 } from "./categoryRepository.js";
 
 // --------------------------------------------------
@@ -105,6 +106,43 @@ export const createCategoryService = async (categoryData) => {
   });
 
   return newCategory;
+};
+
+// --------------------------------------------------
+// GET ACTIVE CATEGORY HIERARCHY FOR SHOP
+// --------------------------------------------------
+
+export const getShopCategoriesService = async () => {
+  const categories = await findActiveCategoryTree();
+
+  // Create a lookup map for efficient parent lookup.
+  const categoryMap = new Map();
+
+  // Prepare every category as a tree node.
+  for (const category of categories) {
+    categoryMap.set(category._id.toString(), {
+      ...category,
+      subcategories: [],
+    });
+  }
+
+  const mainCategories = [];
+
+  // Connect subcategories to their respective parents.
+  for (const category of categoryMap.values()) {
+    if (category.parent) {
+      const parentId = category.parent.toString();
+      const parentCategory = categoryMap.get(parentId);
+
+      if (parentCategory) {
+        parentCategory.subcategories.push(category);
+      }
+    } else {
+      mainCategories.push(category);
+    }
+  }
+
+  return mainCategories;
 };
 
 // --------------------------------------------------

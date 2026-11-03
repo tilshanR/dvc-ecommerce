@@ -118,3 +118,18 @@ export const restoreCategoryWithSubcategories = async (
     await session.endSession();
   }
 };
+
+/* GET ACTIVE CATEGORY HIERARCHY FOR SHOP */
+export const findActiveCategoryTree = async () => {
+  return await Category.find({
+    status: "active",
+  })
+    .select(
+      "name slug description sortOrder parent attributes allowCondition status",
+    )
+    .sort({
+      sortOrder: 1,
+      name: 1,
+    })
+    .lean();
+};

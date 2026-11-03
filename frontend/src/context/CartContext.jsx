@@ -22,109 +22,56 @@ export function CartProvider({ children }) {
   }, [cartItems]);
   const { showToast } = useToast();
 
-  // const addToCart = (product) => {
-  //   const id = getProductId(product);
-  //   const stock = Number(product.availableStock ?? product.stock);
+  const addToCart = (product) => {
+    const id = getProductId(product);
+    const stock = Number(product.availableStock ?? product.stock);
 
-  //   if (!id || !Number.isFinite(stock) || stock <= 0) {
-  //     return false;
-  //   }
-
-  //   const existingItem = cartItems.find((item) => item.id === id);
-
-  //   if (existingItem && existingItem.quantity >= stock) {
-  //     return false;
-  //   }
-
-  //   setCartItems((items) => {
-  //     const currentItem = items.find((item) => item.id === id);
-
-  //     if (currentItem) {
-  //       if (currentItem.quantity >= stock) return items;
-
-  //       return items.map((item) =>
-  //         item.id === id
-  //           ? { ...item, quantity: item.quantity + 1 }
-  //           : item,
-  //       );
-  //     }
-
-  //     const category =
-  //       typeof product.category === "object"
-  //         ? product.category?.name
-  //         : product.category;
-
-  //     return [
-  //       ...items,
-  //       {
-  //         id,
-  //         name: product.name ?? "Unnamed product",
-  //         category: category ?? "Uncategorized",
-  //         description: product.description ?? "",
-  //         price: Number(product.price),
-  //         quantity: 1,
-  //         stock,
-  //         image: product.image || "/images/product-placeholder.png",
-  //       },
-  //     ];
-  //   });
-
-  //   return true;
-  // };
-  
-const addToCart = (product) => {
-  const id = getProductId(product);
-  const stock = Number(product.availableStock ?? product.stock);
-
-  if (!id || !Number.isFinite(stock) || stock <= 0) {
-    showToast("error", "This product is currently unavailable.");
-    return false;
-  }
-
-  const existingItem = cartItems.find((item) => item.id === id);
-
-  if (existingItem && existingItem.quantity >= stock) {
-    showToast("error", "You have reached the available stock limit.");
-    return false;
-  }
-
-  setCartItems((items) => {
-    const currentItem = items.find((item) => item.id === id);
-
-    if (currentItem) {
-      if (currentItem.quantity >= stock) return items;
-
-      return items.map((item) =>
-        item.id === id
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      );
+    if (!id || !Number.isFinite(stock) || stock <= 0) {
+      showToast("error", "This product is currently unavailable.");
+      return false;
     }
 
-    const category =
-      typeof product.category === "object"
-        ? product.category?.name
-        : product.category;
+    const existingItem = cartItems.find((item) => item.id === id);
 
-    return [
-      ...items,
-      {
-        id,
-        name: product.name ?? "Unnamed product",
-        category: category ?? "Uncategorized",
-        description: product.description ?? "",
-        price: Number(product.price),
-        quantity: 1,
-        stock,
-        image: product.image || "/images/product-placeholder.png",
-      },
-    ];
-  });
+    if (existingItem && existingItem.quantity >= stock) {
+      showToast("error", "You have reached the available stock limit.");
+      return false;
+    }
 
-  showToast("success", `${product.name ?? "Product"} added to your cart.`);
-  return true;
-};
+    setCartItems((items) => {
+      const currentItem = items.find((item) => item.id === id);
 
+      if (currentItem) {
+        if (currentItem.quantity >= stock) return items;
+
+        return items.map((item) =>
+          item.id === id ? { ...item, quantity: item.quantity + 1 } : item,
+        );
+      }
+
+      const category =
+        typeof product.category === "object"
+          ? product.category?.name
+          : product.category;
+
+      return [
+        ...items,
+        {
+          id,
+          name: product.name ?? "Unnamed product",
+          category: category ?? "Uncategorized",
+          description: product.description ?? "",
+          price: Number(product.price),
+          quantity: 1,
+          stock,
+          image: product.image || "/images/product-placeholder.png",
+        },
+      ];
+    });
+
+    showToast("success", `${product.name ?? "Product"} added to your cart.`);
+    return true;
+  };
 
   const updateQuantity = (id, change) => {
     setCartItems((items) =>

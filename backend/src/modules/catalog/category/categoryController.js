@@ -7,6 +7,7 @@ import {
   updateCategoryService,
   archiveCategoryService,
   restoreCategoryService,
+  getShopCategoriesService,
 } from "./categoryService.js";
 
 import {
@@ -15,7 +16,11 @@ import {
   restoreCategorySchema,
 } from "./categoryValidation.js";
 
-import { categoryDTO, categoryDTOs } from "./categorySerializer.js";
+import {
+  categoryDTO,
+  categoryDTOs,
+  shopCategoryDTOs,
+} from "./categorySerializer.js";
 
 // CREATE CATEGORY
 export const createCategoryController = async (req, res, next) => {
@@ -59,6 +64,21 @@ export const getAllCategoriesController = async (req, res, next) => {
       success: true,
       count: categories.length,
       categories: categoryDTOs(categories),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+// GET ACTIVE CATEGORIES FOR SHOP
+
+export const getShopCategoriesController = async (req, res, next) => {
+  try {
+    const categories = await getShopCategoriesService();
+
+    return res.status(200).json({
+      success: true,
+      count: categories.length,
+      categories: shopCategoryDTOs(categories),
     });
   } catch (error) {
     next(error);

@@ -8,44 +8,12 @@ import {
 } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { useCart } from "../context/CartContext";
+import { getProducts } from "../services/productApi";
 
 const DEMO_PRODUCTS = [
-  {
-    _id: "m1",
-    name: "Smartphone",
-    category: "Mobile Phones",
-    categorySlug: "mobile-phones",
-    brand: "Samsung",
-    phoneType: "smartphone",
-    price: 68500,
-    stock: 8,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-20",
-  },
-  {
-    _id: "m2",
-    name: "Feature Phone",
-    category: "Mobile Phones",
-    categorySlug: "mobile-phones",
-    brand: "Nokia",
-    phoneType: "feature-phone",
-    price: 8500,
-    stock: 12,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-18",
-  },
-  {
-    _id: "a1",
-    name: "USB-C Fast Charger",
-    category: "Mobile Accessories",
-    categorySlug: "mobile-accessories",
-    brand: "Anker",
-    accessoryType: "chargers",
-    price: 4500,
-    stock: 12,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-17",
-  },
+ 
+ 
+ 
   {
     _id: "a2",
     name: "Wireless Earbuds",
@@ -370,11 +338,55 @@ function formatPrice(value) {
     maximumFractionDigits: 2,
   }).format(price);
 }
+function normalizeProduct(product) {
+  const mainImage = product.mainImage;
 
-// Demo-only data loader. Need to replace with the express api
+  const image =
+    (typeof mainImage === "string" ? mainImage : mainImage?.url) ||
+    product.images?.find((img) => img.isPrimary)?.url ||
+    product.images?.[0]?.url ||
+    product.image ||
+    "/images/product-placeholder.png";
+
+  const availableStock =
+    product.availableStock ??
+    Math.max(
+      0,
+      Number(product.inventory?.onHand ?? 0) -
+        Number(product.inventory?.reserved ?? 0),
+    );
+
+  return {
+    ...product,
+    _id: String(product._id ?? product.id ?? ""),
+    brand:
+      typeof product.brand === "object"
+        ? product.brand?.name ?? ""
+        : product.brand ?? "",
+    category:
+      typeof product.category === "object"
+        ? product.category?.name ?? ""
+        : product.category ?? "",
+    categorySlug:
+      typeof product.category === "object"
+        ? product.category?.slug ?? ""
+        : product.categorySlug ?? "",
+    image,
+    availableStock: Number(availableStock),
+    stock: Number(availableStock),
+  };
+}
+
 async function loadProducts(signal) {
-  if (signal.aborted) throw new DOMException("Aborted", "AbortError");
-  return DEMO_PRODUCTS;
+  const response = await getProducts(
+    {
+      page: 1,
+      limit: 30,
+    },
+    { signal },
+  );
+
+  return response.products.map(normalizeProduct);
 }
 
 export default function Shop() {
@@ -417,17 +429,32 @@ export default function Shop() {
   const [packSize, setPackSize] = useState(searchParams.get("packSize") || "");
 
   useEffect(() => {
-    const controller = new AbortController();
-    loadProducts(controller.signal)
-      .then(setProducts)
-      .catch((err) => {
-        if (err.name !== "AbortError") setError("We couldn't load products.");
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-    return () => controller.abort();
-  }, []);
+  const controller = new AbortController();
+
+  setLoading(true);
+  setError("");
+
+  loadProducts(controller.signal)
+    .then((data) => {
+      setProducts(data);
+    })
+    .catch((err) => {
+      if (
+        !controller.signal.aborted &&
+        err.code !== "ERR_CANCELED"
+      ) {
+        console.error("Product loading error:", err);
+        setError(err.message || "We couldn't load products.");
+      }
+    })
+    .finally(() => {
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
+    });
+
+  return () => controller.abort();
+}, []);
 
   useEffect(() => {
     setSearch(searchParams.get("search") || "");
@@ -492,43 +519,7 @@ export default function Shop() {
       packSize: "",
     });
   }
-  //   function scrollToProducts() {
-  //   requestAnimationFrame(() => {
-  //     if (productsSectionRef.current) {
-  //       const top =
-  //         productsSectionRef.current.getBoundingClientRect().top +
-  //         window.scrollY -
-  //         180;
 
-  //       window.scrollTo({
-  //         top: Math.max(0, top),
-  //         behavior: "smooth",
-  //       });
-  //     }
-  //   });
-  // }
-  //
-  // function scrollToProducts() {
-  //   if (!productsSectionRef.current) return;
-
-  //   const section = productsSectionRef.current;
-
-  //   const stickyControls = document.querySelector(
-  //     '[data-shop-sticky-controls="true"]',
-  //   );
-
-  //   const stickyHeight = stickyControls
-  //     ? stickyControls.getBoundingClientRect().height
-  //     : 0;
-
-  //   const top =
-  //     section.getBoundingClientRect().top + window.scrollY - stickyHeight - 24;
-
-  //   window.scrollTo({
-  //     top: Math.max(0, top),
-  //     behavior: "auto",
-  //   });
-  // }
 
 
 function scrollToProducts() {

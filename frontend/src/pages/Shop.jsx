@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
   Search,
@@ -11,112 +11,12 @@ import { useCart } from "../context/CartContext";
 import { getProducts } from "../services/productApi";
 import { getShopCategories } from "../services/categoryApi";
 
-const CATEGORIES = [
-  { value: "all", label: "All" },
-  { value: "mobile", label: "Mobile Phones" },
-  { value: "accessories", label: "Mobile Accessories" },
-  { value: "computer", label: "Computer Parts" },
-  { value: "stationery", label: "Stationery & Books" },
-];
+const ATTR_PREFIX = "attr_";
 
-const STATIONERY_TYPES = [
-  ["writing-instruments", "Writing Instruments"],
-  ["paper-notebooks", "Paper, Exercise Books & Notebooks"],
-  ["geometry-tools", "Erasers, Sharpeners & Geometry"],
-  ["art-coloring", "Art & Coloring Supplies"],
-  ["fasteners-adhesives", "Staplers, Fasteners & Adhesives"],
-  ["cutting-correction", "Cutting & Correction Tools"],
-  ["files-folders", "Files, Folders & Organizers"],
-  ["office-desk", "Office Desk Supplies"],
-  ["books-education", "Books & Educational Materials"],
-  ["calculators-equipment", "Calculators & Office Equipment"],
-  ["cards-gifts", "Cards & Gift Items"],
-  ["stickers-labels", "Stickers & Labels"],
-];
+/* ---------- helpers ---------- */
 
-const FILTER_CONFIG = {
-  mobile: ["Phone type", "Brand", "Storage", "RAM"],
-  accessories: ["Accessory type", "Brand"],
-  computer: ["Component type", "Brand", "Condition", "Compatibility"],
-  stationery: ["Product type", "Brand", "Color", "Paper size", "Pack size"],
-};
-
-const normalizeCategory = (category) => {
-  const value =
-    typeof category === "string"
-      ? category
-      : typeof category?.name === "string"
-        ? category.name
-        : "";
-
-  const normalized = value
-    .toLowerCase()
-    .trim()
-    .replace(/[\s_]+/g, "-");
-
-  if (!normalized) return "all";
-
-  if (
-    normalized.includes("stationery") ||
-    normalized.includes("office-supplies")
-  ) {
-    return "stationery";
-  }
-
-  if (normalized.includes("mobile-accessories")) {
-    return "accessories";
-  }
-
-  if (normalized.includes("mobile") || normalized.includes("phone")) {
-    return "mobile";
-  }
-
-  if (normalized.includes("computer") || normalized.includes("peripheral")) {
-    return "computer";
-  }
-
-  return normalized === "all" ? "all" : normalized;
-};
-function getCategory(product) {
-  const slug = String(
-    product.categorySlug || product.category?.slug || "",
-  ).toLowerCase();
-  if (slug.includes("stationery") || slug.includes("office-supplies"))
-    return "stationery";
-  if (slug.includes("mobile-accessories")) return "accessories";
-  if (slug.includes("mobile")) return "mobile";
-  if (slug.includes("computer") || slug.includes("peripheral"))
-    return "computer";
-
-  const category = String(
-    product.category?.name || product.category || "",
-  ).toLowerCase();
-  if (category.includes("stationery") || category.includes("book"))
-    return "stationery";
-  if (category.includes("accessor")) return "accessories";
-  if (category.includes("mobile") || category.includes("phone"))
-    return "mobile";
-  if (
-    category.includes("computer") ||
-    category.includes("hardware") ||
-    category.includes("peripheral")
-  )
-    return "computer";
-  return "all";
-}
-
-function formatPrice(value) {
-  const price = Number(value);
-  if (!Number.isFinite(price)) return "Price unavailable";
-  return new Intl.NumberFormat("en-LK", {
-    style: "currency",
-    currency: "LKR",
-    maximumFractionDigits: 2,
-  }).format(price);
-}
 function normalizeProduct(product) {
   const mainImage = product.mainImage;
-
   const image =
     (typeof mainImage === "string" ? mainImage : mainImage?.url) ||
     product.images?.find((img) => img.isPrimary)?.url ||
@@ -154,87 +54,107 @@ function normalizeProduct(product) {
 }
 
 async function loadProducts(signal) {
-  const response = await getProducts(
-    {
-      page: 1,
-      limit: 30,
-    },
-    { signal },
-  );
-  console.log("========== BACKEND PRODUCT RESPONSE ==========");
-  console.log("Complete response:", response);
-  console.log("Products array:", response.products);
-  console.log("First product:", response.products[0]);
-  console.log("Pagination:", response.pagination);
-
+  const response = await getProducts({ page: 1, limit: 30 }, { signal });
   return response.products.map(normalizeProduct);
 }
+
+// An attribute option can be a plain string or { value, label }.
+function toOption(option) {
+  if (option && typeof option === "object") {
+    const value = option.value ?? option.label ?? "";
+    return { value: String(value), label: String(option.label ?? value) };
+  }
+  return { value: String(option), label: String(option) };
+}
+
+// Reads a product's value for an attribute key.
+// ADJUST THIS if your backend stores attribute values somewhere else.
+function getProductAttributeValue(product, key) {
+  const raw = product.attributes?.[key] ?? product.specs?.[key] ?? product[key];
+
+  if (raw == null) return [];
+  return (Array.isArray(raw) ? raw : [raw]).map((v) => String(v).toLowerCase());
+}
+
+/* ---------- small components ---------- */
+
+function FilterSection({ title, defaultOpen = false, children }) {
+  return (
+    <details open={defaultOpen} className="border-b border-gray-200 py-3">
+      <summary className="cursor-pointer list-none font-medium text-gray-800">
+        {title} <ChevronDown className="float-right" size={16} />
+      </summary>
+      {children}
+    </details>
+  );
+}
+
+function CategoryButton({ active, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+        active
+          ? "border-[#183D3D] bg-[#183D3D] text-white"
+          : "border-gray-200 bg-white text-gray-700 hover:border-[#183D3D] hover:text-[#183D3D]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ---------- page ---------- */
 
 export default function Shop() {
   const { addToCart } = useCart();
   const productsSectionRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Data
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [categories, setCategories] = useState([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState("");
 
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [category, setCategory] = useState(
-    searchParams.get("category") || "all",
+  // Filters: the URL is the single source of truth (no duplicated state).
+  const search = searchParams.get("search") || "";
+  const category = searchParams.get("category") || "all";
+  const sort = searchParams.get("sort") || "newest";
+  const inStockOnly = searchParams.get("availability") === "in-stock";
+  const minPrice = searchParams.get("minPrice") || "";
+  const maxPrice = searchParams.get("maxPrice") || "";
+  const brand = searchParams.get("brand") || "";
+
+  const attributeFilters = useMemo(
+    () =>
+      Object.fromEntries(
+        [...searchParams.entries()]
+          .filter(([key]) => key.startsWith(ATTR_PREFIX))
+          .map(([key, value]) => [key.slice(ATTR_PREFIX.length), value]),
+      ),
+    [searchParams],
   );
-  const [subCategory, setSubCategory] = useState(
-    searchParams.get("subCategory") || "",
-  );
-  const [condition, setCondition] = useState(
-    searchParams.get("condition") || "all",
-  );
-  const [sort, setSort] = useState(searchParams.get("sort") || "newest");
-  const [inStockOnly, setInStockOnly] = useState(
-    searchParams.get("availability") === "in-stock",
-  );
-  const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
-  const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
-  const [brand, setBrand] = useState(searchParams.get("brand") || "");
-  const [color, setColor] = useState(searchParams.get("color") || "");
-  const [phoneType, setPhoneType] = useState(
-    searchParams.get("phoneType") || "",
-  );
-  const [componentType, setComponentType] = useState(
-    searchParams.get("componentType") || "",
-  );
-  const [accessoryType, setAccessoryType] = useState(
-    searchParams.get("accessoryType") || "",
-  );
-  const [paperSize, setPaperSize] = useState(
-    searchParams.get("paperSize") || "",
-  );
-  const [packSize, setPackSize] = useState(searchParams.get("packSize") || "");
+
+  /* ---------- effects ---------- */
 
   useEffect(() => {
     const controller = new AbortController();
-
     setLoading(true);
     setError("");
 
     loadProducts(controller.signal)
-      .then((data) => {
-        setProducts(data);
-      })
+      .then(setProducts)
       .catch((err) => {
         if (!controller.signal.aborted && err.code !== "ERR_CANCELED") {
-          console.error("Product loading error:", err);
           setError(err.message || "We couldn't load products.");
         }
       })
       .finally(() => {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
+        if (!controller.signal.aborted) setLoading(false);
       });
 
     return () => controller.abort();
@@ -242,26 +162,13 @@ export default function Shop() {
 
   useEffect(() => {
     const controller = new AbortController();
-
-    setCategoriesLoading(true);
     setCategoriesError("");
 
     getShopCategories({ signal: controller.signal })
-      .then((data) => {
-        console.log("========== BACKEND CATEGORY RESPONSE ==========");
-        console.log("Categories:", data);
-
-        setCategories(data);
-      })
+      .then(setCategories)
       .catch((err) => {
         if (!controller.signal.aborted && err.code !== "ERR_CANCELED") {
-          console.error("Category loading error:", err);
           setCategoriesError(err.message || "We couldn't load categories.");
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setCategoriesLoading(false);
         }
       });
 
@@ -269,185 +176,152 @@ export default function Shop() {
   }, []);
 
   useEffect(() => {
-    setSearch(searchParams.get("search") || "");
-    // setCategory(normalizeCategory(searchParams.get("category")));
-    setCategory(searchParams.get("category") || "all");
-    setSubCategory(searchParams.get("subCategory") || "");
-    setCondition(searchParams.get("condition") || "all");
-    setSort(searchParams.get("sort") || "newest");
-    setInStockOnly(searchParams.get("availability") === "in-stock");
-    setMinPrice(searchParams.get("minPrice") || "");
-    setMaxPrice(searchParams.get("maxPrice") || "");
-    setBrand(searchParams.get("brand") || "");
-    setColor(searchParams.get("color") || "");
-    setPhoneType(searchParams.get("phoneType") || "");
-    setComponentType(searchParams.get("componentType") || "");
-    setAccessoryType(searchParams.get("accessoryType") || "");
-    setPaperSize(searchParams.get("paperSize") || "");
-    setPackSize(searchParams.get("packSize") || "");
-  }, [searchParams]);
-  useEffect(() => {
     if (!productsSectionRef.current) return;
-
-    const frameId = requestAnimationFrame(() => {
-      scrollToProducts();
-    });
-
+    const frameId = requestAnimationFrame(scrollToProducts);
     return () => cancelAnimationFrame(frameId);
   }, [category]);
+
+  /* ---------- URL helpers ---------- */
 
   function updateQuery(values) {
     const next = new URLSearchParams(searchParams);
     Object.entries(values).forEach(([key, value]) => {
       if (value === "" || value === "all" || value == null || value === false)
         next.delete(key);
-      else if (key === "availability" && value === true)
-        next.set(key, "in-stock");
+      else if (value === true)
+        next.set(key, key === "availability" ? "in-stock" : "true");
       else next.set(key, String(value));
     });
     setSearchParams(next, { replace: true });
   }
 
   function changeCategory(value) {
-    setCategory(value);
-    setSubCategory("");
-    setCondition("all");
-    setBrand("");
-    setColor("");
-    setPhoneType("");
-    setComponentType("");
-    setAccessoryType("");
-    setPaperSize("");
-    setPackSize("");
-    updateQuery({
-      category: value,
-      subCategory: "",
-      condition: "",
-      brand: "",
-      color: "",
-      phoneType: "",
-      componentType: "",
-      accessoryType: "",
-      paperSize: "",
-      packSize: "",
+    const next = new URLSearchParams(searchParams);
+    [...next.keys()].forEach((key) => {
+      if (key.startsWith(ATTR_PREFIX)) next.delete(key);
     });
+    next.delete("brand");
+    if (value === "all") next.delete("category");
+    else next.set("category", value);
+    setSearchParams(next, { replace: true });
+  }
+
+  function setAttribute(key, value) {
+    updateQuery({ [`${ATTR_PREFIX}${key}`]: value });
+  }
+
+  function clearFilters() {
+    setSearchParams({});
   }
 
   function scrollToProducts() {
     if (!productsSectionRef.current) return;
-
-    const section = productsSectionRef.current;
     const stickyControls = document.querySelector(
       '[data-shop-sticky-controls="true"]',
     );
-
     const stickyBottom = stickyControls
       ? stickyControls.getBoundingClientRect().bottom
       : 0;
-
     const top =
-      window.scrollY + section.getBoundingClientRect().top - stickyBottom - 40;
-
-    window.scrollTo({
-      top: Math.max(0, top),
-      behavior: "auto",
-    });
+      window.scrollY +
+      productsSectionRef.current.getBoundingClientRect().top -
+      stickyBottom -
+      40;
+    window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
   }
-  const selectedCategory = useMemo(() => {
-    if (category === "all") return null;
 
-    return (
-      categories
-        .flatMap((main) => [main, ...(main.subcategories || [])])
-        .find((item) => item.slug === category) || null
-    );
-  }, [categories, category]);
+  /* ---------- derived data ---------- */
 
-  const selectedCategorySlugs = useMemo(() => {
-  if (category === "all") return [];
-
-  const mainCategory = categories.find(
-    (item) => item.slug === category
+  const allCategories = useMemo(
+    () => categories.flatMap((main) => [main, ...(main.subcategories || [])]),
+    [categories],
   );
 
-  // Main category: include itself and its subcategories.
-  if (mainCategory) {
-    return [
-      mainCategory.slug,
-      ...(mainCategory.subcategories || []).map(
-        (item) => item.slug
-      ),
-    ];
-  }
+  const selectedCategory = useMemo(
+    () =>
+      category === "all"
+        ? null
+        : allCategories.find((item) => item.slug === category) || null,
+    [allCategories, category],
+  );
 
-  // Subcategory: include only the selected subcategory.
-  return [category];
-}, [categories, category]);
+  const selectedCategorySlugs = useMemo(() => {
+    if (category === "all") return [];
+    const mainCategory = categories.find((item) => item.slug === category);
+    if (mainCategory) {
+      return [
+        mainCategory.slug,
+        ...(mainCategory.subcategories || []).map((s) => s.slug),
+      ];
+    }
+    return [category];
+  }, [categories, category]);
+
+  // Filterable attributes for the selected category.
+  // A subcategory with no attributes of its own inherits its parent's.
+  const selectedCategoryAttributes = useMemo(() => {
+    if (!selectedCategory) return [];
+
+    let attributes = selectedCategory.attributes || [];
+    if (attributes.length === 0) {
+      const parent = categories.find((main) =>
+        (main.subcategories || []).some(
+          (sub) => sub.slug === selectedCategory.slug,
+        ),
+      );
+      attributes = parent?.attributes || [];
+    }
+
+    return attributes
+      .filter(
+        (attribute) => attribute.isFilterable && attribute.key !== "brand",
+      )
+      .map((attribute) => ({
+        ...attribute,
+        options: (attribute.options || []).map(toOption),
+      }))
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  }, [categories, selectedCategory]);
+  console.log("Selected category:", selectedCategory?.name);
+  console.log("Selected attributes:", selectedCategory?.attributes);
+  console.log("Filterable attributes:", selectedCategoryAttributes);
+
+  // Only count attribute filters that belong to the current category.
+  const activeAttributeFilters = useMemo(
+    () =>
+      selectedCategoryAttributes
+        .filter((attribute) => attributeFilters[attribute.key])
+        .map((attribute) => [attribute.key, attributeFilters[attribute.key]]),
+    [selectedCategoryAttributes, attributeFilters],
+  );
 
   const visibleProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     const result = products.filter((p) => {
-     const categoryMatch =
-  category === "all" ||
-  selectedCategorySlugs.includes(p.categorySlug);
-      const subcategoryMatch = !subCategory || p.stationeryType === subCategory;
-      const text = [
-        p.name,
-        p.brand,
-        p.description,
-        p.category?.name || p.category,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      const searchMatch = !query || text.includes(query);
-      const conditionMatch =
-        category !== "computer" ||
-        condition === "all" ||
-        p.condition === condition;
-      const stockMatch =
-        !inStockOnly || Number(p.stock ?? p.availableStock ?? 0) > 0;
-      const price = Number(p.price);
-      const minMatch = minPrice === "" || price >= Number(minPrice);
-      const maxMatch = maxPrice === "" || price <= Number(maxPrice);
-      const brandMatch =
-        !brand || String(p.brand || "").toLowerCase() === brand.toLowerCase();
-      const colorMatch =
-        !color || String(p.color || "").toLowerCase() === color.toLowerCase();
-      const phoneMatch =
-        category !== "mobile" || !phoneType || p.phoneType === phoneType;
-      const componentMatch =
-        category !== "computer" ||
-        !componentType ||
-        p.componentType === componentType;
-      const accessoryMatch =
-        category !== "accessories" ||
-        !accessoryType ||
-        p.accessoryType === accessoryType;
-      const paperMatch =
-        category !== "stationery" || !paperSize || p.paperSize === paperSize;
-      const packMatch =
-        category !== "stationery" ||
-        !packSize ||
-        String(p.packSize || "") === packSize;
+      if (category !== "all" && !selectedCategorySlugs.includes(p.categorySlug))
+        return false;
 
-      return (
-        categoryMatch &&
-        subcategoryMatch &&
-        searchMatch &&
-        conditionMatch &&
-        stockMatch &&
-        minMatch &&
-        maxMatch &&
-        brandMatch &&
-        colorMatch &&
-        phoneMatch &&
-        componentMatch &&
-        accessoryMatch &&
-        paperMatch &&
-        packMatch 
-        
+      if (query) {
+        const text = [p.name, p.brand, p.description, p.category]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!text.includes(query)) return false;
+      }
+
+      if (inStockOnly && Number(p.stock ?? p.availableStock ?? 0) <= 0)
+        return false;
+
+      const price = Number(p.price);
+      if (minPrice !== "" && price < Number(minPrice)) return false;
+      if (maxPrice !== "" && price > Number(maxPrice)) return false;
+
+      if (brand && String(p.brand || "").toLowerCase() !== brand.toLowerCase())
+        return false;
+
+      return activeAttributeFilters.every(([key, value]) =>
+        getProductAttributeValue(p, key).includes(String(value).toLowerCase()),
       );
     });
 
@@ -460,52 +334,37 @@ export default function Shop() {
   }, [
     products,
     category,
-    subCategory,
+    selectedCategorySlugs,
     search,
-    condition,
     inStockOnly,
     minPrice,
     maxPrice,
     brand,
-    color,
-    phoneType,
-    componentType,
-    accessoryType,
-    paperSize,
-    packSize,
+    activeAttributeFilters,
     sort,
-    selectedCategorySlugs
   ]);
-  
 
-  const categoryBrands = [
-    ...new Set(
-      products
-        .filter((p) => category === "all" || getCategory(p) === category)
-        .map((p) => p.brand)
-        .filter(Boolean),
-    ),
-  ];
+  const categoryBrands = useMemo(
+    () => [
+      ...new Set(
+        products
+          .filter(
+            (p) =>
+              category === "all" ||
+              selectedCategorySlugs.includes(p.categorySlug),
+          )
+          .map((p) => p.brand)
+          .filter(Boolean),
+      ),
+    ],
+    [products, category, selectedCategorySlugs],
+  );
 
-  function clearFilters() {
-    setSearchParams({});
-  }
+  const activeFilterCount =
+    [search, inStockOnly, minPrice, maxPrice, brand].filter(Boolean).length +
+    activeAttributeFilters.length;
 
-  const activeFilterCount = [
-    search,
-    subCategory,
-    condition !== "all" && category === "computer" ? condition : "",
-    inStockOnly,
-    minPrice,
-    maxPrice,
-    brand,
-    color,
-    phoneType,
-    componentType,
-    accessoryType,
-    paperSize,
-    packSize,
-  ].filter(Boolean).length;
+  /* ---------- render ---------- */
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -514,13 +373,11 @@ export default function Shop() {
           <p className="text-sm font-semibold uppercase tracking-widest text-emerald-200">
             DVC Store
           </p>
-
           <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
             {selectedCategory
               ? `Shop ${selectedCategory.name}`
               : "Shop all products"}
           </h1>
-
           <p className="mt-3 max-w-2xl text-sm text-gray-200 sm:text-base">
             {selectedCategory?.description ||
               "Explore our collection of products available at DVC Store."}
@@ -529,73 +386,54 @@ export default function Shop() {
       </section>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* stickey product filters */}
+        {/* Sticky category + search controls */}
         <div
           data-shop-sticky-controls="true"
-          className="sticky top-20 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3  lg:top-30"
+          className="sticky top-20 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3 lg:top-30"
         >
           <div className="mb-3 space-y-3">
-            {/* All Categories Button */}
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
+              <CategoryButton
+                active={category === "all"}
                 onClick={() => changeCategory("all")}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                  category === "all"
-                    ? "border-[#183D3D] bg-[#183D3D] text-white"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-[#183D3D] hover:text-[#183D3D]"
-                }`}
               >
                 All
-              </button>
+              </CategoryButton>
             </div>
 
-            {/* Dynamic Main Categories and Subcategories */}
             {categories.map((mainCategory) => {
-              const categoryButtons =
-                mainCategory.subcategories?.length > 0
-                  ? [
-                      {
-                        ...mainCategory,
-                        buttonLabel: `All ${mainCategory.name}`,
-                      },
-                      ...mainCategory.subcategories.map((subCategory) => ({
-                        ...subCategory,
-                        buttonLabel: subCategory.name,
-                      })),
-                    ]
-                  : [
-                      {
-                        ...mainCategory,
-                        buttonLabel: mainCategory.name,
-                      },
-                    ];
+              const hasSubs = mainCategory.subcategories?.length > 0;
+              const buttons = hasSubs
+                ? [
+                    {
+                      ...mainCategory,
+                      buttonLabel: `All ${mainCategory.name}`,
+                    },
+                    ...mainCategory.subcategories.map((sub) => ({
+                      ...sub,
+                      buttonLabel: sub.name,
+                    })),
+                  ]
+                : [{ ...mainCategory, buttonLabel: mainCategory.name }];
 
               return (
-                <div key={mainCategory.id}>
-                  {/* <h3 className="mb-2 text-sm font-semibold text-gray-800">
-                    {mainCategory.name}
-                  </h3> */}
-
-                  <div className="flex flex-wrap gap-2">
-                    {categoryButtons.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => changeCategory(item.slug)}
-                        className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                          category === item.slug
-                            ? "border-[#183D3D] bg-[#183D3D] text-white"
-                            : "border-gray-200 bg-white text-gray-700 hover:border-[#183D3D] hover:text-[#183D3D]"
-                        }`}
-                      >
-                        {item.buttonLabel}
-                      </button>
-                    ))}
-                  </div>
+                <div key={mainCategory.id} className="flex flex-wrap gap-2">
+                  {buttons.map((item) => (
+                    <CategoryButton
+                      key={item.id}
+                      active={category === item.slug}
+                      onClick={() => changeCategory(item.slug)}
+                    >
+                      {item.buttonLabel}
+                    </CategoryButton>
+                  ))}
                 </div>
               );
             })}
+
+            {categoriesError && (
+              <p className="text-sm text-red-600">{categoriesError}</p>
+            )}
           </div>
 
           <label className="relative block">
@@ -607,33 +445,16 @@ export default function Shop() {
               type="search"
               value={search}
               onChange={(e) => {
-                const value = e.target.value;
-
-                setSearch(value);
-                setCategory("all");
-                setSubCategory("");
-                setCondition("all");
-                setBrand("");
-                setColor("");
-                setPhoneType("");
-                setComponentType("");
-                setAccessoryType("");
-                setPaperSize("");
-                setPackSize("");
-
-                updateQuery({
-                  search: value,
-                  category: "all",
-                  subCategory: "",
-                  condition: "",
-                  brand: "",
-                  color: "",
-                  phoneType: "",
-                  componentType: "",
-                  accessoryType: "",
-                  paperSize: "",
-                  packSize: "",
+                // Searching resets category and attribute filters.
+                const next = new URLSearchParams(searchParams);
+                [...next.keys()].forEach((key) => {
+                  if (key.startsWith(ATTR_PREFIX)) next.delete(key);
                 });
+                next.delete("category");
+                next.delete("brand");
+                if (e.target.value) next.set("search", e.target.value);
+                else next.delete("search");
+                setSearchParams(next, { replace: true });
               }}
               placeholder="Search products or brands..."
               className="w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-4 text-sm outline-none focus:border-[#183D3D] focus:ring-2 focus:ring-[#183D3D]/15"
@@ -642,12 +463,12 @@ export default function Shop() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[245px_minmax(0,1fr)]">
+          {/* Filters sidebar */}
           <aside className="h-fit rounded-xl border border-gray-200 bg-white p-4 lg:sticky lg:top-64 lg:max-h-[calc(100vh-270px)] lg:overflow-y-auto">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="flex items-center gap-2 font-semibold text-gray-900">
                 <SlidersHorizontal size={17} /> Filters
               </h2>
-
               <button
                 type="button"
                 onClick={clearFilters}
@@ -662,30 +483,21 @@ export default function Shop() {
               </button>
             </div>
 
-            <details open className="border-b border-gray-200 py-3">
-              <summary className="cursor-pointer list-none font-medium text-gray-800">
-                Availability <ChevronDown className="float-right" size={16} />
-              </summary>
+            <FilterSection title="Availability" defaultOpen>
               <label className="mt-3 flex items-center gap-2 text-sm text-gray-600">
                 <input
                   type="checkbox"
                   checked={inStockOnly}
-                  onChange={(e) => {
-                    setInStockOnly(e.target.checked);
-                    updateQuery({
-                      availability: e.target.checked ? "in-stock" : "",
-                    });
-                  }}
+                  onChange={(e) =>
+                    updateQuery({ availability: e.target.checked })
+                  }
                   className="accent-dvcGreen"
                 />
                 In stock only
               </label>
-            </details>
+            </FilterSection>
 
-            <details open className="border-b border-gray-200 py-3">
-              <summary className="cursor-pointer list-none font-medium text-gray-800">
-                Price (LKR) <ChevronDown className="float-right" size={16} />
-              </summary>
+            <FilterSection title="Price (LKR)" defaultOpen>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <input
                   aria-label="Minimum price"
@@ -693,10 +505,7 @@ export default function Shop() {
                   min="0"
                   placeholder="Min"
                   value={minPrice}
-                  onChange={(e) => {
-                    setMinPrice(e.target.value);
-                    updateQuery({ minPrice: e.target.value });
-                  }}
+                  onChange={(e) => updateQuery({ minPrice: e.target.value })}
                   className="min-w-0 rounded-md border border-gray-300 px-2 py-2 text-sm"
                 />
                 <input
@@ -705,25 +514,16 @@ export default function Shop() {
                   min="0"
                   placeholder="Max"
                   value={maxPrice}
-                  onChange={(e) => {
-                    setMaxPrice(e.target.value);
-                    updateQuery({ maxPrice: e.target.value });
-                  }}
+                  onChange={(e) => updateQuery({ maxPrice: e.target.value })}
                   className="min-w-0 rounded-md border border-gray-300 px-2 py-2 text-sm"
                 />
               </div>
-            </details>
+            </FilterSection>
 
-            <details open className="border-b border-gray-200 py-3">
-              <summary className="cursor-pointer list-none font-medium text-gray-800">
-                Brand <ChevronDown className="float-right" size={16} />
-              </summary>
+            <FilterSection title="Brand" defaultOpen>
               <select
                 value={brand}
-                onChange={(e) => {
-                  setBrand(e.target.value);
-                  updateQuery({ brand: e.target.value });
-                }}
+                onChange={(e) => updateQuery({ brand: e.target.value })}
                 className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
               >
                 <option value="">All brands</option>
@@ -733,202 +533,40 @@ export default function Shop() {
                   </option>
                 ))}
               </select>
-            </details>
+            </FilterSection>
+            {selectedCategoryAttributes.map((attribute) => (
+              <div
+                key={attribute.key}
+                className="border-b border-gray-200 py-3"
+              >
+                <label className="font-medium text-gray-800">
+                  {attribute.label}
+                </label>
 
-            {category === "computer" && (
-              <>
-                <details open className="border-b border-gray-200 py-3">
-                  <summary className="cursor-pointer list-none font-medium text-gray-800">
-                    Condition <ChevronDown className="float-right" size={16} />
-                  </summary>
-                  <div className="mt-3 space-y-2 text-sm text-gray-600">
-                    {[
-                      ["all", "All conditions"],
-                      ["new", "Brand new"],
-                      ["used", "Used - tested"],
-                    ].map(([value, label]) => (
-                      <label key={value} className="flex items-center gap-2">
-                        <input
-                          type="radio"
-                          name="condition"
-                          checked={condition === value}
-                          onChange={() => {
-                            setCondition(value);
-                            updateQuery({ condition: value });
-                          }}
-                          className="accent-dvcGreen"
-                        />
-                        {label}
-                      </label>
-                    ))}
-                  </div>
-                </details>
-                <details className="border-b border-gray-200 py-3">
-                  <summary className="cursor-pointer list-none font-medium text-gray-800">
-                    Component type{" "}
-                    <ChevronDown className="float-right" size={16} />
-                  </summary>
-                  <select
-                    value={componentType}
-                    onChange={(e) => {
-                      setComponentType(e.target.value);
-                      updateQuery({ componentType: e.target.value });
-                    }}
-                    className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
-                  >
-                    <option value="">All components</option>
-                    <option value="memory">RAM / Memory</option>
-                    <option value="storage">Storage</option>
-                    <option value="peripherals">Peripherals</option>
-                    <option value="processor">Processors</option>
-                    <option value="graphics">Graphics cards</option>
-                  </select>
-                </details>
-              </>
-            )}
-
-            {category === "mobile" && (
-              <details open className="border-b border-gray-200 py-3">
-                <summary className="cursor-pointer list-none font-medium text-gray-800">
-                  Phone type <ChevronDown className="float-right" size={16} />
-                </summary>
                 <select
-                  value={phoneType}
-                  onChange={(e) => {
-                    setPhoneType(e.target.value);
-                    updateQuery({ phoneType: e.target.value });
-                  }}
+                  aria-label={attribute.label}
+                  value={attributeFilters[attribute.key] || ""}
+                  onChange={(e) => setAttribute(attribute.key, e.target.value)}
                   className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
                 >
-                  <option value="">All phones</option>
-                  <option value="smartphone">Smartphones</option>
-                  <option value="feature-phone">Feature phones</option>
-                </select>
-              </details>
-            )}
+                  <option value="">All</option>
 
-            {category === "accessories" && (
-              <details open className="border-b border-gray-200 py-3">
-                <summary className="cursor-pointer list-none font-medium text-gray-800">
-                  Accessory type{" "}
-                  <ChevronDown className="float-right" size={16} />
-                </summary>
-                <select
-                  value={accessoryType}
-                  onChange={(e) => {
-                    setAccessoryType(e.target.value);
-                    updateQuery({ accessoryType: e.target.value });
-                  }}
-                  className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
-                >
-                  <option value="">All accessories</option>
-                  <option value="chargers">Chargers</option>
-                  <option value="power-banks">Power banks</option>
-                  <option value="audio">Speakers & audio</option>
-                  <option value="car-accessories">Car accessories</option>
+                  {attribute.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
-              </details>
-            )}
-
-            {category === "stationery" && (
-              <>
-                <details open className="border-b border-gray-200 py-3">
-                  <summary className="cursor-pointer list-none font-medium text-gray-800">
-                    Product type{" "}
-                    <ChevronDown className="float-right" size={16} />
-                  </summary>
-                  <select
-                    value={subCategory}
-                    onChange={(e) => {
-                      setSubCategory(e.target.value);
-                      updateQuery({ subCategory: e.target.value });
-                    }}
-                    className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
-                  >
-                    <option value="">All stationery</option>
-                    {STATIONERY_TYPES.map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </details>
-                <details className="border-b border-gray-200 py-3">
-                  <summary className="cursor-pointer list-none font-medium text-gray-800">
-                    Color <ChevronDown className="float-right" size={16} />
-                  </summary>
-                  <select
-                    value={color}
-                    onChange={(e) => {
-                      setColor(e.target.value);
-                      updateQuery({ color: e.target.value });
-                    }}
-                    className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
-                  >
-                    <option value="">All colors</option>
-                    <option value="blue">Blue</option>
-                    <option value="black">Black</option>
-                    <option value="red">Red</option>
-                    <option value="mixed">Multicolor</option>
-                  </select>
-                </details>
-                <details className="border-b border-gray-200 py-3">
-                  <summary className="cursor-pointer list-none font-medium text-gray-800">
-                    Paper size <ChevronDown className="float-right" size={16} />
-                  </summary>
-                  <select
-                    value={paperSize}
-                    onChange={(e) => {
-                      setPaperSize(e.target.value);
-                      updateQuery({ paperSize: e.target.value });
-                    }}
-                    className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
-                  >
-                    <option value="">All sizes</option>
-                    <option value="A4">A4</option>
-                    <option value="A3">A3</option>
-                    <option value="A5">A5</option>
-                  </select>
-                </details>
-                <details className="border-b border-gray-200 py-3">
-                  <summary className="cursor-pointer list-none font-medium text-gray-800">
-                    Pack size <ChevronDown className="float-right" size={16} />
-                  </summary>
-                  <select
-                    value={packSize}
-                    onChange={(e) => {
-                      setPackSize(e.target.value);
-                      updateQuery({ packSize: e.target.value });
-                    }}
-                    className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
-                  >
-                    <option value="">Any pack size</option>
-                    <option value="1">Single item</option>
-                    <option value="10">10 items</option>
-                    <option value="12">12 items</option>
-                    <option value="500">500 sheets</option>
-                  </select>
-                </details>
-              </>
-            )}
+              </div>
+            ))}
           </aside>
 
-          {/* <section>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-             */}
+          {/* Product grid */}
           <section ref={productsSectionRef} id="shop-products">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {category === "all"
-                    ? "All products"
-                    : categories
-                        .flatMap((main) => [
-                          main,
-                          ...(main.subcategories || []),
-                        ])
-                        .find((item) => item.slug === category)?.name ||
-                      "All products"}
+                  {selectedCategory?.name || "All products"}
                 </h2>
                 <p className="mt-1 text-sm text-gray-500" aria-live="polite">
                   {loading
@@ -943,10 +581,11 @@ export default function Shop() {
                 Sort by
                 <select
                   value={sort}
-                  onChange={(e) => {
-                    setSort(e.target.value);
-                    updateQuery({ sort: e.target.value });
-                  }}
+                  onChange={(e) =>
+                    updateQuery({
+                      sort: e.target.value === "newest" ? "" : e.target.value,
+                    })
+                  }
                   className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800"
                 >
                   <option value="newest">Newest</option>

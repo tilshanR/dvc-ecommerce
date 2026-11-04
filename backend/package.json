@@ -7,7 +7,9 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "seed:category": "node scripts/seedTestCategory.js",
+    "seed:product": "node scripts/seedProduct.js"
   },
   "keywords": [],
   "author": "",

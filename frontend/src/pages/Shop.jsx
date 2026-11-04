@@ -9,7 +9,7 @@ import {
 import ProductCard from "../components/ProductCard";
 import { useCart } from "../context/CartContext";
 import { getProducts } from "../services/productApi";
-import {getShopCategories } from "../services/categoryApi";
+import { getShopCategories } from "../services/categoryApi";
 
 const CATEGORIES = [
   { value: "all", label: "All" },
@@ -137,16 +137,16 @@ function normalizeProduct(product) {
     _id: String(product._id ?? product.id ?? ""),
     brand:
       typeof product.brand === "object"
-        ? product.brand?.name ?? ""
-        : product.brand ?? "",
+        ? (product.brand?.name ?? "")
+        : (product.brand ?? ""),
     category:
       typeof product.category === "object"
-        ? product.category?.name ?? ""
-        : product.category ?? "",
+        ? (product.category?.name ?? "")
+        : (product.category ?? ""),
     categorySlug:
       typeof product.category === "object"
-        ? product.category?.slug ?? ""
-        : product.categorySlug ?? "",
+        ? (product.category?.slug ?? "")
+        : (product.categorySlug ?? ""),
     image,
     availableStock: Number(availableStock),
     stock: Number(availableStock),
@@ -216,65 +216,57 @@ export default function Shop() {
   const [packSize, setPackSize] = useState(searchParams.get("packSize") || "");
 
   useEffect(() => {
-  const controller = new AbortController();
+    const controller = new AbortController();
 
-  setLoading(true);
-  setError("");
+    setLoading(true);
+    setError("");
 
-  loadProducts(controller.signal)
-    .then((data) => {
-      setProducts(data);
-    })
-    .catch((err) => {
-      if (
-        !controller.signal.aborted &&
-        err.code !== "ERR_CANCELED"
-      ) {
-        console.error("Product loading error:", err);
-        setError(err.message || "We couldn't load products.");
-      }
-    })
-    .finally(() => {
-      if (!controller.signal.aborted) {
-        setLoading(false);
-      }
-    });
+    loadProducts(controller.signal)
+      .then((data) => {
+        setProducts(data);
+      })
+      .catch((err) => {
+        if (!controller.signal.aborted && err.code !== "ERR_CANCELED") {
+          console.error("Product loading error:", err);
+          setError(err.message || "We couldn't load products.");
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      });
 
-  return () => controller.abort();
-}, []);
+    return () => controller.abort();
+  }, []);
 
-useEffect(() => {
-  const controller = new AbortController();
+  useEffect(() => {
+    const controller = new AbortController();
 
-  setCategoriesLoading(true);
-  setCategoriesError("");
+    setCategoriesLoading(true);
+    setCategoriesError("");
 
-  getShopCategories({ signal: controller.signal })
-    .then((data) => {
-      console.log("========== BACKEND CATEGORY RESPONSE ==========");
-      console.log("Categories:", data);
+    getShopCategories({ signal: controller.signal })
+      .then((data) => {
+        console.log("========== BACKEND CATEGORY RESPONSE ==========");
+        console.log("Categories:", data);
 
-      setCategories(data);
-    })
-    .catch((err) => {
-      if (
-        !controller.signal.aborted &&
-        err.code !== "ERR_CANCELED"
-      ) {
-        console.error("Category loading error:", err);
-        setCategoriesError(
-          err.message || "We couldn't load categories."
-        );
-      }
-    })
-    .finally(() => {
-      if (!controller.signal.aborted) {
-        setCategoriesLoading(false);
-      }
-    });
+        setCategories(data);
+      })
+      .catch((err) => {
+        if (!controller.signal.aborted && err.code !== "ERR_CANCELED") {
+          console.error("Category loading error:", err);
+          setCategoriesError(err.message || "We couldn't load categories.");
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setCategoriesLoading(false);
+        }
+      });
 
-  return () => controller.abort();
-}, []);
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     setSearch(searchParams.get("search") || "");
@@ -341,38 +333,32 @@ useEffect(() => {
     });
   }
 
+  function scrollToProducts() {
+    if (!productsSectionRef.current) return;
 
+    const section = productsSectionRef.current;
+    const stickyControls = document.querySelector(
+      '[data-shop-sticky-controls="true"]',
+    );
 
-function scrollToProducts() {
-  if (!productsSectionRef.current) return;
+    const stickyBottom = stickyControls
+      ? stickyControls.getBoundingClientRect().bottom
+      : 0;
 
-  const section = productsSectionRef.current;
-  const stickyControls = document.querySelector(
-    '[data-shop-sticky-controls="true"]'
-  );
+    const top =
+      window.scrollY + section.getBoundingClientRect().top - stickyBottom - 40;
 
-  const stickyBottom = stickyControls
-    ? stickyControls.getBoundingClientRect().bottom
-    : 0;
-
-  const top =
-    window.scrollY +
-    section.getBoundingClientRect().top -
-    stickyBottom -
-    40;
-
-  window.scrollTo({
-    top: Math.max(0, top),
-    behavior: "auto",
-  });
-}
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: "auto",
+    });
+  }
 
   const visibleProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     const result = products.filter((p) => {
-     const categoryMatch =
-  category === "all" || p.categorySlug === category;
+      const categoryMatch = category === "all" || p.categorySlug === category;
       const subcategoryMatch = !subCategory || p.stationeryType === subCategory;
       const text = [
         p.name,
@@ -456,6 +442,15 @@ function scrollToProducts() {
     packSize,
     sort,
   ]);
+  const selectedCategory = useMemo(() => {
+    if (category === "all") return null;
+
+    return (
+      categories
+        .flatMap((main) => [main, ...(main.subcategories || [])])
+        .find((item) => item.slug === category) || null
+    );
+  }, [categories, category]);
 
   const categoryBrands = [
     ...new Set(
@@ -493,61 +488,22 @@ function scrollToProducts() {
           <p className="text-sm font-semibold uppercase tracking-widest text-emerald-200">
             DVC Store
           </p>
+
           <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
-            {category === "all"
-              ? "Shop all products"
-              : `Shop ${
-                  category === "mobile"
-                    ? "mobile phones"
-                    : category === "accessories"
-                      ? "mobile accessories"
-                      : category === "computer"
-                        ? "computer parts"
-                        : category === "stationery"
-                          ? "stationery and books"
-                          : "all products"
-                }`}
+            {selectedCategory
+              ? `Shop ${selectedCategory.name}`
+              : "Shop all products"}
           </h1>
 
           <p className="mt-3 max-w-2xl text-sm text-gray-200 sm:text-base">
-            {category === "all"
-              ? "Explore mobile phones, computer parts, stationery, books, and accessories."
-              : category === "mobile"
-                ? "Explore our range of mobile phones for your everyday needs."
-                : category === "accessories"
-                  ? "Discover chargers, audio devices, and other mobile accessories."
-                  : category === "computer"
-                    ? "Explore computer parts and hardware for your setup."
-                    : category === "stationery"
-                      ? "Find stationery, books, and educational supplies."
-                      : "Explore products available at DVC Store."}
+            {selectedCategory?.description ||
+              "Explore our collection of products available at DVC Store."}
           </p>
         </div>
       </section>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* stickey product filters
-        <div
-          data-shop-sticky-controls="true"
-          className="sticky top-20 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3  lg:top-30"
-        >
-          <div className="mb-3 flex flex-wrap gap-2">
-            {CATEGORIES.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                onClick={() => changeCategory(item.value)}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-                  category === item.value
-                    ? "border-[#183D3D] bg-[#183D3D] text-white"
-                    : "border-gray-200 bg-white text-gray-700 hover:border-[#183D3D] hover:text-[#183D3D]"
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div> */}
-          {/* stickey product filters */}
+        {/* stickey product filters */}
         <div
           data-shop-sticky-controls="true"
           className="sticky top-20 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3  lg:top-30"
@@ -938,14 +894,15 @@ function scrollToProducts() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">
-                 {category === "all"
-  ? "All products"
-  : categories
-      .flatMap((main) => [
-        main,
-        ...(main.subcategories || []),
-      ])
-      .find((item) => item.slug === category)?.name || "All products"}
+                  {category === "all"
+                    ? "All products"
+                    : categories
+                        .flatMap((main) => [
+                          main,
+                          ...(main.subcategories || []),
+                        ])
+                        .find((item) => item.slug === category)?.name ||
+                      "All products"}
                 </h2>
                 <p className="mt-1 text-sm text-gray-500" aria-live="polite">
                   {loading

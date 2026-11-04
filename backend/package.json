@@ -9,7 +9,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "seed:category": "node scripts/seedTestCategory.js",
-    "seed:product": "node scripts/seedProduct.js"
+    "seed:product": "node scripts/seedProduct.js",
+    "seed:shop-hierarchy": "node scripts/seedShopHierarchy.js"
   },
   "keywords": [],
   "author": "",

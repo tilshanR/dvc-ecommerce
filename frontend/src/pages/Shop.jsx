@@ -353,12 +353,44 @@ export default function Shop() {
       behavior: "auto",
     });
   }
+  const selectedCategory = useMemo(() => {
+    if (category === "all") return null;
+
+    return (
+      categories
+        .flatMap((main) => [main, ...(main.subcategories || [])])
+        .find((item) => item.slug === category) || null
+    );
+  }, [categories, category]);
+
+  const selectedCategorySlugs = useMemo(() => {
+  if (category === "all") return [];
+
+  const mainCategory = categories.find(
+    (item) => item.slug === category
+  );
+
+  // Main category: include itself and its subcategories.
+  if (mainCategory) {
+    return [
+      mainCategory.slug,
+      ...(mainCategory.subcategories || []).map(
+        (item) => item.slug
+      ),
+    ];
+  }
+
+  // Subcategory: include only the selected subcategory.
+  return [category];
+}, [categories, category]);
 
   const visibleProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     const result = products.filter((p) => {
-      const categoryMatch = category === "all" || p.categorySlug === category;
+     const categoryMatch =
+  category === "all" ||
+  selectedCategorySlugs.includes(p.categorySlug);
       const subcategoryMatch = !subCategory || p.stationeryType === subCategory;
       const text = [
         p.name,
@@ -414,7 +446,8 @@ export default function Shop() {
         componentMatch &&
         accessoryMatch &&
         paperMatch &&
-        packMatch
+        packMatch 
+        
       );
     });
 
@@ -441,16 +474,9 @@ export default function Shop() {
     paperSize,
     packSize,
     sort,
+    selectedCategorySlugs
   ]);
-  const selectedCategory = useMemo(() => {
-    if (category === "all") return null;
-
-    return (
-      categories
-        .flatMap((main) => [main, ...(main.subcategories || [])])
-        .find((item) => item.slug === category) || null
-    );
-  }, [categories, category]);
+  
 
   const categoryBrands = [
     ...new Set(

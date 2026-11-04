@@ -1,22 +1,17 @@
-export const getShopCategories = async ({ signal } = {}) => {
-  const response = await fetch(
-    `${import.meta.env.VITE_API_BASE_URL}/categories/shop`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      signal,
-    },
-  );
 
-  const data = await response.json();
+import api from "./api";
 
-  if (!response.ok || !data.success) {
+// GET /api/categories/shop
+export async function getShopCategories({ signal } = {}) {
+  const { data } = await api.get("/categories/shop", {
+    signal,
+  });
+
+  if (!data?.success || !Array.isArray(data.categories)) {
     throw new Error(
-      data.message || "Unable to load categories.",
+      "Invalid category response from server."
     );
   }
 
   return data.categories;
-};
+}

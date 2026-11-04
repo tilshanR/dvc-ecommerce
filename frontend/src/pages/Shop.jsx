@@ -9,231 +9,7 @@ import {
 import ProductCard from "../components/ProductCard";
 import { useCart } from "../context/CartContext";
 import { getProducts } from "../services/productApi";
-
-const DEMO_PRODUCTS = [
- 
- 
- 
-  {
-    _id: "a2",
-    name: "Wireless Earbuds",
-    category: "Mobile Accessories",
-    categorySlug: "mobile-accessories",
-    brand: "Baseus",
-    accessoryType: "audio",
-    price: 6200,
-    stock: 10,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-16",
-  },
-  {
-    _id: "c1",
-    name: "Mechanical Gaming Keyboard",
-    category: "Computer Hardware",
-    categorySlug: "computer-hardware",
-    brand: "Logitech",
-    condition: "new",
-    componentType: "peripherals",
-    price: 12500,
-    stock: 5,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-15",
-  },
-  {
-    _id: "c2",
-    name: "DDR4 Desktop RAM",
-    category: "Computer Hardware",
-    categorySlug: "computer-hardware",
-    brand: "Kingston",
-    condition: "used",
-    componentType: "memory",
-    price: 8500,
-    stock: 2,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-14",
-  },
-
-  {
-    _id: "s1",
-    name: "Blue Ballpoint Pen",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "writing-instruments",
-    brand: "DVC",
-    color: "blue",
-    price: 150,
-    stock: 40,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-13",
-  },
-  {
-    _id: "s2",
-    name: "HB Pencil Pack",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "writing-instruments",
-    brand: "DVC",
-    color: "black",
-    packSize: 10,
-    price: 350,
-    stock: 25,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-12",
-  },
-  {
-    _id: "s3",
-    name: "A4 Paper Pack",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "paper-notebooks",
-    brand: "DVC",
-    paperSize: "A4",
-    packSize: 500,
-    price: 1800,
-    stock: 15,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-11",
-  },
-  {
-    _id: "s4",
-    name: "Exercise Book",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "paper-notebooks",
-    brand: "DVC",
-    paperSize: "A4",
-    price: 250,
-    stock: 50,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-10",
-  },
-  {
-    _id: "s5",
-    name: "Eraser and Sharpener Set",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "geometry-tools",
-    brand: "DVC",
-    price: 200,
-    stock: 20,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-09",
-  },
-  {
-    _id: "s6",
-    name: "Color Pencil Set",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "art-coloring",
-    brand: "DVC",
-    color: "mixed",
-    packSize: 12,
-    price: 650,
-    stock: 18,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-08",
-  },
-  {
-    _id: "s7",
-    name: "Office Stapler",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "fasteners-adhesives",
-    brand: "DVC",
-    price: 750,
-    stock: 8,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-07",
-  },
-  {
-    _id: "s8",
-    name: "Correction Tape",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "cutting-correction",
-    brand: "DVC",
-    price: 300,
-    stock: 0,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-06",
-  },
-  {
-    _id: "s9",
-    name: "Document Folder",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "files-folders",
-    brand: "DVC",
-    color: "blue",
-    price: 400,
-    stock: 15,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-05",
-  },
-  {
-    _id: "s10",
-    name: "Desk Organizer",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "office-desk",
-    brand: "DVC",
-    color: "black",
-    price: 1200,
-    stock: 7,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-04",
-  },
-  {
-    _id: "s11",
-    name: "Children's Storybook",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "books-education",
-    brand: "DVC",
-    price: 850,
-    stock: 11,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-03",
-  },
-  {
-    _id: "s12",
-    name: "Scientific Calculator",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "calculators-equipment",
-    brand: "DVC",
-    price: 2500,
-    stock: 6,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-02",
-  },
-  {
-    _id: "s13",
-    name: "Greeting Card",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "cards-gifts",
-    brand: "DVC",
-    color: "mixed",
-    price: 300,
-    stock: 20,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-10-01",
-  },
-  {
-    _id: "s14",
-    name: "Decorative Sticker Sheet",
-    category: "Stationery",
-    categorySlug: "stationery",
-    stationeryType: "stickers-labels",
-    brand: "DVC",
-    color: "mixed",
-    price: 180,
-    stock: 30,
-    image: "/images/product-placeholder.png",
-    createdAt: "2026-09-30",
-  },
-];
+import {getShopCategories } from "../services/categoryApi";
 
 const CATEGORIES = [
   { value: "all", label: "All" },
@@ -385,6 +161,11 @@ async function loadProducts(signal) {
     },
     { signal },
   );
+  console.log("========== BACKEND PRODUCT RESPONSE ==========");
+  console.log("Complete response:", response);
+  console.log("Products array:", response.products);
+  console.log("First product:", response.products[0]);
+  console.log("Pagination:", response.pagination);
 
   return response.products.map(normalizeProduct);
 }
@@ -393,12 +174,18 @@ export default function Shop() {
   const { addToCart } = useCart();
   const productsSectionRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState("");
+
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState(
-    normalizeCategory(searchParams.get("category")),
+    searchParams.get("category") || "all",
   );
   const [subCategory, setSubCategory] = useState(
     searchParams.get("subCategory") || "",
@@ -456,9 +243,43 @@ export default function Shop() {
   return () => controller.abort();
 }, []);
 
+useEffect(() => {
+  const controller = new AbortController();
+
+  setCategoriesLoading(true);
+  setCategoriesError("");
+
+  getShopCategories({ signal: controller.signal })
+    .then((data) => {
+      console.log("========== BACKEND CATEGORY RESPONSE ==========");
+      console.log("Categories:", data);
+
+      setCategories(data);
+    })
+    .catch((err) => {
+      if (
+        !controller.signal.aborted &&
+        err.code !== "ERR_CANCELED"
+      ) {
+        console.error("Category loading error:", err);
+        setCategoriesError(
+          err.message || "We couldn't load categories."
+        );
+      }
+    })
+    .finally(() => {
+      if (!controller.signal.aborted) {
+        setCategoriesLoading(false);
+      }
+    });
+
+  return () => controller.abort();
+}, []);
+
   useEffect(() => {
     setSearch(searchParams.get("search") || "");
-    setCategory(normalizeCategory(searchParams.get("category")));
+    // setCategory(normalizeCategory(searchParams.get("category")));
+    setCategory(searchParams.get("category") || "all");
     setSubCategory(searchParams.get("subCategory") || "");
     setCondition(searchParams.get("condition") || "all");
     setSort(searchParams.get("sort") || "newest");
@@ -550,8 +371,8 @@ function scrollToProducts() {
     const query = search.trim().toLowerCase();
 
     const result = products.filter((p) => {
-      const categoryMatch =
-        query !== "" || category === "all" || getCategory(p) === category;
+     const categoryMatch =
+  category === "all" || p.categorySlug === category;
       const subcategoryMatch = !subCategory || p.stationeryType === subCategory;
       const text = [
         p.name,
@@ -705,7 +526,7 @@ function scrollToProducts() {
       </section>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* stickey product filters */}
+        {/* stickey product filters
         <div
           data-shop-sticky-controls="true"
           className="sticky top-20 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3  lg:top-30"
@@ -725,6 +546,74 @@ function scrollToProducts() {
                 {item.label}
               </button>
             ))}
+          </div> */}
+          {/* stickey product filters */}
+        <div
+          data-shop-sticky-controls="true"
+          className="sticky top-20 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3  lg:top-30"
+        >
+          <div className="mb-3 space-y-3">
+            {/* All Categories Button */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => changeCategory("all")}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                  category === "all"
+                    ? "border-[#183D3D] bg-[#183D3D] text-white"
+                    : "border-gray-200 bg-white text-gray-700 hover:border-[#183D3D] hover:text-[#183D3D]"
+                }`}
+              >
+                All
+              </button>
+            </div>
+
+            {/* Dynamic Main Categories and Subcategories */}
+            {categories.map((mainCategory) => {
+              const categoryButtons =
+                mainCategory.subcategories?.length > 0
+                  ? [
+                      {
+                        ...mainCategory,
+                        buttonLabel: `All ${mainCategory.name}`,
+                      },
+                      ...mainCategory.subcategories.map((subCategory) => ({
+                        ...subCategory,
+                        buttonLabel: subCategory.name,
+                      })),
+                    ]
+                  : [
+                      {
+                        ...mainCategory,
+                        buttonLabel: mainCategory.name,
+                      },
+                    ];
+
+              return (
+                <div key={mainCategory.id}>
+                  {/* <h3 className="mb-2 text-sm font-semibold text-gray-800">
+                    {mainCategory.name}
+                  </h3> */}
+
+                  <div className="flex flex-wrap gap-2">
+                    {categoryButtons.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => changeCategory(item.slug)}
+                        className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                          category === item.slug
+                            ? "border-[#183D3D] bg-[#183D3D] text-white"
+                            : "border-gray-200 bg-white text-gray-700 hover:border-[#183D3D] hover:text-[#183D3D]"
+                        }`}
+                      >
+                        {item.buttonLabel}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           <label className="relative block">
@@ -1049,8 +938,14 @@ function scrollToProducts() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {CATEGORIES.find((c) => c.value === category)?.label ||
-                    "All products"}
+                 {category === "all"
+  ? "All products"
+  : categories
+      .flatMap((main) => [
+        main,
+        ...(main.subcategories || []),
+      ])
+      .find((item) => item.slug === category)?.name || "All products"}
                 </h2>
                 <p className="mt-1 text-sm text-gray-500" aria-live="polite">
                   {loading

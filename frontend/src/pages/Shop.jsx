@@ -6,6 +6,7 @@ import {
   SlidersHorizontal,
   PackageSearch,
 } from "lucide-react";
+import { normalizeProduct, toOption,getProductAttributeValue } from "../utils/shopHelpers";
 import ProductCard from "../components/ProductCard";
 import { useCart } from "../context/CartContext";
 import { getProducts } from "../services/productApi";
@@ -13,68 +14,13 @@ import { getShopCategories } from "../services/categoryApi";
 
 const ATTR_PREFIX = "attr_";
 
-/* ---------- helpers ---------- */
 
-function normalizeProduct(product) {
-  const mainImage = product.mainImage;
-  const image =
-    (typeof mainImage === "string" ? mainImage : mainImage?.url) ||
-    product.images?.find((img) => img.isPrimary)?.url ||
-    product.images?.[0]?.url ||
-    product.image ||
-    "/images/product-placeholder.png";
-
-  const availableStock =
-    product.availableStock ??
-    Math.max(
-      0,
-      Number(product.inventory?.onHand ?? 0) -
-        Number(product.inventory?.reserved ?? 0),
-    );
-
-  return {
-    ...product,
-    _id: String(product._id ?? product.id ?? ""),
-    brand:
-      typeof product.brand === "object"
-        ? (product.brand?.name ?? "")
-        : (product.brand ?? ""),
-    category:
-      typeof product.category === "object"
-        ? (product.category?.name ?? "")
-        : (product.category ?? ""),
-    categorySlug:
-      typeof product.category === "object"
-        ? (product.category?.slug ?? "")
-        : (product.categorySlug ?? ""),
-    image,
-    availableStock: Number(availableStock),
-    stock: Number(availableStock),
-  };
-}
 
 async function loadProducts(signal) {
-  const response = await getProducts({ page: 1, limit: 30 }, { signal });
+  const response = await getProducts({ page: 1, limit: 100 }, { signal });
   return response.products.map(normalizeProduct);
 }
 
-// An attribute option can be a plain string or { value, label }.
-function toOption(option) {
-  if (option && typeof option === "object") {
-    const value = option.value ?? option.label ?? "";
-    return { value: String(value), label: String(option.label ?? value) };
-  }
-  return { value: String(option), label: String(option) };
-}
-
-// Reads a product's value for an attribute key.
-// ADJUST THIS if your backend stores attribute values somewhere else.
-function getProductAttributeValue(product, key) {
-  const raw = product.attributes?.[key] ?? product.specs?.[key] ?? product[key];
-
-  if (raw == null) return [];
-  return (Array.isArray(raw) ? raw : [raw]).map((v) => String(v).toLowerCase());
-}
 
 /* ---------- small components ---------- */
 
@@ -282,9 +228,6 @@ export default function Shop() {
       }))
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }, [categories, selectedCategory]);
-  console.log("Selected category:", selectedCategory?.name);
-  console.log("Selected attributes:", selectedCategory?.attributes);
-  console.log("Filterable attributes:", selectedCategoryAttributes);
 
   // Only count attribute filters that belong to the current category.
   const activeAttributeFilters = useMemo(

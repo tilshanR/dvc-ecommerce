@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
-import { getProduct, addProductToCart } from "../services/productApi";
+import { getProduct } from "../services/productApi";
+import { addProductToCart } from "../services/cartApi";
 import { normalizeProduct } from "../utils/productUtils";
 import ProductBreadcrumbs from "../components/ProductBreadcrumbs";
 import ProductGallery from "../components/ProductGallery";
 import ProductInfo from "../components/ProductInfo";
 import ProductSpecifications from "../components/ProductSpecifications";
-import { ProductLoading, ProductLoadError } from "../components/ProductPageState";
+import {
+  ProductLoading,
+  ProductLoadError,
+} from "../components/ProductPageState";
 
 export default function ProductDetails() {
   const { productId } = useParams();
@@ -22,24 +26,31 @@ export default function ProductDetails() {
   const [cartError, setCartError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
 
-  const loadProduct = useCallback(async (signal) => {
-    setLoading(true);
-    setError("");
-    setProduct(null);
-    setCurrentImageIndex(0);
-    setQuantity(1);
-    setCartMessage("");
-    setCartError("");
+  const loadProduct = useCallback(
+    async (signal) => {
+      setLoading(true);
+      setError("");
+      setProduct(null);
+      setCurrentImageIndex(0);
+      setQuantity(1);
+      setCartMessage("");
+      setCartError("");
 
-    try {
-      const result = await getProduct(productId, { signal });
-      if (!signal.aborted) setProduct(normalizeProduct(result));
-    } catch (err) {
-      if (!signal.aborted) setError(err.message || "Unable to load this product.");
-    } finally {
-      if (!signal.aborted) setLoading(false);
-    }
-  }, [productId]);
+      try {
+        const result = await getProduct(productId, { signal });
+        if (!signal.aborted) setProduct(normalizeProduct(result));
+      } catch (err) {
+        if (!signal.aborted)
+          setError(err.message || "Unable to load this product.");
+      } finally {
+        if (!signal.aborted) setLoading(false);
+      }
+    },
+    [productId],
+  );
+  console.log("========== PRODUCT DETAILS RESPONSE ==========");
+  console.log("Raw product received:", product);
+  console.table(product);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -51,13 +62,13 @@ export default function ProductDetails() {
 
   const showPreviousImage = () => {
     setCurrentImageIndex((current) =>
-      current === 0 ? images.length - 1 : current - 1
+      current === 0 ? images.length - 1 : current - 1,
     );
   };
 
   const showNextImage = () => {
     setCurrentImageIndex((current) =>
-      current === images.length - 1 ? 0 : current + 1
+      current === images.length - 1 ? 0 : current + 1,
     );
   };
 
@@ -83,7 +94,10 @@ export default function ProductDetails() {
       await addProductToCart(product.id, quantity);
       setCartMessage("Product added to your cart successfully.");
     } catch (err) {
-      setCartError(err.message || "Could not add this product to your cart. Please try again.");
+      setCartError(
+        err.message ||
+          "Could not add this product to your cart. Please try again.",
+      );
     } finally {
       setCartLoading(false);
     }
@@ -124,7 +138,9 @@ export default function ProductDetails() {
               setCartError("");
             }}
             onIncrease={() => {
-              setQuantity((current) => Math.min(product.availableStock, current + 1));
+              setQuantity((current) =>
+                Math.min(product.availableStock, current + 1),
+              );
               setCartMessage("");
               setCartError("");
             }}

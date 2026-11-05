@@ -1,0 +1,340 @@
+import {
+  createCategory,
+  findAllCategories,
+  findCategoryById,
+  findCategoryBySlug,
+  findSubcategories,
+  updateCategoryById,
+  archiveCategoryById,
+  restoreCategoryWithSubcategories,
+  findActiveCategoryTree,
+} from "./categoryRepository.js";
+
+// --------------------------------------------------
+// Helper: Create a consistent error with HTTP status
+// --------------------------------------------------
+const createError = (message, statusCode = 400) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+};
+
+// --------------------------------------------------
+// Helper: Convert a category name into a URL slug
+// Example: "Mobile Phones" -> "mobile-phones"
+// --------------------------------------------------
+const slugify = (name) => {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+};
+
+// --------------------------------------------------
+// Helper: Generate a unique slug
+// Example: mobile-phones, mobile-phones-2
+// --------------------------------------------------
+const generateUniqueSlug = async (name, currentCategoryId = null) => {
+  const baseSlug = slugify(name);
+
+  if (!baseSlug) {
+    throw createError("A valid category name is required.");
+  }
+
+  let slug = baseSlug;
+  let counter = 2;
+
+  while (true) {
+    const existingCategory = await findCategoryBySlug(slug);
+
+    if (
+      !existingCategory ||
+      existingCategory._id.toString() === currentCategoryId?.toString()
+    ) {
+      return slug;
+    }
+
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+};
+
+// --------------------------------------------------
+// Helper: Validate a parent category
+// Only active main categories can be parents.
+// --------------------------------------------------
+const validateParentCategory = async (parentId) => {
+  if (!parentId) {
+    return null;
+  }
+
+  const parentCategory = await findCategoryById(parentId);
+
+  if (!parentCategory) {
+    throw createError("Parent category not found.", 404);
+  }
+
+  if (parentCategory.status !== "active") {
+    throw createError("Cannot use an archived category as a parent.");
+  }
+
+  if (parentCategory.parent) {
+    throw createError("Subcategories cannot have their own subcategories.");
+  }
+
+  return parentCategory;
+};
+
+// --------------------------------------------------
+// CREATE CATEGORY
+// --------------------------------------------------
+export const createCategoryService = async (categoryData) => {
+  const { name, parent, ...otherData } = categoryData;
+
+  // Validate parent if creating a subcategory
+  await validateParentCategory(parent);
+
+  // Generate a unique slug
+  const slug = await generateUniqueSlug(name);
+
+  const newCategory = await createCategory({
+    name,
+    parent: parent || null,
+    slug,
+    ...otherData,
+  });
+
+  return newCategory;
+};
+
+// --------------------------------------------------
+// GET ACTIVE CATEGORY HIERARCHY FOR SHOP
+// --------------------------------------------------
+
+export const getShopCategoriesService = async () => {
+  const categories = await findActiveCategoryTree();
+
+  // Create a lookup map for efficient parent lookup.
+  const categoryMap = new Map();
+
+  // Prepare every category as a tree node.
+  for (const category of categories) {
+    categoryMap.set(category._id.toString(), {
+      ...category,
+      subcategories: [],
+    });
+  }
+
+  const mainCategories = [];
+
+  // Connect subcategories to their respective parents.
+  for (const category of categoryMap.values()) {
+    if (category.parent) {
+      const parentId = category.parent.toString();
+      const parentCategory = categoryMap.get(parentId);
+
+      if (parentCategory) {
+        parentCategory.subcategories.push(category);
+      }
+    } else {
+      mainCategories.push(category);
+    }
+  }
+
+  return mainCategories;
+};
+
+// --------------------------------------------------
+// GET ALL CATEGORIES
+// --------------------------------------------------
+export const getAllCategoriesService = async (filters = {}) => {
+  return await findAllCategories(filters);
+};
+
+// --------------------------------------------------
+// GET CATEGORY BY ID
+// --------------------------------------------------
+export const getCategoryByIdService = async (categoryId) => {
+  const category = await findCategoryById(categoryId);
+
+  if (!category) {
+    throw createError("Category not found.", 404);
+  }
+
+  return category;
+};
+
+// --------------------------------------------------
+// GET CATEGORY BY SLUG
+// --------------------------------------------------
+export const getCategoryBySlugService = async (slug) => {
+  const category = await findCategoryBySlug(slug);
+
+  if (!category) {
+    throw createError("Category not found.", 404);
+  }
+
+  return category;
+};
+
+// --------------------------------------------------
+// GET SUBCATEGORIES
+// --------------------------------------------------
+export const getSubcategoriesService = async (parentId) => {
+  const parentCategory = await findCategoryById(parentId);
+
+  if (!parentCategory) {
+    throw createError("Parent category not found.", 404);
+  }
+
+  return await findSubcategories(parentId);
+};
+
+// --------------------------------------------------
+// UPDATE CATEGORY
+// --------------------------------------------------
+export const updateCategoryService = async (categoryId, updateData) => {
+  const existingCategory = await findCategoryById(categoryId);
+
+  if (!existingCategory) {
+    throw createError("Category not found.", 404);
+  }
+
+  const { name, parent, slug, ...otherData } = updateData;
+
+  const finalName = name ?? existingCategory.name;
+
+  // Validate parent only when the parent field is being updated
+  if (Object.hasOwn(updateData, "parent")) {
+    if (parent?.toString() === categoryId.toString()) {
+      throw createError("A category cannot be its own parent.");
+    }
+
+    await validateParentCategory(parent);
+
+    // A main category with subcategories cannot become a subcategory.
+    if (parent && !existingCategory.parent) {
+      const children = await findSubcategories(categoryId);
+
+      if (children.length > 0) {
+        throw createError(
+          "A category with subcategories cannot become a subcategory.",
+        );
+      }
+    }
+  }
+
+  // Generate a new unique slug if the name or slug changes
+  let finalSlug = existingCategory.slug;
+
+  if (name || slug) {
+    finalSlug = await generateUniqueSlug(slug || finalName, categoryId);
+  }
+
+  const dataToUpdate = {
+    ...otherData,
+    ...(name !== undefined && { name }),
+    ...(Object.hasOwn(updateData, "parent") && {
+      parent: parent || null,
+    }),
+    ...(name !== undefined || slug !== undefined ? { slug: finalSlug } : {}),
+  };
+
+  return await updateCategoryById(categoryId, dataToUpdate);
+};
+
+// --------------------------------------------------
+// ARCHIVE CATEGORY
+// --------------------------------------------------
+export const archiveCategoryService = async (categoryId) => {
+  const category = await findCategoryById(categoryId);
+
+  if (!category) {
+    throw createError("Category not found.", 404);
+  }
+
+  if (category.status === "archived") {
+    throw createError("Category is already archived.");
+  }
+
+  // Prevent archiving a main category while it has
+  // active subcategories.
+  if (!category.parent) {
+    const children = await findSubcategories(categoryId);
+
+    const hasActiveChildren = children.some(
+      (child) => child.status === "active",
+    );
+
+    if (hasActiveChildren) {
+      throw createError(
+        "Archive the active subcategories before archiving this category.",
+      );
+    }
+  }
+
+  return await archiveCategoryById(categoryId);
+};
+
+// RESTORE CATEGORY
+export const restoreCategoryService = async (
+  categoryId,
+  subcategoryIds = [],
+) => {
+  // 1. Find the category.
+  const category = await findCategoryById(categoryId);
+
+  if (!category) {
+    throw createError("Category not found.", 404);
+  }
+
+  // 2. Prevent restoring an already active category.
+  if (category.status === "active") {
+    throw createError("Category is already active.");
+  }
+
+  // 3. Handle subcategory restoration.
+  if (category.parent) {
+    // A subcategory cannot be restored while its parent is archived.
+    const parentCategory = await findCategoryById(category.parent._id);
+
+    if (!parentCategory || parentCategory.status !== "active") {
+      throw createError(
+        "Restore the parent category before restoring this subcategory.",
+      );
+    }
+
+    if (subcategoryIds.length > 0) {
+      throw createError(
+        "You cannot select subcategories when restoring a subcategory.",
+      );
+    }
+  } else {
+    // 4. Validate selected subcategories of a main category.
+    if (subcategoryIds.length > 0) {
+      const children = await findSubcategories(categoryId);
+
+      const childMap = new Map(
+        children.map((child) => [child._id.toString(), child]),
+      );
+
+      for (const subcategoryId of subcategoryIds) {
+        const child = childMap.get(subcategoryId.toString());
+
+        if (!child) {
+          throw createError(
+            "One or more selected subcategories do not belong to this category.",
+          );
+        }
+
+        if (child.status !== "archived") {
+          throw createError(`Subcategory "${child.name}" is already active.`);
+        }
+      }
+    }
+  }
+
+  // 5. Restore the category and selected subcategories.
+  return await restoreCategoryWithSubcategories(categoryId, subcategoryIds);
+};

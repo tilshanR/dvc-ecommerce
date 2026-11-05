@@ -1,29 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import useShopData from "../hooks/useShopData";
 import {
   Search,
   ChevronDown,
   SlidersHorizontal,
   PackageSearch,
 } from "lucide-react";
-import { normalizeProduct, toOption,getProductAttributeValue } from "../utils/shopHelpers";
+import { toOption, getProductAttributeValue } from "../utils/shopHelpers";
 import ProductCard from "../components/ProductCard";
 import { useCart } from "../context/CartContext";
-import { getProducts } from "../services/productApi";
-import { getShopCategories } from "../services/categoryApi";
 
 const ATTR_PREFIX = "attr_";
-
-
-
-async function loadProducts(signal) {
-  const response = await getProducts({ page: 1, limit: 100 }, { signal });
-  return response.products.map(normalizeProduct);
-}
-
-
 /* ---------- small components ---------- */
-
 function FilterSection({ title, defaultOpen = false, children }) {
   return (
     <details open={defaultOpen} className="border-b border-gray-200 py-3">
@@ -34,7 +23,6 @@ function FilterSection({ title, defaultOpen = false, children }) {
     </details>
   );
 }
-
 function CategoryButton({ active, onClick, children }) {
   return (
     <button
@@ -50,22 +38,14 @@ function CategoryButton({ active, onClick, children }) {
     </button>
   );
 }
-
 /* ---------- page ---------- */
-
 export default function Shop() {
   const { addToCart } = useCart();
   const productsSectionRef = useRef(null);
   const [searchParams, setSearchParams] = useSearchParams();
-
   // Data
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const [categories, setCategories] = useState([]);
-  const [categoriesError, setCategoriesError] = useState("");
-
+  const { products, categories, loading, error, categoriesError } =
+    useShopData();
   // Filters: the URL is the single source of truth (no duplicated state).
   const search = searchParams.get("search") || "";
   const category = searchParams.get("category") || "all";
@@ -74,7 +54,6 @@ export default function Shop() {
   const minPrice = searchParams.get("minPrice") || "";
   const maxPrice = searchParams.get("maxPrice") || "";
   const brand = searchParams.get("brand") || "";
-
   const attributeFilters = useMemo(
     () =>
       Object.fromEntries(
@@ -85,50 +64,7 @@ export default function Shop() {
     [searchParams],
   );
 
-  /* ---------- effects ---------- */
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setError("");
-
-    loadProducts(controller.signal)
-      .then(setProducts)
-      .catch((err) => {
-        if (!controller.signal.aborted && err.code !== "ERR_CANCELED") {
-          setError(err.message || "We couldn't load products.");
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-
-    return () => controller.abort();
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setCategoriesError("");
-
-    getShopCategories({ signal: controller.signal })
-      .then(setCategories)
-      .catch((err) => {
-        if (!controller.signal.aborted && err.code !== "ERR_CANCELED") {
-          setCategoriesError(err.message || "We couldn't load categories.");
-        }
-      });
-
-    return () => controller.abort();
-  }, []);
-
-  useEffect(() => {
-    if (!productsSectionRef.current) return;
-    const frameId = requestAnimationFrame(scrollToProducts);
-    return () => cancelAnimationFrame(frameId);
-  }, [category]);
-
   /* ---------- URL helpers ---------- */
-
   function updateQuery(values) {
     const next = new URLSearchParams(searchParams);
     Object.entries(values).forEach(([key, value]) => {
@@ -140,7 +76,6 @@ export default function Shop() {
     });
     setSearchParams(next, { replace: true });
   }
-
   function changeCategory(value) {
     const next = new URLSearchParams(searchParams);
     [...next.keys()].forEach((key) => {
@@ -151,15 +86,12 @@ export default function Shop() {
     else next.set("category", value);
     setSearchParams(next, { replace: true });
   }
-
   function setAttribute(key, value) {
     updateQuery({ [`${ATTR_PREFIX}${key}`]: value });
   }
-
   function clearFilters() {
     setSearchParams({});
   }
-
   function scrollToProducts() {
     if (!productsSectionRef.current) return;
     const stickyControls = document.querySelector(
@@ -175,14 +107,11 @@ export default function Shop() {
       40;
     window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
   }
-
   /* ---------- derived data ---------- */
-
   const allCategories = useMemo(
     () => categories.flatMap((main) => [main, ...(main.subcategories || [])]),
     [categories],
   );
-
   const selectedCategory = useMemo(
     () =>
       category === "all"
@@ -190,7 +119,6 @@ export default function Shop() {
         : allCategories.find((item) => item.slug === category) || null,
     [allCategories, category],
   );
-
   const selectedCategorySlugs = useMemo(() => {
     if (category === "all") return [];
     const mainCategory = categories.find((item) => item.slug === category);
@@ -202,12 +130,10 @@ export default function Shop() {
     }
     return [category];
   }, [categories, category]);
-
   // Filterable attributes for the selected category.
   // A subcategory with no attributes of its own inherits its parent's.
   const selectedCategoryAttributes = useMemo(() => {
     if (!selectedCategory) return [];
-
     let attributes = selectedCategory.attributes || [];
     if (attributes.length === 0) {
       const parent = categories.find((main) =>
@@ -217,7 +143,6 @@ export default function Shop() {
       );
       attributes = parent?.attributes || [];
     }
-
     return attributes
       .filter(
         (attribute) => attribute.isFilterable && attribute.key !== "brand",
@@ -228,7 +153,6 @@ export default function Shop() {
       }))
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
   }, [categories, selectedCategory]);
-
   // Only count attribute filters that belong to the current category.
   const activeAttributeFilters = useMemo(
     () =>
@@ -237,7 +161,6 @@ export default function Shop() {
         .map((attribute) => [attribute.key, attributeFilters[attribute.key]]),
     [selectedCategoryAttributes, attributeFilters],
   );
-
   const visibleProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -252,22 +175,17 @@ export default function Shop() {
           .toLowerCase();
         if (!text.includes(query)) return false;
       }
-
       if (inStockOnly && Number(p.stock ?? p.availableStock ?? 0) <= 0)
         return false;
-
       const price = Number(p.price);
       if (minPrice !== "" && price < Number(minPrice)) return false;
       if (maxPrice !== "" && price > Number(maxPrice)) return false;
-
       if (brand && String(p.brand || "").toLowerCase() !== brand.toLowerCase())
         return false;
-
       return activeAttributeFilters.every(([key, value]) =>
         getProductAttributeValue(p, key).includes(String(value).toLowerCase()),
       );
     });
-
     return result.sort((a, b) => {
       if (sort === "price-low") return Number(a.price) - Number(b.price);
       if (sort === "price-high") return Number(b.price) - Number(a.price);
@@ -286,7 +204,6 @@ export default function Shop() {
     activeAttributeFilters,
     sort,
   ]);
-
   const categoryBrands = useMemo(
     () => [
       ...new Set(
@@ -302,13 +219,10 @@ export default function Shop() {
     ],
     [products, category, selectedCategorySlugs],
   );
-
   const activeFilterCount =
     [search, inStockOnly, minPrice, maxPrice, brand].filter(Boolean).length +
     activeAttributeFilters.length;
-
   /* ---------- render ---------- */
-
   return (
     <main className="min-h-screen bg-gray-50">
       <section className="bg-[#183D3D] text-white">

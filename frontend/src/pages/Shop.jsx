@@ -1,43 +1,18 @@
 import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import useShopData from "../hooks/useShopData";
-import {
-  Search,
-  ChevronDown,
-  SlidersHorizontal,
-  PackageSearch,
-} from "lucide-react";
+import { PackageSearch } from "lucide-react";
 import ProductCard from "../components/ProductCard";
 import { useCart } from "../context/CartContext";
 import useShopFilters from "../hooks/useShopFilters";
 import useShopProducts from "../hooks/useShopProducts";
+import ShopSearch from "../components/shop/ShopSearch";
+import ShopHeader from "../components/shop/ShopHeader";
+import CategoryNavigation from "../components/shop/CategoryNavigation";
+import FilterSection from "../components/shop/FilterSection";
+import FilterSidebar from "../components/shop/FilterSidebar";
+import ShopToolbar from "../components/shop/ShopToolbar";
 
-/* ---------- small components ---------- */
-function FilterSection({ title, defaultOpen = false, children }) {
-  return (
-    <details open={defaultOpen} className="border-b border-gray-200 py-3">
-      <summary className="cursor-pointer list-none font-medium text-gray-800">
-        {title} <ChevronDown className="float-right" size={16} />
-      </summary>
-      {children}
-    </details>
-  );
-}
-function CategoryButton({ active, onClick, children }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
-        active
-          ? "border-[#183D3D] bg-[#183D3D] text-white"
-          : "border-gray-200 bg-white text-gray-700 hover:border-[#183D3D] hover:text-[#183D3D]"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
 /* ---------- page ---------- */
 export default function Shop() {
   const { addToCart } = useCart();
@@ -64,23 +39,28 @@ export default function Shop() {
 
   function scrollToProducts() {
     if (!productsSectionRef.current) return;
+
     const stickyControls = document.querySelector(
       '[data-shop-sticky-controls="true"]',
     );
-    useEffect(() => {
-      requestAnimationFrame(scrollToProducts);
-    }, [category]);
+
     const stickyBottom = stickyControls
       ? stickyControls.getBoundingClientRect().bottom
       : 0;
+
     const top =
       window.scrollY +
       productsSectionRef.current.getBoundingClientRect().top -
       stickyBottom -
       40;
+
     window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
   }
-  // /* ---------- derived data ---------- */
+
+  useEffect(() => {
+    requestAnimationFrame(scrollToProducts);
+  }, [category]);
+  //derived data
   const {
     selectedCategory,
     selectedCategoryAttributes,
@@ -102,22 +82,7 @@ export default function Shop() {
   /* ---------- render ---------- */
   return (
     <main className="min-h-screen bg-gray-50">
-      <section className="bg-[#183D3D] text-white">
-        <div className="mx-auto max-w-7xl px-4 py-9 sm:px-6 lg:px-8">
-          <p className="text-sm font-semibold uppercase tracking-widest text-emerald-200">
-            DVC Store
-          </p>
-          <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
-            {selectedCategory
-              ? `Shop ${selectedCategory.name}`
-              : "Shop all products"}
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm text-gray-200 sm:text-base">
-            {selectedCategory?.description ||
-              "Explore our collection of products available at DVC Store."}
-          </p>
-        </div>
-      </section>
+      <ShopHeader selectedCategory={selectedCategory} />
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Sticky category + search controls */}
@@ -125,199 +90,44 @@ export default function Shop() {
           data-shop-sticky-controls="true"
           className="sticky top-20 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3 lg:top-30"
         >
-          <div className="mb-3 space-y-3">
-            <div className="flex flex-wrap gap-2">
-              <CategoryButton
-                active={category === "all"}
-                onClick={() => changeCategory("all")}
-              >
-                All
-              </CategoryButton>
-            </div>
+          <CategoryNavigation
+            categories={categories}
+            category={category}
+            changeCategory={changeCategory}
+            categoriesError={categoriesError}
+          />
 
-            {categories.map((mainCategory) => {
-              const hasSubs = mainCategory.subcategories?.length > 0;
-              const buttons = hasSubs
-                ? [
-                    {
-                      ...mainCategory,
-                      buttonLabel: `All ${mainCategory.name}`,
-                    },
-                    ...mainCategory.subcategories.map((sub) => ({
-                      ...sub,
-                      buttonLabel: sub.name,
-                    })),
-                  ]
-                : [{ ...mainCategory, buttonLabel: mainCategory.name }];
-
-              return (
-                <div key={mainCategory.id} className="flex flex-wrap gap-2">
-                  {buttons.map((item) => (
-                    <CategoryButton
-                      key={item.id}
-                      active={category === item.slug}
-                      onClick={() => changeCategory(item.slug)}
-                    >
-                      {item.buttonLabel}
-                    </CategoryButton>
-                  ))}
-                </div>
-              );
-            })}
-
-            {categoriesError && (
-              <p className="text-sm text-red-600">{categoriesError}</p>
-            )}
-          </div>
-
-          <label className="relative block">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={19}
-            />
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Search products or brands..."
-              className="w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-4 text-sm outline-none focus:border-[#183D3D] focus:ring-2 focus:ring-[#183D3D]/15"
-            />
-          </label>
+          <ShopSearch search={search} handleSearchChange={handleSearchChange} />
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[245px_minmax(0,1fr)]">
           {/* Filters sidebar */}
-          <aside className="h-fit rounded-xl border border-gray-200 bg-white p-4 lg:sticky lg:top-64 lg:max-h-[calc(100vh-270px)] lg:overflow-y-auto">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 font-semibold text-gray-900">
-                <SlidersHorizontal size={17} /> Filters
-              </h2>
-              <button
-                type="button"
-                onClick={clearFilters}
-                disabled={
-                  activeFilterCount === 0 &&
-                  category === "all" &&
-                  sort === "newest"
-                }
-                className="text-xs font-semibold text-dvcGreen hover:underline disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline"
-              >
-                Reset filters
-              </button>
-            </div>
-
-            <FilterSection title="Availability" defaultOpen>
-              <label className="mt-3 flex items-center gap-2 text-sm text-gray-600">
-                <input
-                  type="checkbox"
-                  checked={inStockOnly}
-                  onChange={(e) =>
-                    updateQuery({ availability: e.target.checked })
-                  }
-                  className="accent-dvcGreen"
-                />
-                In stock only
-              </label>
-            </FilterSection>
-
-            <FilterSection title="Price (LKR)" defaultOpen>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <input
-                  aria-label="Minimum price"
-                  type="number"
-                  min="0"
-                  placeholder="Min"
-                  value={minPrice}
-                  onChange={(e) => updateQuery({ minPrice: e.target.value })}
-                  className="min-w-0 rounded-md border border-gray-300 px-2 py-2 text-sm"
-                />
-                <input
-                  aria-label="Maximum price"
-                  type="number"
-                  min="0"
-                  placeholder="Max"
-                  value={maxPrice}
-                  onChange={(e) => updateQuery({ maxPrice: e.target.value })}
-                  className="min-w-0 rounded-md border border-gray-300 px-2 py-2 text-sm"
-                />
-              </div>
-            </FilterSection>
-
-            <FilterSection title="Brand" defaultOpen>
-              <select
-                value={brand}
-                onChange={(e) => updateQuery({ brand: e.target.value })}
-                className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
-              >
-                <option value="">All brands</option>
-                {categoryBrands.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
-                ))}
-              </select>
-            </FilterSection>
-            {selectedCategoryAttributes.map((attribute) => (
-              <div
-                key={attribute.key}
-                className="border-b border-gray-200 py-3"
-              >
-                <label className="font-medium text-gray-800">
-                  {attribute.label}
-                </label>
-
-                <select
-                  aria-label={attribute.label}
-                  value={attributeFilters[attribute.key] || ""}
-                  onChange={(e) => setAttribute(attribute.key, e.target.value)}
-                  className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
-                >
-                  <option value="">All</option>
-
-                  {attribute.options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
-          </aside>
+          <FilterSidebar
+            clearFilters={clearFilters}
+            activeFilterCount={activeFilterCount}
+            category={category}
+            sort={sort}
+            inStockOnly={inStockOnly}
+            updateQuery={updateQuery}
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+            brand={brand}
+            categoryBrands={categoryBrands}
+            selectedCategoryAttributes={selectedCategoryAttributes}
+            attributeFilters={attributeFilters}
+            setAttribute={setAttribute}
+          />
 
           {/* Product grid */}
           <section ref={productsSectionRef} id="shop-products">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {selectedCategory?.name || "All products"}
-                </h2>
-                <p className="mt-1 text-sm text-gray-500" aria-live="polite">
-                  {loading
-                    ? "Loading products..."
-                    : `${visibleProducts.length} products found`}
-                  {activeFilterCount > 0
-                    ? ` · ${activeFilterCount} active filters`
-                    : ""}
-                </p>
-              </div>
-              <label className="flex items-center gap-2 text-sm text-gray-600">
-                Sort by
-                <select
-                  value={sort}
-                  onChange={(e) =>
-                    updateQuery({
-                      sort: e.target.value === "newest" ? "" : e.target.value,
-                    })
-                  }
-                  className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800"
-                >
-                  <option value="newest">Newest</option>
-                  <option value="price-low">Price: low to high</option>
-                  <option value="price-high">Price: high to low</option>
-                  <option value="name">Name: A to Z</option>
-                </select>
-              </label>
-            </div>
+            <ShopToolbar
+              selectedCategory={selectedCategory}
+              loading={loading}
+              visibleProducts={visibleProducts}
+              activeFilterCount={activeFilterCount}
+              sort={sort}
+              updateQuery={updateQuery}
+            />
 
             {loading ? (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">

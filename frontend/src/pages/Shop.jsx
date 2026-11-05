@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import useShopData from "../hooks/useShopData";
 import {
@@ -7,10 +7,10 @@ import {
   SlidersHorizontal,
   PackageSearch,
 } from "lucide-react";
-import { toOption, getProductAttributeValue } from "../utils/shopHelpers";
 import ProductCard from "../components/ProductCard";
 import { useCart } from "../context/CartContext";
 import useShopFilters from "../hooks/useShopFilters";
+import useShopProducts from "../hooks/useShopProducts";
 
 /* ---------- small components ---------- */
 function FilterSection({ title, defaultOpen = false, children }) {
@@ -67,6 +67,9 @@ export default function Shop() {
     const stickyControls = document.querySelector(
       '[data-shop-sticky-controls="true"]',
     );
+    useEffect(() => {
+      requestAnimationFrame(scrollToProducts);
+    }, [category]);
     const stickyBottom = stickyControls
       ? stickyControls.getBoundingClientRect().bottom
       : 0;
@@ -77,121 +80,25 @@ export default function Shop() {
       40;
     window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
   }
-  /* ---------- derived data ---------- */
-  const allCategories = useMemo(
-    () => categories.flatMap((main) => [main, ...(main.subcategories || [])]),
-    [categories],
-  );
-  const selectedCategory = useMemo(
-    () =>
-      category === "all"
-        ? null
-        : allCategories.find((item) => item.slug === category) || null,
-    [allCategories, category],
-  );
-  const selectedCategorySlugs = useMemo(() => {
-    if (category === "all") return [];
-    const mainCategory = categories.find((item) => item.slug === category);
-    if (mainCategory) {
-      return [
-        mainCategory.slug,
-        ...(mainCategory.subcategories || []).map((s) => s.slug),
-      ];
-    }
-    return [category];
-  }, [categories, category]);
-  // Filterable attributes for the selected category.
-  // A subcategory with no attributes of its own inherits its parent's.
-  const selectedCategoryAttributes = useMemo(() => {
-    if (!selectedCategory) return [];
-    let attributes = selectedCategory.attributes || [];
-    if (attributes.length === 0) {
-      const parent = categories.find((main) =>
-        (main.subcategories || []).some(
-          (sub) => sub.slug === selectedCategory.slug,
-        ),
-      );
-      attributes = parent?.attributes || [];
-    }
-    return attributes
-      .filter(
-        (attribute) => attribute.isFilterable && attribute.key !== "brand",
-      )
-      .map((attribute) => ({
-        ...attribute,
-        options: (attribute.options || []).map(toOption),
-      }))
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-  }, [categories, selectedCategory]);
-  // Only count attribute filters that belong to the current category.
-  const activeAttributeFilters = useMemo(
-    () =>
-      selectedCategoryAttributes
-        .filter((attribute) => attributeFilters[attribute.key])
-        .map((attribute) => [attribute.key, attributeFilters[attribute.key]]),
-    [selectedCategoryAttributes, attributeFilters],
-  );
-  const visibleProducts = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    const result = products.filter((p) => {
-      if (category !== "all" && !selectedCategorySlugs.includes(p.categorySlug))
-        return false;
-
-      if (query) {
-        const text = [p.name, p.brand, p.description, p.category]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        if (!text.includes(query)) return false;
-      }
-      if (inStockOnly && Number(p.stock ?? p.availableStock ?? 0) <= 0)
-        return false;
-      const price = Number(p.price);
-      if (minPrice !== "" && price < Number(minPrice)) return false;
-      if (maxPrice !== "" && price > Number(maxPrice)) return false;
-      if (brand && String(p.brand || "").toLowerCase() !== brand.toLowerCase())
-        return false;
-      return activeAttributeFilters.every(([key, value]) =>
-        getProductAttributeValue(p, key).includes(String(value).toLowerCase()),
-      );
-    });
-    return result.sort((a, b) => {
-      if (sort === "price-low") return Number(a.price) - Number(b.price);
-      if (sort === "price-high") return Number(b.price) - Number(a.price);
-      if (sort === "name") return String(a.name).localeCompare(String(b.name));
-      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-    });
-  }, [
+  // /* ---------- derived data ---------- */
+  const {
+    selectedCategory,
+    selectedCategoryAttributes,
+    visibleProducts,
+    categoryBrands,
+    activeFilterCount,
+  } = useShopProducts({
     products,
-    category,
-    selectedCategorySlugs,
+    categories,
     search,
+    category,
+    sort,
     inStockOnly,
     minPrice,
     maxPrice,
     brand,
-    activeAttributeFilters,
-    sort,
-  ]);
-  const categoryBrands = useMemo(
-    () => [
-      ...new Set(
-        products
-          .filter(
-            (p) =>
-              category === "all" ||
-              selectedCategorySlugs.includes(p.categorySlug),
-          )
-          .map((p) => p.brand)
-          .filter(Boolean),
-      ),
-    ],
-    [products, category, selectedCategorySlugs],
-  );
-  const activeFilterCount =
-    [search, inStockOnly, minPrice, maxPrice, brand].filter(Boolean).length +
-    activeAttributeFilters.length;
+    attributeFilters,
+  });
   /* ---------- render ---------- */
   return (
     <main className="min-h-screen bg-gray-50">

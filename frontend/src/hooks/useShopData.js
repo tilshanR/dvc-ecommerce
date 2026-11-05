@@ -4,6 +4,7 @@ import { getProducts } from "../services/productApi";
 import { getShopCategories } from "../services/categoryApi";
 import { normalizeProduct } from "../utils/shopHelpers";
 
+// fetch products and normalize the response data
 async function loadProducts(signal) {
   const response = await getProducts(
     { page: 1, limit: 100 },
@@ -12,16 +13,14 @@ async function loadProducts(signal) {
 
   return response.products.map(normalizeProduct);
 }
-
+// custom hook to manage product and category state
 export default function useShopData() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [categories, setCategories] = useState([]);
   const [categoriesError, setCategoriesError] = useState("");
-
-  // Fetch products
+// fetch products on mount and handle abort signals
   useEffect(() => {
     const controller = new AbortController();
 

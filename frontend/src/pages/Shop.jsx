@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import useShopData from "../hooks/useShopData";
 import {
   Search,
@@ -10,8 +10,8 @@ import {
 import { toOption, getProductAttributeValue } from "../utils/shopHelpers";
 import ProductCard from "../components/ProductCard";
 import { useCart } from "../context/CartContext";
+import useShopFilters from "../hooks/useShopFilters";
 
-const ATTR_PREFIX = "attr_";
 /* ---------- small components ---------- */
 function FilterSection({ title, defaultOpen = false, children }) {
   return (
@@ -42,56 +42,26 @@ function CategoryButton({ active, onClick, children }) {
 export default function Shop() {
   const { addToCart } = useCart();
   const productsSectionRef = useRef(null);
-  const [searchParams, setSearchParams] = useSearchParams();
   // Data
   const { products, categories, loading, error, categoriesError } =
     useShopData();
-  // Filters: the URL is the single source of truth (no duplicated state).
-  const search = searchParams.get("search") || "";
-  const category = searchParams.get("category") || "all";
-  const sort = searchParams.get("sort") || "newest";
-  const inStockOnly = searchParams.get("availability") === "in-stock";
-  const minPrice = searchParams.get("minPrice") || "";
-  const maxPrice = searchParams.get("maxPrice") || "";
-  const brand = searchParams.get("brand") || "";
-  const attributeFilters = useMemo(
-    () =>
-      Object.fromEntries(
-        [...searchParams.entries()]
-          .filter(([key]) => key.startsWith(ATTR_PREFIX))
-          .map(([key, value]) => [key.slice(ATTR_PREFIX.length), value]),
-      ),
-    [searchParams],
-  );
+  // Filters:
+  const {
+    search,
+    category,
+    sort,
+    inStockOnly,
+    minPrice,
+    maxPrice,
+    brand,
+    attributeFilters,
+    updateQuery,
+    changeCategory,
+    setAttribute,
+    clearFilters,
+    handleSearchChange,
+  } = useShopFilters();
 
-  /* ---------- URL helpers ---------- */
-  function updateQuery(values) {
-    const next = new URLSearchParams(searchParams);
-    Object.entries(values).forEach(([key, value]) => {
-      if (value === "" || value === "all" || value == null || value === false)
-        next.delete(key);
-      else if (value === true)
-        next.set(key, key === "availability" ? "in-stock" : "true");
-      else next.set(key, String(value));
-    });
-    setSearchParams(next, { replace: true });
-  }
-  function changeCategory(value) {
-    const next = new URLSearchParams(searchParams);
-    [...next.keys()].forEach((key) => {
-      if (key.startsWith(ATTR_PREFIX)) next.delete(key);
-    });
-    next.delete("brand");
-    if (value === "all") next.delete("category");
-    else next.set("category", value);
-    setSearchParams(next, { replace: true });
-  }
-  function setAttribute(key, value) {
-    updateQuery({ [`${ATTR_PREFIX}${key}`]: value });
-  }
-  function clearFilters() {
-    setSearchParams({});
-  }
   function scrollToProducts() {
     if (!productsSectionRef.current) return;
     const stickyControls = document.querySelector(
@@ -301,18 +271,7 @@ export default function Shop() {
             <input
               type="search"
               value={search}
-              onChange={(e) => {
-                // Searching resets category and attribute filters.
-                const next = new URLSearchParams(searchParams);
-                [...next.keys()].forEach((key) => {
-                  if (key.startsWith(ATTR_PREFIX)) next.delete(key);
-                });
-                next.delete("category");
-                next.delete("brand");
-                if (e.target.value) next.set("search", e.target.value);
-                else next.delete("search");
-                setSearchParams(next, { replace: true });
-              }}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Search products or brands..."
               className="w-full rounded-xl border border-gray-300 bg-white py-3 pl-10 pr-4 text-sm outline-none focus:border-[#183D3D] focus:ring-2 focus:ring-[#183D3D]/15"
             />

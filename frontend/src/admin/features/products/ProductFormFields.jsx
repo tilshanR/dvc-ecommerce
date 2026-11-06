@@ -1,3 +1,4 @@
+import DynamicAttributeFields from "./DynamicAttributeFields";
 export default function ProductFormFields({
   formData,
   onChange,
@@ -23,6 +24,9 @@ export default function ProductFormFields({
         : [],
     }));
   };
+  const selectedCategory = categories.find(
+    (category) => (category._id || category.id) === formData.category,
+  );
 
   const inputClass =
     "w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-[#183D3D]";
@@ -31,7 +35,6 @@ export default function ProductFormFields({
 
   return (
     <div className="space-y-6">
-
       {/* Basic Information */}
       <section className="space-y-3">
         <h3 className="font-semibold text-gray-800">Basic Information</h3>
@@ -76,12 +79,24 @@ export default function ProductFormFields({
           <select
             className={inputClass}
             value={formData.category}
-            onChange={(e) => onChange("category", e.target.value)}
+            onChange={(e) => {
+              onChange("category", e.target.value);
+
+              // Clear specifications from the previous category.
+              setFormData((prev) => ({
+                ...prev,
+                attributes: {},
+                condition: null,
+              }));
+            }}
             required
           >
             <option value="">Select category</option>
             {categories.map((category) => (
-              <option key={category._id} value={category._id}>
+              <option
+                key={category._id || category.id}
+                value={category._id || category.id}
+              >
                 {category.name}
               </option>
             ))}
@@ -104,7 +119,7 @@ export default function ProductFormFields({
           </select>
         </div>
 
-        <div>
+        {/* <div>
           <label className={labelClass}>Condition</label>
           <select
             className={inputClass}
@@ -115,8 +130,30 @@ export default function ProductFormFields({
             <option value="new">New</option>
             <option value="used">Used</option>
           </select>
-        </div>
+        </div> */}
+        {selectedCategory?.allowCondition && (
+          <div>
+            <label className={labelClass}>Condition</label>
+            <select
+              className={inputClass}
+              value={formData.condition || ""}
+              onChange={(e) => onChange("condition", e.target.value || null)}
+            >
+              <option value="">Not specified</option>
+              <option value="new">New</option>
+              <option value="used">Used</option>
+            </select>
+          </div>
+        )}
       </section>
+      {/* Dynamic Specifications */}
+      {selectedCategory && (
+        <DynamicAttributeFields
+          category={selectedCategory}
+          attributes={formData.attributes}
+          setFormData={setFormData}
+        />
+      )}
 
       {/* Pricing */}
       <section className="space-y-3">
@@ -127,7 +164,8 @@ export default function ProductFormFields({
           <input
             type="number"
             min="0"
-            step="0.01"
+            step="1"
+placeholder="e.g. 3000"
             className={inputClass}
             value={formData.price}
             onChange={(e) => onChange("price", e.target.value)}
@@ -140,7 +178,8 @@ export default function ProductFormFields({
           <input
             type="number"
             min="0"
-            step="0.01"
+           step="1"
+placeholder="e.g. 2000"
             className={inputClass}
             value={formData.originalPrice}
             onChange={(e) => onChange("originalPrice", e.target.value)}

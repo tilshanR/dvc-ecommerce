@@ -51,9 +51,81 @@ export default function ProductForm({
     }));
   };
 
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      return "Product name is required.";
+    }
+
+    if (!formData.category) {
+      return "Please select a category.";
+    }
+
+    if (
+      formData.price === "" ||
+      !Number.isFinite(Number(formData.price)) ||
+      Number(formData.price) < 0
+    ) {
+      return "Please enter a valid selling price.";
+    }
+
+    if (
+      formData.originalPrice !== "" &&
+      (!Number.isFinite(Number(formData.originalPrice)) ||
+        Number(formData.originalPrice) < 0)
+    ) {
+      return "Original price must be a valid non-negative number.";
+    }
+
+    const quantity = Number(formData.inventory.onHand);
+
+    if (
+      formData.inventory.onHand === "" ||
+      !Number.isInteger(quantity) ||
+      quantity < 0
+    ) {
+      return "On-hand quantity must be a non-negative whole number.";
+    }
+
+    const selectedCategory = categories.find(
+      (category) => (category._id || category.id) === formData.category,
+    );
+
+    if (!selectedCategory) {
+      return "Please select a valid category.";
+    }
+
+    if (!selectedCategory.allowCondition && formData.condition) {
+      return "Condition is not allowed for this category.";
+    }
+
+    for (const field of selectedCategory.attributes || []) {
+      const value = formData.attributes[field.key];
+
+      if (!field.isRequired) continue;
+
+      const isEmpty =
+        value === undefined ||
+        value === null ||
+        value === "" ||
+        (Array.isArray(value) && value.length === 0);
+
+      if (isEmpty) {
+        return `${field.label} is required.`;
+      }
+    }
+
+    return "";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    const validationError = validateForm();
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
 
     const payload = {
       ...formData,
@@ -61,9 +133,7 @@ export default function ProductForm({
       sku: formData.sku.trim() || undefined,
       price: Number(formData.price),
       originalPrice:
-        formData.originalPrice === ""
-          ? null
-          : Number(formData.originalPrice),
+        formData.originalPrice === "" ? null : Number(formData.originalPrice),
       inventory: {
         onHand: Number(formData.inventory.onHand),
         reserved: Number(formData.inventory.reserved),
@@ -76,9 +146,7 @@ export default function ProductForm({
       await onSubmit(payload);
     } catch (err) {
       setError(
-        err.response?.data?.message ||
-        err.message ||
-        "Unable to save product."
+        err.response?.data?.message || err.message || "Unable to save product.",
       );
     } finally {
       setSaving(false);
@@ -127,7 +195,11 @@ export default function ProductForm({
               disabled={saving}
               className="rounded-lg bg-[#183D3D] px-5 py-2 text-sm text-white disabled:opacity-50"
             >
-              {saving ? "Saving..." : product ? "Update Product" : "Create Product"}
+              {saving
+                ? "Saving..."
+                : product
+                  ? "Update Product"
+                  : "Create Product"}
             </button>
           </div>
         </form>

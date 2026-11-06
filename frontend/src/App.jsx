@@ -1,4 +1,3 @@
-
 import { Routes, Route, Outlet } from "react-router-dom";
 
 import Home from "./pages/Home";
@@ -18,7 +17,7 @@ import { ToastProvider } from "./context/ToastContext";
 import AdminLayout from "./admin/components/AdminLayout";
 import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminCategories from "./admin/pages/AdminCategories";
-
+import AdminProducts from "./admin/pages/AdminProducts";
 // Public storefront layout
 function PublicLayout() {
   return (
@@ -30,28 +29,7 @@ function PublicLayout() {
   );
 }
 
-// Temporary products page until product management is implemented
-function AdminProductsPlaceholder() {
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900">
-        Product Management
-      </h2>
-      <p className="mt-1 text-sm text-gray-500">
-        Manage and organize your store products.
-      </p>
 
-      <div className="mt-6 rounded-xl border border-gray-200 bg-white p-8 text-center">
-        <p className="font-medium text-gray-700">
-          Product management is coming soon.
-        </p>
-        <p className="mt-1 text-sm text-gray-500">
-          This section is currently under development.
-        </p>
-      </div>
-    </div>
-  );
-}
 
 function App() {
   return (
@@ -73,7 +51,7 @@ function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="categories" element={<AdminCategories />} />
-            <Route path="products" element={<AdminProductsPlaceholder />} />
+           <Route path="products" element={<AdminProducts />} />
           </Route>
         </Routes>
       </CartProvider>

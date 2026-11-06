@@ -30,7 +30,7 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
 
-      <div className="pointer-events-none fixed right-3 top-4 z-[100] w-[calc(100%-1.5rem)] max-w-md sm:right-6 sm:top-6">
+      <div className="pointer-events-none fixed right-3 top-4 z-100 w-[calc(100%-1.5rem)] max-w-md sm:right-6 sm:top-6">
         <AnimatePresence>
           {toast && (
             <motion.div

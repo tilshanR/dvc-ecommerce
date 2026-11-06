@@ -2,17 +2,20 @@ import mongoose from "mongoose";
 
 import {
   findAllProducts,
+  findProductById,
   findActiveProductById,
   findActiveProductBySlug,
-} from "./productRepository.js";
-
-import Category from "../category/categoryModel.js";
-import {
   createProduct,
+  updateProductById,
+  archiveProductById,
+  restoreProductById,
   findProductBySku,
   productSlugExists,
 } from "./productRepository.js";
-import { createProductSchema } from "./productValidation.js";
+
+import Category from "../category/categoryModel.js";
+
+import { createProductSchema,   updateProductSchema, productQuerySchema, } from "./productValidation.js";
 /* --------------------------------
    SHOP PRODUCT LISTING
 --------------------------------- */
@@ -281,4 +284,42 @@ export const getShopProduct = async (identifier) => {
 
   // Otherwise, find by slug.
   return await findActiveProductBySlug(productIdentifier);
+};
+
+/**
+ * Retrieves a filtered list of products for admin users.
+ * 
+ * @param {Object} [filters={}] - Query parameters and filter criteria for products.
+ * @throws {ServiceError} Throws a 400 error if the provided filters fail validation.
+ * @returns {Promise<Array>} A promise that resolves to the list of matching products.
+ */
+
+export const getAdminProducts = async (filters = {}) => {
+  const validation = productQuerySchema.safeParse(filters);
+
+  if (!validation.success) {
+    throw createServiceError("Invalid product filters.", 400);
+  }
+
+  return await findAllProducts(validation.data);
+};
+/**
+ * Retrieves a single product by its unique identifier for admin users.
+ * 
+ * @param {string} productId - The unique MongoDB ObjectId of the product to retrieve.
+ * @throws {ServiceError} Throws a 400 error if the productId is invalid, or a 404 error if the product does not exist.
+ * @returns {Promise<Object>} A promise that resolves to the product object.
+ */
+export const getAdminProduct = async (productId) => {
+  if (!mongoose.isValidObjectId(productId)) {
+    throw createServiceError("Invalid product ID.", 400);
+  }
+
+  const product = await findProductById(productId);
+
+  if (!product) {
+    throw createServiceError("Product not found.", 404);
+  }
+
+  return product;
 };

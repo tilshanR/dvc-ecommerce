@@ -1,28 +1,3 @@
-
-
-// import api from "./api";
-
-// // GET /api/products/:productId
-// export async function getProduct(productId, { signal } = {}) {
-//   if (!productId) {
-//     throw new Error("A product ID or slug is required.");
-//   }
-
-//   const { data } = await api.get(
-//     `/products/${encodeURIComponent(productId)}`,
-//     { signal }
-//   );
-
-//   // Support common response shapes
-//   const product = data?.product ?? data?.data ?? data;
-
-//   if (!product || typeof product !== "object" || !product.name) {
-//     throw new Error("The server returned an invalid product response.");
-//   }
-
-//   return product;
-// }
-
 import api from "./api";
 
 // GET /api/products

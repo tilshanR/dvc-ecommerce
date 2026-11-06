@@ -15,6 +15,9 @@ export default function CategoryForm({
   categories = [],
   initialCategory = null,
   hasChildren = false,
+    requireParent = false,
+     forceMainCategory = false,
+
   onSubmit = () => {},
   onCancel = () => {},
 }) {
@@ -59,6 +62,10 @@ export default function CategoryForm({
       setError("Category name is required.");
       return;
     }
+    if (requireParent && !formData.parent) {
+  setError("Please select a main category for this subcategory.");
+  return;
+}
 
     if (!formData.slug.trim()) {
       setError("Category slug is required.");
@@ -76,7 +83,7 @@ export default function CategoryForm({
       name: formData.name.trim(),
       slug: formData.slug.trim(),
       description: formData.description.trim(),
-      parent: formData.parent || null,
+     parent: forceMainCategory ? null : formData.parent || null,
       sortOrder,
       attributes: initialCategory?.attributes ?? [],
     };
@@ -188,9 +195,10 @@ export default function CategoryForm({
             <select
               id="parent"
               name="parent"
-              value={formData.parent}
+             value={forceMainCategory ? "" : formData.parent}
               onChange={handleChange}
-              disabled={hasChildren}
+              disabled={hasChildren || forceMainCategory}
+              required={requireParent}
               className={`${inputClass} disabled:cursor-not-allowed disabled:bg-gray-100`}
             >
               <option value="">None (Main Category)</option>

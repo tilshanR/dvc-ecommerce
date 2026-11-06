@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+
+import { Fragment, useMemo, useState } from "react";
 import {
   Search,
   Tags,
@@ -8,6 +9,9 @@ import {
   ChevronDown,
   ChevronRight,
   Pencil,
+  X,
+  FolderPlus,
+  Trash2,
 } from "lucide-react";
 
 import CategoryForm from "../features/categories/CategoryForm";
@@ -17,123 +21,155 @@ const initialCategories = [
     id: "1",
     name: "Mobile Phones",
     slug: "mobile-phones",
-    description: "Mobile phones and smartphones",
+    description: "Mobile phones and smartphones.",
     parent: null,
     sortOrder: 1,
     allowCondition: true,
-    status: "active",
     attributes: [],
+    status: "active",
   },
   {
     id: "2",
     name: "Android Phones",
     slug: "android-phones",
-    description: "Android smartphones",
+    description: "",
     parent: "1",
     sortOrder: 1,
-    allowCondition: true,
-    status: "active",
+    allowCondition: false,
     attributes: [],
+    status: "active",
   },
   {
     id: "3",
     name: "iPhones",
     slug: "iphones",
-    description: "Apple iPhones",
+    description: "",
     parent: "1",
     sortOrder: 2,
-    allowCondition: true,
-    status: "active",
+    allowCondition: false,
     attributes: [],
+    status: "active",
   },
   {
     id: "4",
     name: "Computer Parts",
     slug: "computer-parts",
-    description: "Computer components",
+    description: "Computer components and accessories.",
     parent: null,
     sortOrder: 2,
     allowCondition: false,
-    status: "active",
     attributes: [],
+    status: "active",
   },
   {
     id: "5",
     name: "RAM",
     slug: "ram",
-    description: "Desktop and laptop memory",
+    description: "",
     parent: "4",
     sortOrder: 1,
     allowCondition: false,
-    status: "archived",
     attributes: [],
+    status: "archived",
   },
 ];
 
-export default function AdminCategories() {
+const slugify = (value) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+
+const AdminCategories = () => {
   const [categories, setCategories] = useState(initialCategories);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const [showForm, setShowForm] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
-
   const [expandedCategories, setExpandedCategories] = useState(
-    () => new Set(["1", "4"])
+    new Set(["1", "4"])
   );
 
-  // Sort categories by their display order.
-  const sortCategories = (items) =>
-    [...items].sort(
-      (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)
-    );
+  const [showCreationChooser, setShowCreationChooser] = useState(false);
+  const [creationMode, setCreationMode] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
 
-  // Build the main-category groups from the flat category collection.
+  const [initialSubcategories, setInitialSubcategories] = useState([""]);
+
+  const [childNamesError, setChildNamesError] = useState("");
+
+  const isFormOpen = Boolean(creationMode || editingCategory);
+
+  // Build the main-category and subcategory hierarchy.
   const categoryGroups = useMemo(() => {
-    const mainCategories = sortCategories(
-      categories.filter((category) => !category.parent)
-    );
-
-    const matchesSearch = (category) => {
-      const search = searchTerm.toLowerCase();
-
-      return (
-        category.name.toLowerCase().includes(search) ||
-        category.slug.toLowerCase().includes(search)
+    const mainCategories = categories
+      .filter((category) => category.parent === null)
+      .sort(
+        (a, b) =>
+          a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)
       );
-    };
 
-    const matchesStatus = (category) =>
-      statusFilter === "all" || category.status === statusFilter;
+    const search = searchTerm.trim().toLowerCase();
 
     return mainCategories
       .map((mainCategory) => {
-        const children = sortCategories(
-          categories.filter(
-            (category) => category.parent === mainCategory.id
-          )
-        );
-
-        const matchingChildren = children.filter(
-          (child) => matchesStatus(child) && matchesSearch(child)
-        );
+        const children = categories
+          .filter((category) => category.parent === mainCategory.id)
+          .sort(
+            (a, b) =>
+              a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)
+          );
 
         const mainMatches =
-          matchesStatus(mainCategory) && matchesSearch(mainCategory);
+          !search ||
+          mainCategory.name.toLowerCase().includes(search) ||
+          mainCategory.slug.toLowerCase().includes(search);
 
-        if (!mainMatches && matchingChildren.length === 0) {
-          return null;
+        const visibleChildren = children.filter((child) => {
+          const matchesSearch =
+            !search ||
+            child.name.toLowerCase().includes(search) ||
+            child.slug.toLowerCase().includes(search);
+
+          const matchesStatus =
+            statusFilter === "all" || child.status === statusFilter;
+
+          return matchesSearch && matchesStatus;
+        });
+
+        const mainMatchesStatus =
+          statusFilter === "all" || mainCategory.status === statusFilter;
+
+        if (mainMatches && mainMatchesStatus) {
+          return {
+            ...mainCategory,
+            children: children.filter(
+              (child) =>
+                statusFilter === "all" || child.status === statusFilter
+            ),
+          };
         }
 
-        return {
-          category: mainCategory,
-          children: mainMatches
-            ? children.filter(matchesStatus)
-            : matchingChildren,
-        };
+        if (visibleChildren.length > 0) {
+          return {
+            ...mainCategory,
+            children: visibleChildren,
+          };
+        }
+
+        return null;
       })
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter((group) => {
+        const mainMatches =
+          !search ||
+          group.name.toLowerCase().includes(search) ||
+          group.slug.toLowerCase().includes(search);
+
+        return mainMatches || group.children.length > 0;
+      });
   }, [categories, searchTerm, statusFilter]);
 
   const activeCount = categories.filter(
@@ -142,6 +178,14 @@ export default function AdminCategories() {
 
   const archivedCount = categories.filter(
     (category) => category.status === "archived"
+  ).length;
+
+  const mainCategoryCount = categories.filter(
+    (category) => category.parent === null
+  ).length;
+
+  const subcategoryCount = categories.filter(
+    (category) => category.parent !== null
   ).length;
 
   const toggleExpanded = (categoryId) => {
@@ -158,386 +202,761 @@ export default function AdminCategories() {
     });
   };
 
-  const openCreateForm = () => {
-    setEditingCategory(null);
-    setShowForm(true);
-  };
-
-  const openEditForm = (category) => {
-    setEditingCategory(category);
-    setShowForm(true);
-  };
-
-  const closeForm = () => {
-    setShowForm(false);
-    setEditingCategory(null);
-  };
-
-  // Create or update a category using mock data.
-  const handleSaveCategory = (categoryData) => {
-    const editingId = editingCategory?.id;
-
-    const slugExists = categories.some(
-      (category) =>
-        category.id !== editingId &&
-        category.slug.toLowerCase() === categoryData.slug.toLowerCase()
-    );
-
-    if (slugExists) {
-      window.alert("A category with this slug already exists.");
-      return;
-    }
-
-    if (editingCategory) {
-      setCategories((previous) =>
-        previous.map((category) =>
-          category.id === editingId
-            ? { ...category, ...categoryData }
-            : category
-        )
-      );
-    } else {
-      const newCategory = {
-        ...categoryData,
-        id: Date.now().toString(),
-        status: "active",
-      };
-
-      setCategories((previous) => [...previous, newCategory]);
-    }
-
-    closeForm();
-  };
-
   const clearFilters = () => {
     setSearchTerm("");
     setStatusFilter("all");
   };
 
-  const totalVisible = categoryGroups.reduce(
-    (total, group) => total + 1 + group.children.length,
-    0
+  const openCreateChooser = () => {
+    setEditingCategory(null);
+    setCreationMode(null);
+    setInitialSubcategories([""]);
+    setChildNamesError("");
+    setShowCreationChooser(true);
+  };
+
+  const chooseCreationMode = (mode) => {
+    setCreationMode(mode);
+    setShowCreationChooser(false);
+    setEditingCategory(null);
+    setInitialSubcategories([""]);
+    setChildNamesError("");
+  };
+
+  const openEditForm = (category) => {
+    setShowCreationChooser(false);
+    setCreationMode(null);
+    setEditingCategory(category);
+    setChildNamesError("");
+  };
+
+  const closeForm = () => {
+    setShowCreationChooser(false);
+    setCreationMode(null);
+    setEditingCategory(null);
+    setInitialSubcategories([""]);
+    setChildNamesError("");
+  };
+
+  const addSubcategoryInput = () => {
+    setInitialSubcategories((previous) => [...previous, ""]);
+  };
+
+  const updateSubcategoryInput = (index, value) => {
+    setInitialSubcategories((previous) =>
+      previous.map((name, currentIndex) =>
+        currentIndex === index ? value : name
+      )
+    );
+  };
+
+  const removeSubcategoryInput = (index) => {
+    setInitialSubcategories((previous) =>
+      previous.filter((_, currentIndex) => currentIndex !== index)
+    );
+  };
+
+  const handleSaveCategory = (categoryData) => {
+    const cleanName = categoryData.name.trim();
+    const cleanSlug = slugify(categoryData.slug);
+
+    if (!cleanName || !cleanSlug) {
+      window.alert("Please provide a valid category name and slug.");
+      return;
+    }
+
+    // Editing an existing category.
+    if (editingCategory) {
+      const duplicateSlug = categories.some(
+        (category) =>
+          category.id !== editingCategory.id &&
+          category.slug.toLowerCase() === cleanSlug.toLowerCase()
+      );
+
+      if (duplicateSlug) {
+        window.alert("Another category already uses this slug.");
+        return;
+      }
+
+      setCategories((previous) =>
+        previous.map((category) =>
+          category.id === editingCategory.id
+            ? {
+                ...category,
+                ...categoryData,
+                name: cleanName,
+                slug: cleanSlug,
+              }
+            : category
+        )
+      );
+
+      closeForm();
+      return;
+    }
+
+    // Validate the optional initial subcategories.
+    const childNames =
+      creationMode === "main"
+        ? initialSubcategories
+            .map((name) => name.trim())
+            .filter(Boolean)
+        : [];
+
+    if (childNames.some((name) => name.length < 2 || name.length > 100)) {
+      setChildNamesError(
+        "Each subcategory name must contain between 2 and 100 characters."
+      );
+      return;
+    }
+
+    const childSlugs = childNames.map(slugify);
+
+    if (childSlugs.some((slug) => !slug)) {
+      setChildNamesError("Please enter valid subcategory names.");
+      return;
+    }
+
+    const slugsToCheck = [cleanSlug, ...childSlugs];
+    const uniqueSlugs = new Set(
+      slugsToCheck.map((slug) => slug.toLowerCase())
+    );
+
+    if (uniqueSlugs.size !== slugsToCheck.length) {
+      setChildNamesError(
+        "The main category and its subcategories must have unique slugs."
+      );
+      return;
+    }
+
+    const existingSlugs = new Set(
+      categories.map((category) => category.slug.toLowerCase())
+    );
+
+    if (slugsToCheck.some((slug) => existingSlugs.has(slug.toLowerCase()))) {
+      setChildNamesError(
+        "A category with one of these names or slugs already exists."
+      );
+      return;
+    }
+
+    // Creating a new main category.
+    if (creationMode === "main") {
+      const mainId = Date.now().toString();
+
+      const newMainCategory = {
+        ...categoryData,
+        id: mainId,
+        name: cleanName,
+        slug: cleanSlug,
+        parent: null,
+        status: "active",
+        attributes: [],
+      };
+
+      const newChildren = childNames.map((name, index) => ({
+        id: `${mainId}-${index + 1}`,
+        name,
+        slug: childSlugs[index],
+        description: "",
+        parent: mainId,
+        sortOrder: index + 1,
+        allowCondition: false,
+        attributes: [],
+        status: "active",
+      }));
+
+      setCategories((previous) => [
+        ...previous,
+        newMainCategory,
+        ...newChildren,
+      ]);
+
+      setExpandedCategories((previous) => new Set([...previous, mainId]));
+      closeForm();
+      return;
+    }
+
+    // Creating a new subcategory.
+    if (creationMode === "subcategory") {
+      const parentCategory = categories.find(
+        (category) => category.id === categoryData.parent
+      );
+
+      if (
+        !parentCategory ||
+        parentCategory.parent !== null ||
+        parentCategory.status !== "active"
+      ) {
+        window.alert("Please select an active main category.");
+        return;
+      }
+
+      const newSubcategory = {
+        ...categoryData,
+        id: Date.now().toString(),
+        name: cleanName,
+        slug: cleanSlug,
+        parent: parentCategory.id,
+        status: "active",
+        attributes: [],
+      };
+
+      setCategories((previous) => [...previous, newSubcategory]);
+
+      setExpandedCategories(
+        (previous) => new Set([...previous, parentCategory.id])
+      );
+
+      closeForm();
+    }
+  };
+
+  const handleArchive = (category) => {
+    if (category.parent === null) {
+      const hasActiveChildren = categories.some(
+        (child) =>
+          child.parent === category.id && child.status === "active"
+      );
+
+      if (hasActiveChildren) {
+        window.alert(
+          "Archive the active subcategories first before archiving this main category."
+        );
+        return;
+      }
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to archive "${category.name}"?`
+    );
+
+    if (!confirmed) return;
+
+    setCategories((previous) =>
+      previous.map((item) =>
+        item.id === category.id
+          ? { ...item, status: "archived" }
+          : item
+      )
+    );
+  };
+
+  const handleRestore = (category) => {
+    if (category.parent !== null) {
+      const parent = categories.find(
+        (item) => item.id === category.parent
+      );
+
+      if (!parent || parent.status !== "active") {
+        window.alert(
+          "Restore the main category before restoring this subcategory."
+        );
+        return;
+      }
+    }
+
+    setCategories((previous) =>
+      previous.map((item) =>
+        item.id === category.id
+          ? { ...item, status: "active" }
+          : item
+      )
+    );
+  };
+
+  const renderCategoryRow = (category, isSubcategory = false) => (
+    <tr
+      key={category.id}
+      className="border-t border-gray-100 hover:bg-gray-50"
+    >
+      <td className="px-5 py-4">
+        <div className="flex items-center gap-3">
+          {isSubcategory ? (
+            <span className="ml-8 text-gray-400">↳</span>
+          ) : (
+            <span className="text-[#183D3D]">
+              <FolderTree size={18} />
+            </span>
+          )}
+
+          <div>
+            <p className="font-medium text-gray-800">{category.name}</p>
+            <p className="text-xs text-gray-400">{category.slug}</p>
+          </div>
+        </div>
+      </td>
+
+      <td className="px-5 py-4 text-sm text-gray-600">
+        {isSubcategory
+          ? categories.find((item) => item.id === category.parent)?.name ||
+            "—"
+          : "Main category"}
+      </td>
+
+      <td className="px-5 py-4 text-sm text-gray-600">
+        {category.sortOrder}
+      </td>
+
+      <td className="px-5 py-4">
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-medium ${
+            category.status === "active"
+              ? "bg-green-50 text-green-700"
+              : "bg-gray-100 text-gray-500"
+          }`}
+        >
+          {category.status === "active" ? "Active" : "Archived"}
+        </span>
+      </td>
+
+      <td className="px-5 py-4">
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => openEditForm(category)}
+            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-[#183D3D]"
+            title="Edit category"
+          >
+            <Pencil size={16} />
+          </button>
+
+          {category.status === "active" ? (
+            <button
+              type="button"
+              onClick={() => handleArchive(category)}
+              className="rounded-lg p-2 text-gray-500 hover:bg-red-50 hover:text-red-600"
+              title="Archive category"
+            >
+              <X size={16} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => handleRestore(category)}
+              className="rounded-lg p-2 text-gray-500 hover:bg-green-50 hover:text-green-600"
+              title="Restore category"
+            >
+              <RotateCcw size={16} />
+            </button>
+          )}
+        </div>
+      </td>
+    </tr>
   );
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Page heading */}
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-gray-900">
-            Category Management
-          </h2>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Categories
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Organize your store categories and subcategories.
+            Organize your store products into categories and subcategories.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={showForm ? closeForm : openCreateForm}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#183D3D] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#245252]"
-        >
-          {showForm ? (
-            <>
-              <RotateCcw size={18} />
-              Back to Categories
-            </>
-          ) : (
-            <>
-              <Plus size={18} />
-              Add Category
-            </>
-          )}
-        </button>
+        {!isFormOpen && !showCreationChooser && (
+          <button
+            type="button"
+            onClick={openCreateChooser}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#183D3D] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#245252]"
+          >
+            <Plus size={18} />
+            Add Category
+          </button>
+        )}
       </div>
 
-      {/* Create / Edit form */}
-      {showForm && (
-        <div className="mb-6">
+      {/* Summary cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          {
+            label: "Total Categories",
+            value: categories.length,
+            icon: Tags,
+          },
+          {
+            label: "Main Categories",
+            value: mainCategoryCount,
+            icon: FolderTree,
+          },
+          {
+            label: "Subcategories",
+            value: subcategoryCount,
+            icon: FolderPlus,
+          },
+          {
+            label: "Active / Archived",
+            value: `${activeCount} / ${archivedCount}`,
+            icon: RotateCcw,
+          },
+        ].map((stat) => {
+          const Icon = stat.icon;
+
+          return (
+            <div
+              key={stat.label}
+              className="rounded-xl border border-gray-200 bg-white p-5"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">{stat.label}</p>
+                <Icon size={19} className="text-[#183D3D]" />
+              </div>
+              <p className="mt-3 text-2xl font-semibold text-gray-900">
+                {stat.value}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Creation mode chooser */}
+      {showCreationChooser && (
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                What would you like to create?
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Choose how this category should fit into your store hierarchy.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={closeForm}
+              className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => chooseCreationMode("main")}
+              className="rounded-xl border border-gray-200 p-5 text-left transition hover:border-[#183D3D] hover:bg-[#E8F0EF]"
+            >
+              <FolderTree size={24} className="text-[#183D3D]" />
+              <h3 className="mt-3 font-semibold text-gray-900">
+                Create Main Category
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Create a top-level category, such as Stationery. You can also
+                add its initial subcategories now.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => chooseCreationMode("subcategory")}
+              className="rounded-xl border border-gray-200 p-5 text-left transition hover:border-[#183D3D] hover:bg-[#E8F0EF]"
+            >
+              <FolderPlus size={24} className="text-[#183D3D]" />
+              <h3 className="mt-3 font-semibold text-gray-900">
+                Create Subcategory
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Add a more specific category under an existing active main
+                category, such as Books under Stationery.
+              </p>
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Category form */}
+      {isFormOpen && (
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <div className="mb-5">
+            <h2 className="text-lg font-semibold text-gray-900">
+              {editingCategory
+                ? "Edit Category"
+                : creationMode === "main"
+                  ? "Create Main Category"
+                  : "Create Subcategory"}
+            </h2>
+
+            <p className="mt-1 text-sm text-gray-500">
+              {creationMode === "main"
+                ? "Create a main category and optionally add its subcategories."
+                : creationMode === "subcategory"
+                  ? "Choose an active main category for this subcategory."
+                  : "Update the category details below."}
+            </p>
+          </div>
+
           <CategoryForm
             categories={categories}
             initialCategory={editingCategory}
             hasChildren={
               editingCategory
                 ? categories.some(
-                    (category) =>
-                      category.parent === editingCategory.id
+                    (category) => category.parent === editingCategory.id
                   )
                 : false
             }
+            forceMainCategory={creationMode === "main"}
+            requireParent={creationMode === "subcategory"}
             onSubmit={handleSaveCategory}
             onCancel={closeForm}
           />
-        </div>
+
+          {/* Optional initial subcategories */}
+          {creationMode === "main" && (
+            <div className="mt-6 border-t border-gray-100 pt-5">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div>
+                  <h3 className="font-semibold text-gray-900">
+                    Initial Subcategories
+                    <span className="ml-2 text-xs font-normal text-gray-400">
+                      Optional
+                    </span>
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Add subcategories now, or create them later.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addSubcategoryInput}
+                  className="inline-flex items-center gap-2 self-start rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  <Plus size={16} />
+                  Add Subcategory
+                </button>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {initialSubcategories.map((name, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(event) =>
+                        updateSubcategoryInput(index, event.target.value)
+                      }
+                      placeholder={`Subcategory name ${index + 1}`}
+                      maxLength={100}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#183D3D] focus:ring-2 focus:ring-[#183D3D]/10"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => removeSubcategoryInput(index)}
+                      disabled={initialSubcategories.length === 1}
+                      className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
+                      title="Remove subcategory"
+                    >
+                      <Trash2 size={17} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {childNamesError && (
+                <p className="mt-3 text-sm text-red-600">
+                  {childNamesError}
+                </p>
+              )}
+            </div>
+          )}
+        </section>
       )}
 
-      {/* Summary */}
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#E8F0EF] text-[#183D3D]">
-              <FolderTree size={20} />
+      {/* Filters and category table */}
+      {!isFormOpen && !showCreationChooser && (
+        <>
+          <section className="rounded-xl border border-gray-200 bg-white p-5">
+            <div className="flex flex-col gap-3 md:flex-row">
+              <div className="relative flex-1">
+                <Search
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Search categories by name or slug..."
+                  className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#183D3D]"
+                />
+              </div>
+
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-[#183D3D]"
+              >
+                <option value="all">All statuses</option>
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
+              </select>
+
+              {(searchTerm || statusFilter !== "all") && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Categories</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {categories.length}
-              </p>
+          </section>
+
+          <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <div className="flex items-center justify-between px-5 py-4">
+              <div>
+                <h2 className="font-semibold text-gray-900">
+                  Category List
+                </h2>
+                <p className="mt-1 text-xs text-gray-500">
+                  Main categories and their subcategories
+                </p>
+              </div>
+              <span className="text-sm text-gray-500">
+                {categoryGroups.length} main categories
+              </span>
             </div>
-          </div>
-        </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-sm text-gray-500">Active Categories</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">
-            {activeCount}
-          </p>
-        </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-187.5 text-left">
+                <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                  <tr>
+                    <th className="px-5 py-3 font-medium">Category</th>
+                    <th className="px-5 py-3 font-medium">Parent</th>
+                    <th className="px-5 py-3 font-medium">Sort Order</th>
+                    <th className="px-5 py-3 font-medium">Status</th>
+                    <th className="px-5 py-3 text-right font-medium">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
 
-        <div className="rounded-xl border border-gray-200 bg-white p-5">
-          <p className="text-sm text-gray-500">Archived Categories</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">
-            {archivedCount}
-          </p>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="mb-5 rounded-xl border border-gray-200 bg-white p-4">
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <div className="relative flex-1">
-            <Search
-              size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-            />
-
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search by category name or slug..."
-              className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-3 text-sm outline-none transition focus:border-[#183D3D] focus:ring-2 focus:ring-[#183D3D]/10"
-            />
-          </div>
-
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#183D3D]"
-          >
-            <option value="all">All statuses</option>
-            <option value="active">Active</option>
-            <option value="archived">Archived</option>
-          </select>
-
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
-          >
-            <RotateCcw size={16} />
-            Clear
-          </button>
-        </div>
-      </div>
-
-      {/* Hierarchical category table */}
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-          <div>
-            <h3 className="font-semibold text-gray-900">
-              Category Hierarchy
-            </h3>
-            <p className="mt-1 text-xs text-gray-500">
-              Showing {totalVisible} of {categories.length} categories
-            </p>
-          </div>
-        </div>
-
-        {categoryGroups.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <Tags size={30} className="mx-auto text-gray-300" />
-
-            <p className="mt-3 font-medium text-gray-700">
-              No categories found
-            </p>
-
-            <p className="mt-1 text-sm text-gray-500">
-              Try changing your search or filters.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[850px] text-left">
-              <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
-                <tr>
-                  <th className="px-5 py-3 font-semibold">Category</th>
-                  <th className="px-5 py-3 font-semibold">Slug</th>
-                  <th className="px-5 py-3 font-semibold">Sort Order</th>
-                  <th className="px-5 py-3 font-semibold">Condition</th>
-                  <th className="px-5 py-3 font-semibold">Status</th>
-                  <th className="px-5 py-3 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-gray-100">
-                {categoryGroups.map(({ category, children }) => {
-                  const expanded =
-                    searchTerm.trim() !== "" ||
-                    expandedCategories.has(category.id);
-
-                  return (
-                    <>
-                      {/* Main category */}
-                      <tr key={category.id} className="hover:bg-gray-50">
+                <tbody>
+                  {categoryGroups.map((mainCategory) => (
+                    <Fragment key={mainCategory.id}>
+                      <tr className="border-t border-gray-100 bg-gray-50/60">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-2">
-                            {children.length > 0 ? (
-                              <button
-                                type="button"
-                                onClick={() => toggleExpanded(category.id)}
-                                className="rounded p-1 text-gray-500 hover:bg-gray-100"
-                                aria-label={
-                                  expanded
-                                    ? "Collapse subcategories"
-                                    : "Expand subcategories"
-                                }
-                              >
-                                {expanded ? (
-                                  <ChevronDown size={17} />
-                                ) : (
-                                  <ChevronRight size={17} />
-                                )}
-                              </button>
-                            ) : (
-                              <span className="w-[25px]" />
-                            )}
-
-                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E8F0EF] text-[#183D3D]">
-                              <FolderTree size={17} />
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                toggleExpanded(mainCategory.id)
+                              }
+                              className="rounded p-1 text-gray-500 hover:bg-gray-200"
+                              aria-label="Toggle subcategories"
+                            >
+                              {expandedCategories.has(mainCategory.id) ? (
+                                <ChevronDown size={17} />
+                              ) : (
+                                <ChevronRight size={17} />
+                              )}
+                            </button>
 
                             <div>
-                              <p className="text-sm font-semibold text-gray-800">
-                                {category.name}
+                              <p className="font-semibold text-gray-800">
+                                {mainCategory.name}
                               </p>
                               <p className="text-xs text-gray-400">
-                                Main category
+                                {mainCategory.slug}
                               </p>
                             </div>
                           </div>
                         </td>
 
                         <td className="px-5 py-4 text-sm text-gray-500">
-                          {category.slug}
+                          Main category
                         </td>
 
                         <td className="px-5 py-4 text-sm text-gray-600">
-                          {category.sortOrder}
-                        </td>
-
-                        <td className="px-5 py-4 text-sm text-gray-600">
-                          {category.allowCondition ? "Allowed" : "Not allowed"}
+                          {mainCategory.sortOrder}
                         </td>
 
                         <td className="px-5 py-4">
                           <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                              category.status === "active"
+                            className={`rounded-full px-3 py-1 text-xs font-medium ${
+                              mainCategory.status === "active"
                                 ? "bg-green-50 text-green-700"
-                                : "bg-orange-50 text-orange-700"
+                                : "bg-gray-100 text-gray-500"
                             }`}
                           >
-                            {category.status}
+                            {mainCategory.status === "active"
+                              ? "Active"
+                              : "Archived"}
                           </span>
                         </td>
 
                         <td className="px-5 py-4 text-right">
                           <button
                             type="button"
-                            onClick={() => openEditForm(category)}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                            onClick={() => openEditForm(mainCategory)}
+                            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-[#183D3D]"
+                            title="Edit category"
                           >
-                            <Pencil size={14} />
-                            Edit
+                            <Pencil size={16} />
                           </button>
+
+                          {mainCategory.status === "active" ? (
+                            <button
+                              type="button"
+                              onClick={() => handleArchive(mainCategory)}
+                              className="rounded-lg p-2 text-gray-500 hover:bg-red-50 hover:text-red-600"
+                              title="Archive category"
+                            >
+                              <X size={16} />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleRestore(mainCategory)}
+                              className="rounded-lg p-2 text-gray-500 hover:bg-green-50 hover:text-green-600"
+                              title="Restore category"
+                            >
+                              <RotateCcw size={16} />
+                            </button>
+                          )}
                         </td>
                       </tr>
 
-                      {/* Subcategories */}
-                      {expanded &&
-                        children.map((child) => (
-                          <tr
-                            key={child.id}
-                            className="bg-gray-50/60 hover:bg-gray-100/70"
-                          >
-                            <td className="px-5 py-4">
-                              <div className="flex items-center gap-3 pl-10">
-                                <span className="text-gray-400">↳</span>
+                      {expandedCategories.has(mainCategory.id) &&
+                        mainCategory.children.map((child) =>
+                          renderCategoryRow(child, true)
+                        )}
+                    </Fragment>
+                  ))},
 
-                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
-                                  <Tags size={16} />
-                                </div>
+                  {categoryGroups.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        className="px-5 py-12 text-center text-sm text-gray-500"
+                      >
+                        No categories found. Try changing your search or
+                        filters.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-                                <div>
-                                  <p className="text-sm font-medium text-gray-700">
-                                    {child.name}
-                                  </p>
-                                  <p className="text-xs text-gray-400">
-                                    Subcategory
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-
-                            <td className="px-5 py-4 text-sm text-gray-500">
-                              {child.slug}
-                            </td>
-
-                            <td className="px-5 py-4 text-sm text-gray-600">
-                              {child.sortOrder}
-                            </td>
-
-                            <td className="px-5 py-4 text-sm text-gray-600">
-                              {child.allowCondition ? "Allowed" : "Not allowed"}
-                            </td>
-
-                            <td className="px-5 py-4">
-                              <span
-                                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                                  child.status === "active"
-                                    ? "bg-green-50 text-green-700"
-                                    : "bg-orange-50 text-orange-700"
-                                }`}
-                              >
-                                {child.status}
-                              </span>
-                            </td>
-
-                            <td className="px-5 py-4 text-right">
-                              <button
-                                type="button"
-                                onClick={() => openEditForm(child)}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-white"
-                              >
-                                <Pencil size={14} />
-                                Edit
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                    </>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <p className="mt-4 text-xs text-gray-400">
-        Preview data only. Categories are not connected to the backend yet.
-      </p>
+          <p className="text-xs text-gray-400">
+            Preview data only. Category changes are currently stored in
+            frontend state and will reset when the page reloads.
+          </p>
+        </>
+      )}
     </div>
   );
-}
+};
+
+export default AdminCategories;

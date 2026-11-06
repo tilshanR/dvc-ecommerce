@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Package,
@@ -13,8 +12,7 @@ import {
   Archive,
 } from "lucide-react";
 
-import AdminSidebar from "../components/AdminSidebar";
-import AdminHeader from "../components/AdminHeader";
+import AdminLayout from "../components/AdminLayout";
 import StatCard from "../components/StatCard";
 import PageHeader from "../components/PageHeader";
 
@@ -73,7 +71,6 @@ const recentActivities = [
 ];
 
 export default function AdminDashboard() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState("dashboard");
 
   const handleNavigation = (section) => {
@@ -81,176 +78,168 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 lg:flex">
-      {/* Sidebar */}
-      <AdminSidebar
-        activeItem={selectedSection}
-        onNavigate={handleNavigation}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+    <AdminLayout
+      activePage={selectedSection}
+      onNavigate={handleNavigation}
+    >
+      {/* Page heading */}
+      <PageHeader
+        title="Dashboard Overview"
+        description="Welcome to your DVC Store administration panel."
       />
 
-      {/* Main content */}
-      <div className="min-w-0 flex-1">
-        <AdminHeader
-          activePage="dashboard"
-          onMenuClick={() => setSidebarOpen(true)}
-        />
+      {/* Temporary navigation notice */}
+      {selectedSection !== "dashboard" && (
+        <div className="mb-6 rounded-lg border border-teal-200 bg-teal-50 p-4">
+          <p className="text-sm text-teal-800">
+            You selected{" "}
+            <span className="font-semibold capitalize">
+              {selectedSection}
+            </span>
+            . This section will be available soon.
+          </p>
+        </div>
+      )}
 
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          {/* Page heading */}
-          <PageHeader
-            title="Dashboard Overview"
-            description="Welcome to your DVC Store administration panel."
-          />
+      {/* Statistics */}
+      <section className="mb-8">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Store Overview
+          </h2>
+          <p className="mt-1 text-sm text-gray-500">
+            A quick summary of your store performance.
+          </p>
+        </div>
 
-          {/* Temporary navigation notice */}
-          {selectedSection !== "dashboard" && (
-            <div
-              role="status"
-              className="mb-6 rounded-lg border border-[#C8DAD6] bg-[#E8F0EF] p-4 text-sm text-[#183D3D]"
-            >
-              <p className="font-semibold">
-                {selectedSection === "products" ? "Products" : "Categories"}{" "}
-                management is coming in the next development stage.
-              </p>
-              <p className="mt-1">
-                Navigation will be connected when those pages are implemented.
-              </p>
-            </div>
-          )}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {stats.map((stat) => (
+            <StatCard
+              key={stat.title}
+              title={stat.title}
+              value={stat.value}
+              icon={stat.icon}
+              description={stat.description}
+            />
+          ))}
+        </div>
+      </section>
 
-          {/* Statistics */}
-          <section aria-label="Store statistics">
-            <div className="mb-4">
+      {/* Recent activity and quick actions */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        {/* Recent activity */}
+        <section className="rounded-xl border border-gray-200 bg-white p-5 xl:col-span-2">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
               <h2 className="text-lg font-semibold text-gray-900">
-                Store Summary
+                Recent Activity
               </h2>
               <p className="mt-1 text-sm text-gray-500">
-                An overview of your products and categories.
+                Latest changes made to your store.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-              {stats.map((stat) => (
-                <StatCard key={stat.title} {...stat} />
-              ))}
-            </div>
-          </section>
-
-          {/* Dashboard lower section */}
-          <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-3">
-            {/* Recent activity */}
-            <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm xl:col-span-2">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    Recent Activity
-                  </h2>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Latest changes in your store.
-                  </p>
-                </div>
-
-                <Clock size={20} className="text-gray-400" />
-              </div>
-
-              <div className="mt-5 divide-y divide-gray-100">
-                {recentActivities.map((activity) => {
-                  const Icon = activity.icon;
-
-                  return (
-                    <div
-                      key={activity.id}
-                      className="flex items-center gap-3 py-4 first:pt-0 last:pb-0"
-                    >
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${activity.color}`}
-                      >
-                        <Icon size={19} />
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-gray-800">
-                          {activity.title}
-                        </p>
-                        <p className="mt-1 truncate text-sm text-gray-500">
-                          {activity.detail}
-                        </p>
-                      </div>
-
-                      <span className="shrink-0 text-xs text-gray-400">
-                        {activity.time}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* Quick actions */}
-            <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Quick Actions
-              </h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Shortcuts for common tasks.
-              </p>
-
-              <div className="mt-5 space-y-3">
-                <button
-                  type="button"
-                  onClick={() => handleNavigation("products")}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-200 p-3 text-left transition hover:border-[#183D3D] hover:bg-[#F5F8F7]"
-                >
-                  <span className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E8F0EF] text-[#183D3D]">
-                      <Plus size={19} />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-semibold text-gray-800">
-                        Add Product
-                      </span>
-                      <span className="mt-1 block text-xs text-gray-500">
-                        Create a new product
-                      </span>
-                    </span>
-                  </span>
-
-                  <ArrowRight size={17} className="text-gray-400" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleNavigation("categories")}
-                  className="flex w-full items-center justify-between gap-3 rounded-lg border border-gray-200 p-3 text-left transition hover:border-[#183D3D] hover:bg-[#F5F8F7]"
-                >
-                  <span className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E8F0EF] text-[#183D3D]">
-                      <Tags size={19} />
-                    </span>
-                    <span>
-                      <span className="block text-sm font-semibold text-gray-800">
-                        Add Category
-                      </span>
-                      <span className="mt-1 block text-xs text-gray-500">
-                        Organize your products
-                      </span>
-                    </span>
-                  </span>
-
-                  <ArrowRight size={17} className="text-gray-400" />
-                </button>
-              </div>
-            </section>
+            <Clock className="h-5 w-5 text-gray-400" />
           </div>
 
-          {/* Footer note */}
-          <p className="mt-8 text-center text-xs text-gray-400">
-            DVC Store Admin Panel · Dashboard preview
-          </p>
-        </main>
+          <div className="divide-y divide-gray-100">
+            {recentActivities.map((activity) => {
+              const ActivityIcon = activity.icon;
+
+              return (
+                <div
+                  key={activity.id}
+                  className="flex items-center gap-4 py-4 first:pt-0 last:pb-0"
+                >
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${activity.color}`}
+                  >
+                    <ActivityIcon className="h-5 w-5" />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900">
+                      {activity.title}
+                    </p>
+                    <p className="mt-1 truncate text-sm text-gray-500">
+                      {activity.detail}
+                    </p>
+                  </div>
+
+                  <span className="shrink-0 text-xs text-gray-400">
+                    {activity.time}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Quick actions */}
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <div className="mb-5">
+            <h2 className="text-lg font-semibold text-gray-900">
+              Quick Actions
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Common store management tasks.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => handleNavigation("products")}
+              className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-4 text-left transition hover:border-teal-300 hover:bg-teal-50"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-50 text-teal-800">
+                  <Plus className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    Add Product
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Create a new product
+                  </p>
+                </div>
+              </div>
+
+              <ArrowRight className="h-4 w-4 text-gray-400" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleNavigation("categories")}
+              className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-4 text-left transition hover:border-teal-300 hover:bg-teal-50"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-50 text-teal-800">
+                  <Tags className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    Manage Categories
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Organize your catalogue
+                  </p>
+                </div>
+              </div>
+
+              <ArrowRight className="h-4 w-4 text-gray-400" />
+            </button>
+          </div>
+        </section>
       </div>
-    </div>
+
+      {/* Footer note */}
+      <div className="mt-8 border-t border-gray-200 pt-5">
+        <p className="text-center text-xs text-gray-400">
+          DVC Store Admin Panel · Dashboard preview data
+        </p>
+      </div>
+    </AdminLayout>
   );
 }

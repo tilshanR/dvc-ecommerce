@@ -1,4 +1,4 @@
-import { useState } from "react";
+
 import {
   Package,
   Tags,
@@ -12,7 +12,8 @@ import {
   Archive,
 } from "lucide-react";
 
-import AdminLayout from "../components/AdminLayout";
+import { useNavigate } from "react-router-dom";
+
 import StatCard from "../components/StatCard";
 import PageHeader from "../components/PageHeader";
 
@@ -71,35 +72,15 @@ const recentActivities = [
 ];
 
 export default function AdminDashboard() {
-  const [selectedSection, setSelectedSection] = useState("dashboard");
-
-  const handleNavigation = (section) => {
-    setSelectedSection(section);
-  };
+  const navigate = useNavigate();
 
   return (
-    <AdminLayout
-      activePage={selectedSection}
-      onNavigate={handleNavigation}
-    >
+    <>
       {/* Page heading */}
       <PageHeader
         title="Dashboard Overview"
         description="Welcome to your DVC Store administration panel."
       />
-
-      {/* Temporary navigation notice */}
-      {selectedSection !== "dashboard" && (
-        <div className="mb-6 rounded-lg border border-teal-200 bg-teal-50 p-4">
-          <p className="text-sm text-teal-800">
-            You selected{" "}
-            <span className="font-semibold capitalize">
-              {selectedSection}
-            </span>
-            . This section will be available soon.
-          </p>
-        </div>
-      )}
 
       {/* Statistics */}
       <section className="mb-8">
@@ -189,7 +170,7 @@ export default function AdminDashboard() {
           <div className="space-y-3">
             <button
               type="button"
-              onClick={() => handleNavigation("products")}
+              onClick={() => navigate("/admin/products")}
               className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-4 text-left transition hover:border-teal-300 hover:bg-teal-50"
             >
               <div className="flex items-center gap-3">
@@ -211,7 +192,7 @@ export default function AdminDashboard() {
 
             <button
               type="button"
-              onClick={() => handleNavigation("categories")}
+              onClick={() => navigate("/admin/categories")}
               className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-4 text-left transition hover:border-teal-300 hover:bg-teal-50"
             >
               <div className="flex items-center gap-3">
@@ -240,6 +221,6 @@ export default function AdminDashboard() {
           DVC Store Admin Panel · Dashboard preview data
         </p>
       </div>
-    </AdminLayout>
+    </>
   );
 }

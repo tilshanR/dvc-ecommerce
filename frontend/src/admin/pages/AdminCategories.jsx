@@ -1,7 +1,13 @@
-
 import { useMemo, useState } from "react";
-import { Search, Tags, FolderTree, RotateCcw } from "lucide-react";
+import {
+  Search,
+  Tags,
+  FolderTree,
+  RotateCcw,
+  Plus,
+} from "lucide-react";
 
+import CategoryForm from "../features/categories/CategoryForm";
 const initialCategories = [
   {
     id: "1",
@@ -12,6 +18,7 @@ const initialCategories = [
     sortOrder: 1,
     allowCondition: true,
     status: "active",
+    attributes: [],
   },
   {
     id: "2",
@@ -22,6 +29,7 @@ const initialCategories = [
     sortOrder: 1,
     allowCondition: true,
     status: "active",
+    attributes: [],
   },
   {
     id: "3",
@@ -32,6 +40,7 @@ const initialCategories = [
     sortOrder: 2,
     allowCondition: true,
     status: "active",
+    attributes: [],
   },
   {
     id: "4",
@@ -42,6 +51,7 @@ const initialCategories = [
     sortOrder: 2,
     allowCondition: false,
     status: "active",
+    attributes: [],
   },
   {
     id: "5",
@@ -52,13 +62,17 @@ const initialCategories = [
     sortOrder: 1,
     allowCondition: false,
     status: "archived",
+    attributes: [],
   },
 ];
 
 export default function AdminCategories() {
-  const [categories] = useState(initialCategories);
+  const [categories, setCategories] = useState(initialCategories);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const [showForm, setShowForm] = useState(false);
 
   const filteredCategories = useMemo(() => {
     return categories
@@ -86,7 +100,9 @@ export default function AdminCategories() {
   const getParentName = (parentId) => {
     if (!parentId) return "—";
 
-    return categories.find((category) => category.id === parentId)?.name || "—";
+    return (
+      categories.find((category) => category.id === parentId)?.name || "—"
+    );
   };
 
   const clearFilters = () => {
@@ -94,8 +110,30 @@ export default function AdminCategories() {
     setStatusFilter("all");
   };
 
+  // Create a category using mock data
+  const handleCreateCategory = (categoryData) => {
+    const slugExists = categories.some(
+      (category) =>
+        category.slug.toLowerCase() === categoryData.slug.toLowerCase()
+    );
+
+    if (slugExists) {
+      window.alert("A category with this slug already exists.");
+      return;
+    }
+
+    const newCategory = {
+      ...categoryData,
+      id: Date.now().toString(),
+    };
+
+    setCategories((previous) => [...previous, newCategory]);
+    setShowForm(false);
+  };
+
   return (
     <div>
+      {/* Page heading */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-gray-900">
@@ -108,14 +146,33 @@ export default function AdminCategories() {
 
         <button
           type="button"
-          disabled
-          title="Category creation will be added in Section 2B"
-          className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-[#183D3D] px-4 py-2.5 text-sm font-semibold text-white opacity-60"
+          onClick={() => setShowForm((previous) => !previous)}
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#183D3D] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#245252]"
         >
-          <Tags size={18} />
-          Add Category
+          {showForm ? (
+            <>
+              <RotateCcw size={18} />
+              Back to Categories
+            </>
+          ) : (
+            <>
+              <Plus size={18} />
+              Add Category
+            </>
+          )}
         </button>
       </div>
+
+      {/* Category creation form */}
+      {showForm && (
+        <div className="mb-6">
+          <CategoryForm
+            categories={categories}
+            onSubmit={handleCreateCategory}
+            onCancel={() => setShowForm(false)}
+          />
+        </div>
+      )}
 
       {/* Summary */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -156,6 +213,7 @@ export default function AdminCategories() {
               size={18}
               className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
             />
+
             <input
               type="text"
               value={searchTerm}
@@ -200,16 +258,18 @@ export default function AdminCategories() {
         {filteredCategories.length === 0 ? (
           <div className="px-5 py-12 text-center">
             <Tags size={30} className="mx-auto text-gray-300" />
+
             <p className="mt-3 font-medium text-gray-700">
               No categories found
             </p>
+
             <p className="mt-1 text-sm text-gray-500">
               Try changing your search or filters.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[850px] text-left">
+            <table className="w-full min-w-212.5 text-left">
               <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Category</th>
@@ -223,7 +283,10 @@ export default function AdminCategories() {
 
               <tbody className="divide-y divide-gray-100">
                 {filteredCategories.map((category) => (
-                  <tr key={category.id} className="transition hover:bg-gray-50">
+                  <tr
+                    key={category.id}
+                    className="transition hover:bg-gray-50"
+                  >
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div
@@ -235,13 +298,17 @@ export default function AdminCategories() {
                         >
                           <Tags size={17} />
                         </div>
+
                         <div>
                           <p className="text-sm font-semibold text-gray-800">
                             {category.parent ? "↳ " : ""}
                             {category.name}
                           </p>
+
                           <p className="mt-0.5 text-xs text-gray-400">
-                            {category.parent ? "Subcategory" : "Main category"}
+                            {category.parent
+                              ? "Subcategory"
+                              : "Main category"}
                           </p>
                         </div>
                       </div>
@@ -267,7 +334,9 @@ export default function AdminCategories() {
                             : "bg-gray-100 text-gray-600"
                         }`}
                       >
-                        {category.allowCondition ? "Allowed" : "Not allowed"}
+                        {category.allowCondition
+                          ? "Allowed"
+                          : "Not allowed"}
                       </span>
                     </td>
 
@@ -279,7 +348,9 @@ export default function AdminCategories() {
                             : "bg-orange-50 text-orange-700"
                         }`}
                       >
-                        {category.status === "active" ? "Active" : "Archived"}
+                        {category.status === "active"
+                          ? "Active"
+                          : "Archived"}
                       </span>
                     </td>
                   </tr>

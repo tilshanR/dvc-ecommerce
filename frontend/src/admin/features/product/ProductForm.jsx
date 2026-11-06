@@ -116,14 +116,78 @@ export default function ProductForm({
 
     return "";
   };
+  const validateImageAndInventory = () => {
+  const { onHand, reserved } = formData.inventory;
+
+  // Validate on-hand quantity
+  if (
+    onHand === "" ||
+    !Number.isInteger(Number(onHand)) ||
+    Number(onHand) < 0
+  ) {
+    return "On-hand quantity must be a non-negative whole number.";
+  }
+
+  // Validate reserved quantity
+  if (
+    reserved === "" ||
+    !Number.isInteger(Number(reserved)) ||
+    Number(reserved) < 0
+  ) {
+    return "Reserved quantity must be a non-negative whole number.";
+  }
+
+  if (Number(reserved) > Number(onHand)) {
+    return "Reserved quantity cannot exceed on-hand quantity.";
+  }
+
+  // Validate images
+  const images = formData.images || [];
+
+  if (images.length > 0) {
+    if (images.length !== 1) {
+      return "Only one product image is supported currently.";
+    }
+
+    const imageUrl = images[0]?.url?.trim();
+
+    if (!imageUrl) {
+      return "Please enter a valid image URL.";
+    }
+
+    try {
+      const url = new URL(imageUrl);
+
+      if (!["http:", "https:"].includes(url.protocol)) {
+        return "Image URL must use HTTP or HTTPS.";
+      }
+    } catch {
+      return "Please enter a valid image URL.";
+    }
+
+    if (!images[0].isPrimary) {
+      return "The product image must be marked as primary.";
+    }
+  }
+
+  return "";
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
     const validationError = validateForm();
 
     if (validationError) {
       setError(validationError);
+      return;
+    }
+
+    const imageInventoryError = validateImageAndInventory();
+
+    if (imageInventoryError) {
+      setError(imageInventoryError);
       return;
     }
 

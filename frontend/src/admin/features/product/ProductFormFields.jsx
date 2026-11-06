@@ -119,18 +119,6 @@ export default function ProductFormFields({
           </select>
         </div>
 
-        {/* <div>
-          <label className={labelClass}>Condition</label>
-          <select
-            className={inputClass}
-            value={formData.condition || ""}
-            onChange={(e) => onChange("condition", e.target.value || null)}
-          >
-            <option value="">Not specified</option>
-            <option value="new">New</option>
-            <option value="used">Used</option>
-          </select>
-        </div> */}
         {selectedCategory?.allowCondition && (
           <div>
             <label className={labelClass}>Condition</label>
@@ -165,7 +153,7 @@ export default function ProductFormFields({
             type="number"
             min="0"
             step="1"
-placeholder="e.g. 3000"
+            placeholder="e.g. 3000"
             className={inputClass}
             value={formData.price}
             onChange={(e) => onChange("price", e.target.value)}
@@ -178,8 +166,8 @@ placeholder="e.g. 3000"
           <input
             type="number"
             min="0"
-           step="1"
-placeholder="e.g. 2000"
+            step="1"
+            placeholder="e.g. 2000"
             className={inputClass}
             value={formData.originalPrice}
             onChange={(e) => onChange("originalPrice", e.target.value)}
@@ -214,7 +202,7 @@ placeholder="e.g. 2000"
             type="url"
             className={inputClass}
             value={formData.images[0]?.url || ""}
-            onChange={(e) => updateImage(e.target.value)}
+            onChange={(e) => updateImage(e.target.value.trim())}
             placeholder="https://example.com/product.jpg"
           />
           <p className="mt-1 text-xs text-gray-500">

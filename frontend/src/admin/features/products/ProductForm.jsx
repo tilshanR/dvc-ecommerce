@@ -11,8 +11,8 @@ const initialFormData = {
   price: "",
   originalPrice: "",
   inventory: {
-    onHand: 0,
-    reserved: 0,
+    onHand: "",
+    reserved:"",
   },
   condition: null,
   attributes: {},

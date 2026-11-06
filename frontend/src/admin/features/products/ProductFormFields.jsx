@@ -176,21 +176,49 @@ export default function ProductFormFields({
       </section>
 
       {/* Inventory */}
-      <section className="space-y-3">
-        <h3 className="font-semibold text-gray-800">Inventory</h3>
+{/* Inventory */}
+<section className="space-y-3">
+  <h3 className="font-semibold text-gray-800">Inventory</h3>
 
-        <div>
-          <label className={labelClass}>On-hand Quantity</label>
-          <input
-            type="number"
-            min="0"
-            step="1"
-            className={inputClass}
-            value={formData.inventory.onHand}
-            onChange={(e) => updateInventory("onHand", e.target.value)}
-          />
-        </div>
-      </section>
+  <div>
+    <label className={labelClass}>On-hand Quantity *</label>
+    <input
+      type="number"
+      min="0"
+      step="1"
+      className={inputClass}
+      value={formData.inventory.onHand}
+      onChange={(e) => updateInventory("onHand", e.target.value)}
+      required
+    /><p className="mt-1 text-xs text-gray-500">
+  Leave empty to use 0.
+</p>
+  </div>
+
+  <div>
+    <label className={labelClass}>Reserved Quantity</label>
+    <input
+      type="number"
+      min="0"
+      max={formData.inventory.onHand}
+      step="1"
+      className={inputClass}
+      value={formData.inventory.reserved}
+      onChange={(e) => updateInventory("reserved", e.target.value)}
+    />
+    <p className="mt-1 text-xs text-gray-500">
+        Leave empty to use 0. Reserved stock cannot exceed the on-hand quantity.
+    </p>
+  </div>
+
+  <div className="rounded-lg bg-[#E8F0EF] p-3">
+    <p className="text-sm text-gray-600">Available Stock</p>
+    <p className="text-lg font-semibold text-[#183D3D]">
+      {Number(formData.inventory.onHand || 0) -
+        Number(formData.inventory.reserved || 0)}
+    </p>
+  </div>
+</section>
 
       {/* Image */}
       <section className="space-y-3">

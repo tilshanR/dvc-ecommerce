@@ -4,9 +4,8 @@ import { Plus, Package, Archive, FileText } from "lucide-react";
 
 
 import ProductFilters from "../features/products/ProductFilters";
-import ProductForm from "../features/products/ProductForm";
 import ProductTable from "../features/products/ProductTable";
-
+import ProductForm from "../features/products/ProductForm";
 // Temporary mock categories
 const mockCategories = [
   { _id: "mock-smartphones", name: "Smartphones" },

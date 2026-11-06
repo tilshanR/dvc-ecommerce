@@ -9,12 +9,12 @@ const slugify = (value) =>
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
 
-const getCategoryId = (category) =>
-  category?._id ?? category?.id ?? "";
+const getCategoryId = (category) => category?._id ?? category?.id ?? "";
 
 export default function CategoryForm({
   categories = [],
   initialCategory = null,
+  hasChildren = false,
   onSubmit = () => {},
   onCancel = () => {},
 }) {
@@ -25,15 +25,12 @@ export default function CategoryForm({
     parent:
       typeof initialCategory?.parent === "object"
         ? getCategoryId(initialCategory.parent)
-        : initialCategory?.parent ?? "",
+        : (initialCategory?.parent ?? ""),
     sortOrder: initialCategory?.sortOrder ?? 0,
     allowCondition: initialCategory?.allowCondition ?? false,
-    status: initialCategory?.status ?? "active",
   }));
 
-  const [slugEdited, setSlugEdited] = useState(
-    Boolean(initialCategory?.slug)
-  );
+  const [slugEdited, setSlugEdited] = useState(Boolean(initialCategory?.slug));
 
   const [error, setError] = useState("");
 
@@ -67,6 +64,12 @@ export default function CategoryForm({
       setError("Category slug is required.");
       return;
     }
+    const sortOrder = Number(formData.sortOrder);
+
+    if (!Number.isInteger(sortOrder) || sortOrder < 0) {
+      setError("Sort order must be a whole number greater than or equal to 0.");
+      return;
+    }
 
     const payload = {
       ...formData,
@@ -74,7 +77,7 @@ export default function CategoryForm({
       slug: formData.slug.trim(),
       description: formData.description.trim(),
       parent: formData.parent || null,
-      sortOrder: Number(formData.sortOrder),
+      sortOrder,
       attributes: initialCategory?.attributes ?? [],
     };
 
@@ -85,9 +88,11 @@ export default function CategoryForm({
     const categoryId = String(getCategoryId(category));
     const currentId = String(getCategoryId(initialCategory));
 
+    const isMainCategory =
+      category.parent === null || category.parent === undefined;
+
     return (
-      category.status !== "archived" &&
-      categoryId !== currentId
+      category.status === "active" && isMainCategory && categoryId !== currentId
     );
   });
 
@@ -142,9 +147,7 @@ export default function CategoryForm({
               name="name"
               type="text"
               value={formData.name}
-              onChange={(event) =>
-                handleNameChange(event.target.value)
-              }
+              onChange={(event) => handleNameChange(event.target.value)}
               placeholder="e.g. Mobile Phones"
               className={inputClass}
               required
@@ -187,7 +190,8 @@ export default function CategoryForm({
               name="parent"
               value={formData.parent}
               onChange={handleChange}
-              className={inputClass}
+              disabled={hasChildren}
+              className={`${inputClass} disabled:cursor-not-allowed disabled:bg-gray-100`}
             >
               <option value="">None (Main Category)</option>
 
@@ -200,6 +204,12 @@ export default function CategoryForm({
                 </option>
               ))}
             </select>
+
+            {hasChildren && (
+              <p className="mt-1 text-xs text-gray-500">
+                This category has subcategories and cannot become a subcategory.
+              </p>
+            )}
 
             <p className="mt-1 text-xs text-gray-400">
               Select a parent to create a subcategory.
@@ -217,6 +227,7 @@ export default function CategoryForm({
               name="sortOrder"
               type="number"
               min="0"
+              step="1"
               value={formData.sortOrder}
               onChange={handleChange}
               className={inputClass}
@@ -257,29 +268,11 @@ export default function CategoryForm({
                 Allow product condition
               </span>
               <span className="mt-1 block text-xs text-gray-500">
-                Enable condition options such as New and Used for
-                products in this category.
+                Enable condition options such as New and Used for products in
+                this category.
               </span>
             </span>
           </label>
-        </div>
-
-        {/* Status */}
-        <div>
-          <label htmlFor="status" className={labelClass}>
-            Status
-          </label>
-
-          <select
-            id="status"
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className={inputClass}
-          >
-            <option value="active">Active</option>
-            <option value="archived">Archived</option>
-          </select>
         </div>
       </div>
 

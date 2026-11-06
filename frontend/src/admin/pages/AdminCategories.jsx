@@ -5,9 +5,13 @@ import {
   FolderTree,
   RotateCcw,
   Plus,
+  ChevronDown,
+  ChevronRight,
+  Pencil,
 } from "lucide-react";
 
 import CategoryForm from "../features/categories/CategoryForm";
+
 const initialCategories = [
   {
     id: "1",
@@ -73,20 +77,63 @@ export default function AdminCategories() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const [showForm, setShowForm] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
 
-  const filteredCategories = useMemo(() => {
-    return categories
-      .filter((category) => {
-        const matchesSearch =
-          category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          category.slug.toLowerCase().includes(searchTerm.toLowerCase());
+  const [expandedCategories, setExpandedCategories] = useState(
+    () => new Set(["1", "4"])
+  );
 
-        const matchesStatus =
-          statusFilter === "all" || category.status === statusFilter;
+  // Sort categories by their display order.
+  const sortCategories = (items) =>
+    [...items].sort(
+      (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)
+    );
 
-        return matchesSearch && matchesStatus;
+  // Build the main-category groups from the flat category collection.
+  const categoryGroups = useMemo(() => {
+    const mainCategories = sortCategories(
+      categories.filter((category) => !category.parent)
+    );
+
+    const matchesSearch = (category) => {
+      const search = searchTerm.toLowerCase();
+
+      return (
+        category.name.toLowerCase().includes(search) ||
+        category.slug.toLowerCase().includes(search)
+      );
+    };
+
+    const matchesStatus = (category) =>
+      statusFilter === "all" || category.status === statusFilter;
+
+    return mainCategories
+      .map((mainCategory) => {
+        const children = sortCategories(
+          categories.filter(
+            (category) => category.parent === mainCategory.id
+          )
+        );
+
+        const matchingChildren = children.filter(
+          (child) => matchesStatus(child) && matchesSearch(child)
+        );
+
+        const mainMatches =
+          matchesStatus(mainCategory) && matchesSearch(mainCategory);
+
+        if (!mainMatches && matchingChildren.length === 0) {
+          return null;
+        }
+
+        return {
+          category: mainCategory,
+          children: mainMatches
+            ? children.filter(matchesStatus)
+            : matchingChildren,
+        };
       })
-      .sort((a, b) => a.sortOrder - b.sortOrder);
+      .filter(Boolean);
   }, [categories, searchTerm, statusFilter]);
 
   const activeCount = categories.filter(
@@ -97,23 +144,42 @@ export default function AdminCategories() {
     (category) => category.status === "archived"
   ).length;
 
-  const getParentName = (parentId) => {
-    if (!parentId) return "—";
+  const toggleExpanded = (categoryId) => {
+    setExpandedCategories((previous) => {
+      const next = new Set(previous);
 
-    return (
-      categories.find((category) => category.id === parentId)?.name || "—"
-    );
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+
+      return next;
+    });
   };
 
-  const clearFilters = () => {
-    setSearchTerm("");
-    setStatusFilter("all");
+  const openCreateForm = () => {
+    setEditingCategory(null);
+    setShowForm(true);
   };
 
-  // Create a category using mock data
-  const handleCreateCategory = (categoryData) => {
+  const openEditForm = (category) => {
+    setEditingCategory(category);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingCategory(null);
+  };
+
+  // Create or update a category using mock data.
+  const handleSaveCategory = (categoryData) => {
+    const editingId = editingCategory?.id;
+
     const slugExists = categories.some(
       (category) =>
+        category.id !== editingId &&
         category.slug.toLowerCase() === categoryData.slug.toLowerCase()
     );
 
@@ -122,14 +188,36 @@ export default function AdminCategories() {
       return;
     }
 
-    const newCategory = {
-      ...categoryData,
-      id: Date.now().toString(),
-    };
+    if (editingCategory) {
+      setCategories((previous) =>
+        previous.map((category) =>
+          category.id === editingId
+            ? { ...category, ...categoryData }
+            : category
+        )
+      );
+    } else {
+      const newCategory = {
+        ...categoryData,
+        id: Date.now().toString(),
+        status: "active",
+      };
 
-    setCategories((previous) => [...previous, newCategory]);
-    setShowForm(false);
+      setCategories((previous) => [...previous, newCategory]);
+    }
+
+    closeForm();
   };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+  };
+
+  const totalVisible = categoryGroups.reduce(
+    (total, group) => total + 1 + group.children.length,
+    0
+  );
 
   return (
     <div>
@@ -146,7 +234,7 @@ export default function AdminCategories() {
 
         <button
           type="button"
-          onClick={() => setShowForm((previous) => !previous)}
+          onClick={showForm ? closeForm : openCreateForm}
           className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#183D3D] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#245252]"
         >
           {showForm ? (
@@ -163,13 +251,22 @@ export default function AdminCategories() {
         </button>
       </div>
 
-      {/* Category creation form */}
+      {/* Create / Edit form */}
       {showForm && (
         <div className="mb-6">
           <CategoryForm
             categories={categories}
-            onSubmit={handleCreateCategory}
-            onCancel={() => setShowForm(false)}
+            initialCategory={editingCategory}
+            hasChildren={
+              editingCategory
+                ? categories.some(
+                    (category) =>
+                      category.parent === editingCategory.id
+                  )
+                : false
+            }
+            onSubmit={handleSaveCategory}
+            onCancel={closeForm}
           />
         </div>
       )}
@@ -244,18 +341,20 @@ export default function AdminCategories() {
         </div>
       </div>
 
-      {/* Category table */}
+      {/* Hierarchical category table */}
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
           <div>
-            <h3 className="font-semibold text-gray-900">All Categories</h3>
+            <h3 className="font-semibold text-gray-900">
+              Category Hierarchy
+            </h3>
             <p className="mt-1 text-xs text-gray-500">
-              Showing {filteredCategories.length} of {categories.length} categories
+              Showing {totalVisible} of {categories.length} categories
             </p>
           </div>
         </div>
 
-        {filteredCategories.length === 0 ? (
+        {categoryGroups.length === 0 ? (
           <div className="px-5 py-12 text-center">
             <Tags size={30} className="mx-auto text-gray-300" />
 
@@ -269,92 +368,167 @@ export default function AdminCategories() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-212.5 text-left">
+            <table className="w-full min-w-[850px] text-left">
               <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Category</th>
                   <th className="px-5 py-3 font-semibold">Slug</th>
-                  <th className="px-5 py-3 font-semibold">Parent</th>
                   <th className="px-5 py-3 font-semibold">Sort Order</th>
                   <th className="px-5 py-3 font-semibold">Condition</th>
                   <th className="px-5 py-3 font-semibold">Status</th>
+                  <th className="px-5 py-3 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-gray-100">
-                {filteredCategories.map((category) => (
-                  <tr
-                    key={category.id}
-                    className="transition hover:bg-gray-50"
-                  >
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
-                            category.parent
-                              ? "bg-gray-100 text-gray-500"
-                              : "bg-[#E8F0EF] text-[#183D3D]"
-                          }`}
-                        >
-                          <Tags size={17} />
-                        </div>
+                {categoryGroups.map(({ category, children }) => {
+                  const expanded =
+                    searchTerm.trim() !== "" ||
+                    expandedCategories.has(category.id);
 
-                        <div>
-                          <p className="text-sm font-semibold text-gray-800">
-                            {category.parent ? "↳ " : ""}
-                            {category.name}
-                          </p>
+                  return (
+                    <>
+                      {/* Main category */}
+                      <tr key={category.id} className="hover:bg-gray-50">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            {children.length > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => toggleExpanded(category.id)}
+                                className="rounded p-1 text-gray-500 hover:bg-gray-100"
+                                aria-label={
+                                  expanded
+                                    ? "Collapse subcategories"
+                                    : "Expand subcategories"
+                                }
+                              >
+                                {expanded ? (
+                                  <ChevronDown size={17} />
+                                ) : (
+                                  <ChevronRight size={17} />
+                                )}
+                              </button>
+                            ) : (
+                              <span className="w-[25px]" />
+                            )}
 
-                          <p className="mt-0.5 text-xs text-gray-400">
-                            {category.parent
-                              ? "Subcategory"
-                              : "Main category"}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E8F0EF] text-[#183D3D]">
+                              <FolderTree size={17} />
+                            </div>
 
-                    <td className="px-5 py-4 text-sm text-gray-500">
-                      {category.slug}
-                    </td>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-800">
+                                {category.name}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Main category
+                              </p>
+                            </div>
+                          </div>
+                        </td>
 
-                    <td className="px-5 py-4 text-sm text-gray-600">
-                      {getParentName(category.parent)}
-                    </td>
+                        <td className="px-5 py-4 text-sm text-gray-500">
+                          {category.slug}
+                        </td>
 
-                    <td className="px-5 py-4 text-sm text-gray-600">
-                      {category.sortOrder}
-                    </td>
+                        <td className="px-5 py-4 text-sm text-gray-600">
+                          {category.sortOrder}
+                        </td>
 
-                    <td className="px-5 py-4">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          category.allowCondition
-                            ? "bg-blue-50 text-blue-700"
-                            : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
-                        {category.allowCondition
-                          ? "Allowed"
-                          : "Not allowed"}
-                      </span>
-                    </td>
+                        <td className="px-5 py-4 text-sm text-gray-600">
+                          {category.allowCondition ? "Allowed" : "Not allowed"}
+                        </td>
 
-                    <td className="px-5 py-4">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                          category.status === "active"
-                            ? "bg-green-50 text-green-700"
-                            : "bg-orange-50 text-orange-700"
-                        }`}
-                      >
-                        {category.status === "active"
-                          ? "Active"
-                          : "Archived"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                        <td className="px-5 py-4">
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                              category.status === "active"
+                                ? "bg-green-50 text-green-700"
+                                : "bg-orange-50 text-orange-700"
+                            }`}
+                          >
+                            {category.status}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => openEditForm(category)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                          >
+                            <Pencil size={14} />
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+
+                      {/* Subcategories */}
+                      {expanded &&
+                        children.map((child) => (
+                          <tr
+                            key={child.id}
+                            className="bg-gray-50/60 hover:bg-gray-100/70"
+                          >
+                            <td className="px-5 py-4">
+                              <div className="flex items-center gap-3 pl-10">
+                                <span className="text-gray-400">↳</span>
+
+                                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-500">
+                                  <Tags size={16} />
+                                </div>
+
+                                <div>
+                                  <p className="text-sm font-medium text-gray-700">
+                                    {child.name}
+                                  </p>
+                                  <p className="text-xs text-gray-400">
+                                    Subcategory
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="px-5 py-4 text-sm text-gray-500">
+                              {child.slug}
+                            </td>
+
+                            <td className="px-5 py-4 text-sm text-gray-600">
+                              {child.sortOrder}
+                            </td>
+
+                            <td className="px-5 py-4 text-sm text-gray-600">
+                              {child.allowCondition ? "Allowed" : "Not allowed"}
+                            </td>
+
+                            <td className="px-5 py-4">
+                              <span
+                                className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                                  child.status === "active"
+                                    ? "bg-green-50 text-green-700"
+                                    : "bg-orange-50 text-orange-700"
+                                }`}
+                              >
+                                {child.status}
+                              </span>
+                            </td>
+
+                            <td className="px-5 py-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() => openEditForm(child)}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-white"
+                              >
+                                <Pencil size={14} />
+                                Edit
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                    </>
+                  );
+                })}
               </tbody>
             </table>
           </div>

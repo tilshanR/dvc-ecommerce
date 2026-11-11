@@ -441,3 +441,37 @@ export const updateProductService = async (productId, input) => {
 
   return updatedProduct;
 };
+
+/**
+ * Archives a product.
+ */
+export const archiveProductService = async (productId) => {
+  if (!mongoose.isValidObjectId(productId)) {
+    throw createServiceError("Invalid product ID.", 400);
+  }
+
+  const product = await archiveProductById(productId);
+
+  if (!product) {
+    throw createServiceError("Product not found.", 404);
+  }
+
+  return product;
+};
+
+/**
+ * Restores an archived product to draft status.
+ */
+export const restoreProductService = async (productId) => {
+  if (!mongoose.isValidObjectId(productId)) {
+    throw createServiceError("Invalid product ID.", 400);
+  }
+
+  const product = await restoreProductById(productId);
+
+  if (!product) {
+    throw createServiceError("Product not found.", 404);
+  }
+
+  return product;
+};

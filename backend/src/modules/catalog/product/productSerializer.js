@@ -1,4 +1,3 @@
-
 const serializeProduct = (product) => {
   if (!product) return null;
 
@@ -38,19 +37,12 @@ const serializeProduct = (product) => {
     images: item.images || [],
     mainImage: item.mainImage || item.image || "",
 
-    inventory: {
-      onHand: item.inventory?.onHand ?? 0,
-      reserved: item.inventory?.reserved ?? 0,
-    },
-
     availableStock: item.availableStock ?? item.stock ?? 0,
     stock: item.availableStock ?? item.stock ?? 0,
 
     condition: item.condition,
     attributes: item.attributes || {},
     warranty: item.warranty,
-
-    status: item.status,
 
     averageRating: item.averageRating ?? 0,
     reviewCount: item.reviewCount ?? 0,

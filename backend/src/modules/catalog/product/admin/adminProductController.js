@@ -1,4 +1,3 @@
-
 import {
   getAdminProducts,
   getAdminProduct,
@@ -9,10 +8,9 @@ import {
 } from "../productService.js";
 
 import {
-  serializeProducts,
-} from "../productSerializer.js";
+  serializeAdminProducts,
+} from "./adminProductSerializer.js";
 
-import serializeProduct from "../productSerializer.js";
 
 // GET /api/admin/products
 export const getAdminProductsHandler = async (req, res, next) => {
@@ -21,7 +19,7 @@ export const getAdminProductsHandler = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      products: serializeProducts(result.products),
+      products: serializeAdminProducts(result.products),
       pagination: result.pagination,
     });
   } catch (error) {
@@ -36,7 +34,7 @@ export const getAdminProductHandler = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      product: serializeProduct(product),
+      product: serializeAdminProduct(product),
     });
   } catch (error) {
     next(error);
@@ -51,7 +49,7 @@ export const createAdminProductHandler = async (req, res, next) => {
     return res.status(201).json({
       success: true,
       message: "Product created successfully.",
-      product: serializeProduct(product),
+      product: serializeAdminProduct(product),
     });
   } catch (error) {
     next(error);
@@ -69,7 +67,7 @@ export const updateAdminProductHandler = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "Product updated successfully.",
-      product: serializeProduct(product),
+      product: serializeAdminProduct(product),
     });
   } catch (error) {
     next(error);
@@ -84,7 +82,7 @@ export const archiveAdminProductHandler = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "Product archived successfully.",
-      product: serializeProduct(product),
+      product: serializeAdminProduct(product),
     });
   } catch (error) {
     next(error);
@@ -99,7 +97,7 @@ export const restoreAdminProductHandler = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: "Product restored successfully.",
-      product: serializeProduct(product),
+      product: serializeAdminProduct(product),
     });
   } catch (error) {
     next(error);

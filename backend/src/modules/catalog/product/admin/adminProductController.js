@@ -7,10 +7,9 @@ import {
   restoreProductService,
 } from "../productService.js";
 
-import {
+import serializeAdminProduct, {
   serializeAdminProducts,
 } from "./adminProductSerializer.js";
-
 
 // GET /api/admin/products
 export const getAdminProductsHandler = async (req, res, next) => {
@@ -59,10 +58,7 @@ export const createAdminProductHandler = async (req, res, next) => {
 // PATCH /api/admin/products/:productId
 export const updateAdminProductHandler = async (req, res, next) => {
   try {
-    const product = await updateProductService(
-      req.params.productId,
-      req.body,
-    );
+    const product = await updateProductService(req.params.productId, req.body);
 
     return res.status(200).json({
       success: true,

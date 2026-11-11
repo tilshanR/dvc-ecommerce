@@ -1,5 +1,9 @@
+import { Fragment, useEffect, useMemo, useState } from "react";
+import {
+  getAdminCategories,
+  createCategory,
+} from "../services/adminCategoryApi";
 
-import { Fragment, useMemo, useState } from "react";
 import {
   Search,
   Tags,
@@ -16,64 +20,6 @@ import {
 
 import CategoryForm from "../features/categories/CategoryForm";
 
-const initialCategories = [
-  {
-    id: "1",
-    name: "Mobile Phones",
-    slug: "mobile-phones",
-    description: "Mobile phones and smartphones.",
-    parent: null,
-    sortOrder: 1,
-    allowCondition: true,
-    attributes: [],
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "Android Phones",
-    slug: "android-phones",
-    description: "",
-    parent: "1",
-    sortOrder: 1,
-    allowCondition: false,
-    attributes: [],
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "iPhones",
-    slug: "iphones",
-    description: "",
-    parent: "1",
-    sortOrder: 2,
-    allowCondition: false,
-    attributes: [],
-    status: "active",
-  },
-  {
-    id: "4",
-    name: "Computer Parts",
-    slug: "computer-parts",
-    description: "Computer components and accessories.",
-    parent: null,
-    sortOrder: 2,
-    allowCondition: false,
-    attributes: [],
-    status: "active",
-  },
-  {
-    id: "5",
-    name: "RAM",
-    slug: "ram",
-    description: "",
-    parent: "4",
-    sortOrder: 1,
-    allowCondition: false,
-    attributes: [],
-    status: "archived",
-  },
-];
-
 const slugify = (value) =>
   value
     .toLowerCase()
@@ -83,14 +29,32 @@ const slugify = (value) =>
     .replace(/-+/g, "-");
 
 const AdminCategories = () => {
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setIsLoading(true);
+        setError("");
+
+        const result = await getAdminCategories();
+
+        setCategories(result);
+      } catch (err) {
+        setError(err.message || "Failed to load categories.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const [expandedCategories, setExpandedCategories] = useState(
-    new Set(["1", "4"])
-  );
+  const [expandedCategories, setExpandedCategories] = useState(new Set());
 
   const [showCreationChooser, setShowCreationChooser] = useState(false);
   const [creationMode, setCreationMode] = useState(null);
@@ -107,8 +71,7 @@ const AdminCategories = () => {
     const mainCategories = categories
       .filter((category) => category.parent === null)
       .sort(
-        (a, b) =>
-          a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)
+        (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
       );
 
     const search = searchTerm.trim().toLowerCase();
@@ -118,8 +81,7 @@ const AdminCategories = () => {
         const children = categories
           .filter((category) => category.parent === mainCategory.id)
           .sort(
-            (a, b) =>
-              a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)
+            (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
           );
 
         const mainMatches =
@@ -147,7 +109,7 @@ const AdminCategories = () => {
             ...mainCategory,
             children: children.filter(
               (child) =>
-                statusFilter === "all" || child.status === statusFilter
+                statusFilter === "all" || child.status === statusFilter,
             ),
           };
         }
@@ -173,19 +135,19 @@ const AdminCategories = () => {
   }, [categories, searchTerm, statusFilter]);
 
   const activeCount = categories.filter(
-    (category) => category.status === "active"
+    (category) => category.status === "active",
   ).length;
 
   const archivedCount = categories.filter(
-    (category) => category.status === "archived"
+    (category) => category.status === "archived",
   ).length;
 
   const mainCategoryCount = categories.filter(
-    (category) => category.parent === null
+    (category) => category.parent === null,
   ).length;
 
   const subcategoryCount = categories.filter(
-    (category) => category.parent !== null
+    (category) => category.parent !== null,
   ).length;
 
   const toggleExpanded = (categoryId) => {
@@ -245,18 +207,18 @@ const AdminCategories = () => {
   const updateSubcategoryInput = (index, value) => {
     setInitialSubcategories((previous) =>
       previous.map((name, currentIndex) =>
-        currentIndex === index ? value : name
-      )
+        currentIndex === index ? value : name,
+      ),
     );
   };
 
   const removeSubcategoryInput = (index) => {
     setInitialSubcategories((previous) =>
-      previous.filter((_, currentIndex) => currentIndex !== index)
+      previous.filter((_, currentIndex) => currentIndex !== index),
     );
   };
 
-  const handleSaveCategory = (categoryData) => {
+  const handleSaveCategory = async (categoryData) => {
     const cleanName = categoryData.name.trim();
     const cleanSlug = slugify(categoryData.slug);
 
@@ -265,12 +227,12 @@ const AdminCategories = () => {
       return;
     }
 
-    // Editing an existing category.
+    // Editing an existing category (backend integration comes later).
     if (editingCategory) {
       const duplicateSlug = categories.some(
         (category) =>
           category.id !== editingCategory.id &&
-          category.slug.toLowerCase() === cleanSlug.toLowerCase()
+          category.slug.toLowerCase() === cleanSlug.toLowerCase(),
       );
 
       if (duplicateSlug) {
@@ -287,25 +249,23 @@ const AdminCategories = () => {
                 name: cleanName,
                 slug: cleanSlug,
               }
-            : category
-        )
+            : category,
+        ),
       );
 
       closeForm();
       return;
     }
 
-    // Validate the optional initial subcategories.
+    // Validate optional initial subcategories.
     const childNames =
       creationMode === "main"
-        ? initialSubcategories
-            .map((name) => name.trim())
-            .filter(Boolean)
+        ? initialSubcategories.map((name) => name.trim()).filter(Boolean)
         : [];
 
     if (childNames.some((name) => name.length < 2 || name.length > 100)) {
       setChildNamesError(
-        "Each subcategory name must contain between 2 and 100 characters."
+        "Each subcategory name must contain between 2 and 100 characters.",
       );
       return;
     }
@@ -318,139 +278,160 @@ const AdminCategories = () => {
     }
 
     const slugsToCheck = [cleanSlug, ...childSlugs];
-    const uniqueSlugs = new Set(
-      slugsToCheck.map((slug) => slug.toLowerCase())
-    );
+    const uniqueSlugs = new Set(slugsToCheck.map((slug) => slug.toLowerCase()));
 
     if (uniqueSlugs.size !== slugsToCheck.length) {
       setChildNamesError(
-        "The main category and its subcategories must have unique slugs."
+        "The main category and its subcategories must have unique slugs.",
       );
       return;
     }
 
     const existingSlugs = new Set(
-      categories.map((category) => category.slug.toLowerCase())
+      categories.map((category) => category.slug.toLowerCase()),
     );
 
     if (slugsToCheck.some((slug) => existingSlugs.has(slug.toLowerCase()))) {
       setChildNamesError(
-        "A category with one of these names or slugs already exists."
+        "A category with one of these names or slugs already exists.",
       );
       return;
     }
 
-    // Creating a new main category.
-    if (creationMode === "main") {
-      const mainId = Date.now().toString();
+    let createdMainId = null;
 
-      const newMainCategory = {
-        ...categoryData,
-        id: mainId,
-        name: cleanName,
-        slug: cleanSlug,
-        parent: null,
-        status: "active",
-        attributes: [],
-      };
+    try {
+      // CREATE MAIN CATEGORY AND INITIAL SUBCATEGORIES.
+      if (creationMode === "main") {
+        const mainResponse = await createCategory({
+          ...categoryData,
+          name: cleanName,
+          slug: cleanSlug,
+          parent: null,
+          attributes: categoryData.attributes ?? [],
+        });
 
-      const newChildren = childNames.map((name, index) => ({
-        id: `${mainId}-${index + 1}`,
-        name,
-        slug: childSlugs[index],
-        description: "",
-        parent: mainId,
-        sortOrder: index + 1,
-        allowCondition: false,
-        attributes: [],
-        status: "active",
-      }));
+        createdMainId = mainResponse.category?.id;
 
-      setCategories((previous) => [
-        ...previous,
-        newMainCategory,
-        ...newChildren,
-      ]);
+        if (!createdMainId) {
+          throw new Error(
+            "Main category was created, but its ID was not returned.",
+          );
+        }
 
-      setExpandedCategories((previous) => new Set([...previous, mainId]));
-      closeForm();
-      return;
-    }
+        // Save each initial subcategory using the real MongoDB parent ID.
+        for (let index = 0; index < childNames.length; index++) {
+          await createCategory({
+            name: childNames[index],
+            slug: childSlugs[index],
+            description: "",
+            parent: createdMainId,
+            sortOrder: index + 1,
+            attributes: [],
+            allowCondition: false,
+            status: "active",
+          });
+        }
 
-    // Creating a new subcategory.
-    if (creationMode === "subcategory") {
-      const parentCategory = categories.find(
-        (category) => category.id === categoryData.parent
-      );
+        const refreshedCategories = await getAdminCategories();
+        setCategories(refreshedCategories);
 
-      if (
-        !parentCategory ||
-        parentCategory.parent !== null ||
-        parentCategory.status !== "active"
-      ) {
-        window.alert("Please select an active main category.");
+        setExpandedCategories(
+          (previous) => new Set([...previous, createdMainId]),
+        );
+
+        closeForm();
+        window.alert("Main category created successfully.");
         return;
       }
 
-      const newSubcategory = {
-        ...categoryData,
-        id: Date.now().toString(),
-        name: cleanName,
-        slug: cleanSlug,
-        parent: parentCategory.id,
-        status: "active",
-        attributes: [],
-      };
+      // CREATE INDIVIDUAL SUBCATEGORY.
+      if (creationMode === "subcategory") {
+        const parentCategory = categories.find(
+          (category) => category.id === categoryData.parent,
+        );
 
-      setCategories((previous) => [...previous, newSubcategory]);
+        if (
+          !parentCategory ||
+          parentCategory.parent !== null ||
+          parentCategory.status !== "active"
+        ) {
+          window.alert("Please select an active main category.");
+          return;
+        }
 
-      setExpandedCategories(
-        (previous) => new Set([...previous, parentCategory.id])
-      );
+        await createCategory({
+          ...categoryData,
+          name: cleanName,
+          slug: cleanSlug,
+          parent: parentCategory.id,
+          attributes: categoryData.attributes ?? [],
+        });
 
-      closeForm();
+        const refreshedCategories = await getAdminCategories();
+        setCategories(refreshedCategories);
+
+        setExpandedCategories(
+          (previous) => new Set([...previous, parentCategory.id]),
+        );
+
+        closeForm();
+        window.alert("Subcategory created successfully.");
+      }
+    } catch (err) {
+      // Refresh in case the main category was saved before a child failed.
+      try {
+        const refreshedCategories = await getAdminCategories();
+        setCategories(refreshedCategories);
+
+        if (createdMainId) {
+          setExpandedCategories(
+            (previous) => new Set([...previous, createdMainId]),
+          );
+          closeForm();
+        }
+      } catch {
+        // Keep the original API error.
+      }
+
+      window.alert(err.message || "Failed to save category.");
     }
   };
 
   const handleArchive = (category) => {
     if (category.parent === null) {
       const hasActiveChildren = categories.some(
-        (child) =>
-          child.parent === category.id && child.status === "active"
+        (child) => child.parent === category.id && child.status === "active",
       );
 
       if (hasActiveChildren) {
         window.alert(
-          "Archive the active subcategories first before archiving this main category."
+          "Archive the active subcategories first before archiving this main category.",
         );
         return;
       }
     }
 
     const confirmed = window.confirm(
-      `Are you sure you want to archive "${category.name}"?`
+      `Are you sure you want to archive "${category.name}"?`,
     );
 
     if (!confirmed) return;
 
     setCategories((previous) =>
       previous.map((item) =>
-        item.id === category.id
-          ? { ...item, status: "archived" }
-          : item
-      )
+        item.id === category.id ? { ...item, status: "archived" } : item,
+      ),
     );
   };
 
   const handleRestore = (category) => {
     if (category.parent !== null) {
-      const parent = categories.find(
-        (item) => item.id === category.parent
-      );
+      const parent = categories.find((item) => item.id === category.parent);
 
       if (!parent || parent.status !== "active") {
         window.alert(
-          "Restore the main category before restoring this subcategory."
+          "Restore the main category before restoring this subcategory.",
         );
         return;
       }
@@ -458,18 +439,13 @@ const AdminCategories = () => {
 
     setCategories((previous) =>
       previous.map((item) =>
-        item.id === category.id
-          ? { ...item, status: "active" }
-          : item
-      )
+        item.id === category.id ? { ...item, status: "active" } : item,
+      ),
     );
   };
 
   const renderCategoryRow = (category, isSubcategory = false) => (
-    <tr
-      key={category.id}
-      className="border-t border-gray-100 hover:bg-gray-50"
-    >
+    <tr key={category.id} className="border-t border-gray-100 hover:bg-gray-50">
       <td className="px-5 py-4">
         <div className="flex items-center gap-3">
           {isSubcategory ? (
@@ -489,14 +465,11 @@ const AdminCategories = () => {
 
       <td className="px-5 py-4 text-sm text-gray-600">
         {isSubcategory
-          ? categories.find((item) => item.id === category.parent)?.name ||
-            "—"
+          ? categories.find((item) => item.id === category.parent)?.name || "—"
           : "Main category"}
       </td>
 
-      <td className="px-5 py-4 text-sm text-gray-600">
-        {category.sortOrder}
-      </td>
+      <td className="px-5 py-4 text-sm text-gray-600">{category.sortOrder}</td>
 
       <td className="px-5 py-4">
         <span
@@ -550,9 +523,7 @@ const AdminCategories = () => {
       {/* Page heading */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Categories
-          </h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Categories</h1>
           <p className="mt-1 text-sm text-gray-500">
             Organize your store products into categories and subcategories.
           </p>
@@ -697,7 +668,7 @@ const AdminCategories = () => {
             hasChildren={
               editingCategory
                 ? categories.some(
-                    (category) => category.parent === editingCategory.id
+                    (category) => category.parent === editingCategory.id,
                   )
                 : false
             }
@@ -761,9 +732,7 @@ const AdminCategories = () => {
               </div>
 
               {childNamesError && (
-                <p className="mt-3 text-sm text-red-600">
-                  {childNamesError}
-                </p>
+                <p className="mt-3 text-sm text-red-600">{childNamesError}</p>
               )}
             </div>
           )}
@@ -773,185 +742,153 @@ const AdminCategories = () => {
       {/* Filters and category table */}
       {!isFormOpen && !showCreationChooser && (
         <>
-          <section className="rounded-xl border border-gray-200 bg-white p-5">
-            <div className="flex flex-col gap-3 md:flex-row">
-              <div className="relative flex-1">
-                <Search
-                  size={18}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Search categories by name or slug..."
-                  className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[#183D3D]"
-                />
+          {isLoading ? (
+            <div className="rounded-xl border bg-white p-8 text-center text-gray-500">
+              Loading categories...
+            </div>
+          ) : error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+              {error}
+            </div>
+          ) : (
+            <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <div className="flex items-center justify-between px-5 py-4">
+                <div>
+                  <h2 className="font-semibold text-gray-900">Category List</h2>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Main categories and their subcategories
+                  </p>
+                </div>
+                <span className="text-sm text-gray-500">
+                  {categoryGroups.length} main categories
+                </span>
               </div>
 
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-[#183D3D]"
-              >
-                <option value="all">All statuses</option>
-                <option value="active">Active</option>
-                <option value="archived">Archived</option>
-              </select>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-187.5 text-left">
+                  <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                    <tr>
+                      <th className="px-5 py-3 font-medium">Category</th>
+                      <th className="px-5 py-3 font-medium">Parent</th>
+                      <th className="px-5 py-3 font-medium">Sort Order</th>
+                      <th className="px-5 py-3 font-medium">Status</th>
+                      <th className="px-5 py-3 text-right font-medium">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
 
-              {(searchTerm || statusFilter !== "all") && (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="rounded-lg px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100"
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
-          </section>
+                  <tbody>
+                    {categoryGroups.map((mainCategory) => (
+                      <Fragment key={mainCategory.id}>
+                        <tr className="border-t border-gray-100 bg-gray-50/60">
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => toggleExpanded(mainCategory.id)}
+                                className="rounded p-1 text-gray-500 hover:bg-gray-200"
+                                aria-label="Toggle subcategories"
+                              >
+                                {expandedCategories.has(mainCategory.id) ? (
+                                  <ChevronDown size={17} />
+                                ) : (
+                                  <ChevronRight size={17} />
+                                )}
+                              </button>
 
-          <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-            <div className="flex items-center justify-between px-5 py-4">
-              <div>
-                <h2 className="font-semibold text-gray-900">
-                  Category List
-                </h2>
-                <p className="mt-1 text-xs text-gray-500">
-                  Main categories and their subcategories
-                </p>
-              </div>
-              <span className="text-sm text-gray-500">
-                {categoryGroups.length} main categories
-              </span>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-187.5 text-left">
-                <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-                  <tr>
-                    <th className="px-5 py-3 font-medium">Category</th>
-                    <th className="px-5 py-3 font-medium">Parent</th>
-                    <th className="px-5 py-3 font-medium">Sort Order</th>
-                    <th className="px-5 py-3 font-medium">Status</th>
-                    <th className="px-5 py-3 text-right font-medium">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {categoryGroups.map((mainCategory) => (
-                    <Fragment key={mainCategory.id}>
-                      <tr className="border-t border-gray-100 bg-gray-50/60">
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                toggleExpanded(mainCategory.id)
-                              }
-                              className="rounded p-1 text-gray-500 hover:bg-gray-200"
-                              aria-label="Toggle subcategories"
-                            >
-                              {expandedCategories.has(mainCategory.id) ? (
-                                <ChevronDown size={17} />
-                              ) : (
-                                <ChevronRight size={17} />
-                              )}
-                            </button>
-
-                            <div>
-                              <p className="font-semibold text-gray-800">
-                                {mainCategory.name}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {mainCategory.slug}
-                              </p>
+                              <div>
+                                <p className="font-semibold text-gray-800">
+                                  {mainCategory.name}
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  {mainCategory.slug}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        <td className="px-5 py-4 text-sm text-gray-500">
-                          Main category
-                        </td>
+                          <td className="px-5 py-4 text-sm text-gray-500">
+                            Main category
+                          </td>
 
-                        <td className="px-5 py-4 text-sm text-gray-600">
-                          {mainCategory.sortOrder}
-                        </td>
+                          <td className="px-5 py-4 text-sm text-gray-600">
+                            {mainCategory.sortOrder}
+                          </td>
 
-                        <td className="px-5 py-4">
-                          <span
-                            className={`rounded-full px-3 py-1 text-xs font-medium ${
-                              mainCategory.status === "active"
-                                ? "bg-green-50 text-green-700"
-                                : "bg-gray-100 text-gray-500"
-                            }`}
-                          >
-                            {mainCategory.status === "active"
-                              ? "Active"
-                              : "Archived"}
-                          </span>
-                        </td>
+                          <td className="px-5 py-4">
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                                mainCategory.status === "active"
+                                  ? "bg-green-50 text-green-700"
+                                  : "bg-gray-100 text-gray-500"
+                              }`}
+                            >
+                              {mainCategory.status === "active"
+                                ? "Active"
+                                : "Archived"}
+                            </span>
+                          </td>
 
-                        <td className="px-5 py-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() => openEditForm(mainCategory)}
-                            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-[#183D3D]"
-                            title="Edit category"
-                          >
-                            <Pencil size={16} />
-                          </button>
-
-                          {mainCategory.status === "active" ? (
+                          <td className="px-5 py-4 text-right">
                             <button
                               type="button"
-                              onClick={() => handleArchive(mainCategory)}
-                              className="rounded-lg p-2 text-gray-500 hover:bg-red-50 hover:text-red-600"
-                              title="Archive category"
+                              onClick={() => openEditForm(mainCategory)}
+                              className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-[#183D3D]"
+                              title="Edit category"
                             >
-                              <X size={16} />
+                              <Pencil size={16} />
                             </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleRestore(mainCategory)}
-                              className="rounded-lg p-2 text-gray-500 hover:bg-green-50 hover:text-green-600"
-                              title="Restore category"
-                            >
-                              <RotateCcw size={16} />
-                            </button>
+
+                            {mainCategory.status === "active" ? (
+                              <button
+                                type="button"
+                                onClick={() => handleArchive(mainCategory)}
+                                className="rounded-lg p-2 text-gray-500 hover:bg-red-50 hover:text-red-600"
+                                title="Archive category"
+                              >
+                                <X size={16} />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleRestore(mainCategory)}
+                                className="rounded-lg p-2 text-gray-500 hover:bg-green-50 hover:text-green-600"
+                                title="Restore category"
+                              >
+                                <RotateCcw size={16} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+
+                        {expandedCategories.has(mainCategory.id) &&
+                          mainCategory.children.map((child) =>
+                            renderCategoryRow(child, true),
                           )}
+                      </Fragment>
+                    ))}
+
+                    {categoryGroups.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className="px-5 py-12 text-center text-sm text-gray-500"
+                        >
+                          No categories found. Try changing your search or
+                          filters.
                         </td>
                       </tr>
-
-                      {expandedCategories.has(mainCategory.id) &&
-                        mainCategory.children.map((child) =>
-                          renderCategoryRow(child, true)
-                        )}
-                    </Fragment>
-                  ))},
-
-                  {categoryGroups.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-5 py-12 text-center text-sm text-gray-500"
-                      >
-                        No categories found. Try changing your search or
-                        filters.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
 
           <p className="text-xs text-gray-400">
-            Preview data only. Category changes are currently stored in
-            frontend state and will reset when the page reloads.
+            Preview data only. Category changes are currently stored in frontend
+            state and will reset when the page reloads.
           </p>
         </>
       )}

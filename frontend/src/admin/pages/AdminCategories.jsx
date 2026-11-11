@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import {
   getAdminCategories,
   createCategory,
+  updateCategory,
 } from "../services/adminCategoryApi";
 
 import {
@@ -227,7 +228,7 @@ const AdminCategories = () => {
       return;
     }
 
-    // Editing an existing category (backend integration comes later).
+    // UPDATE EXISTING CATEGORY.
     if (editingCategory) {
       const duplicateSlug = categories.some(
         (category) =>
@@ -240,20 +241,22 @@ const AdminCategories = () => {
         return;
       }
 
-      setCategories((previous) =>
-        previous.map((category) =>
-          category.id === editingCategory.id
-            ? {
-                ...category,
-                ...categoryData,
-                name: cleanName,
-                slug: cleanSlug,
-              }
-            : category,
-        ),
-      );
+      try {
+        await updateCategory(editingCategory.id, {
+          ...categoryData,
+          name: cleanName,
+          slug: cleanSlug,
+        });
 
-      closeForm();
+        const refreshedCategories = await getAdminCategories();
+        setCategories(refreshedCategories);
+
+        closeForm();
+        window.alert("Category updated successfully.");
+      } catch (err) {
+        window.alert(err.message || "Failed to update category.");
+      }
+
       return;
     }
 

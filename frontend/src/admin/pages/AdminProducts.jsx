@@ -1,89 +1,43 @@
-
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, Package, Archive, FileText } from "lucide-react";
-
-
 import ProductFilters from "../features/products/ProductFilters";
 import ProductTable from "../features/products/ProductTable";
 import ProductForm from "../features/products/ProductForm";
-// Temporary mock categories
+import { getAdminProducts } from "../services/adminProductApi";
 const mockCategories = [
   { _id: "mock-smartphones", name: "Smartphones" },
   { _id: "mock-ram", name: "RAM" },
   { _id: "mock-notebooks", name: "Notebooks" },
 ];
 
-// Temporary mock products
-const initialProducts = [
-  {
-    _id: "1",
-    name: "Samsung Galaxy A55",
-    sku: "SAM-A55",
-    category: mockCategories[0],
-    price: 125000,
-    availableStock: 10,
-    inventory: { onHand: 10, reserved: 0 },
-    status: "active",
-    images: [],
-    attributes: {},
-  },
-  {
-    _id: "2",
-    name: "iPhone 15",
-    sku: "APP-IP15",
-    category: mockCategories[0],
-    price: 250000,
-    availableStock: 5,
-    inventory: { onHand: 5, reserved: 0 },
-    status: "active",
-    images: [],
-    attributes: {},
-  },
-  {
-    _id: "3",
-    name: "Kingston 16GB DDR4 RAM",
-    sku: "KIN-RAM16",
-    category: mockCategories[1],
-    price: 12000,
-    availableStock: 15,
-    inventory: { onHand: 15, reserved: 0 },
-    status: "active",
-    images: [],
-    attributes: {},
-  },
-  {
-    _id: "4",
-    name: "Notebook A5",
-    sku: "NOTE-A5",
-    category: mockCategories[2],
-    price: 450,
-    availableStock: 30,
-    inventory: { onHand: 30, reserved: 0 },
-    status: "draft",
-    images: [],
-    attributes: {},
-  },
-  {
-    _id: "5",
-    name: "Sample Archived Product",
-    sku: "SAMPLE-05",
-    category: mockCategories[2],
-    price: 800,
-    availableStock: 0,
-    inventory: { onHand: 0, reserved: 0 },
-    status: "archived",
-    images: [],
-    attributes: {},
-  },
-];
-
 export default function AdminProducts() {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setIsLoading(true);
+        setError("");
+
+        const result = await getAdminProducts();
+
+        setProducts(result.products);
+      } catch (err) {
+        setError(err.message || "Failed to load products.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -123,13 +77,13 @@ export default function AdminProducts() {
                 ...formData,
                 category:
                   mockCategories.find(
-                    (category) => category._id === formData.category
+                    (category) => category._id === formData.category,
                   ) || null,
                 availableStock:
                   formData.inventory.onHand - formData.inventory.reserved,
               }
-            : product
-        )
+            : product,
+        ),
       );
 
       setNotice("Product updated successfully.");
@@ -139,10 +93,9 @@ export default function AdminProducts() {
         _id: `mock-${Date.now()}`,
         category:
           mockCategories.find(
-            (category) => category._id === formData.category
+            (category) => category._id === formData.category,
           ) || null,
-        availableStock:
-          formData.inventory.onHand - formData.inventory.reserved,
+        availableStock: formData.inventory.onHand - formData.inventory.reserved,
       };
 
       setProducts((prev) => [newProduct, ...prev]);
@@ -156,10 +109,8 @@ export default function AdminProducts() {
   const handleArchive = (id) => {
     setProducts((prev) =>
       prev.map((product) =>
-        product._id === id
-          ? { ...product, status: "archived" }
-          : product
-      )
+        product._id === id ? { ...product, status: "archived" } : product,
+      ),
     );
 
     setNotice("Product archived.");
@@ -168,10 +119,8 @@ export default function AdminProducts() {
   const handleRestore = (id) => {
     setProducts((prev) =>
       prev.map((product) =>
-        product._id === id
-          ? { ...product, status: "draft" }
-          : product
-      )
+        product._id === id ? { ...product, status: "draft" } : product,
+      ),
     );
 
     setNotice("Product restored as draft.");
@@ -187,9 +136,7 @@ export default function AdminProducts() {
       {/* Page heading */}
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-[#183D3D]">
-            Products
-          </h1>
+          <h1 className="text-2xl font-semibold text-[#183D3D]">Products</h1>
           <p className="mt-1 text-sm text-gray-500">
             Manage your store products.
           </p>
@@ -243,12 +190,23 @@ export default function AdminProducts() {
       />
 
       {/* Product table */}
-      <ProductTable
-        products={filteredProducts}
-        onEdit={handleEdit}
-        onArchive={handleArchive}
-        onRestore={handleRestore}
-      />
+      {/* Product table */}
+      {isLoading ? (
+        <div className="rounded-lg border bg-white p-8 text-center text-gray-500">
+          Loading products...
+        </div>
+      ) : error ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+          {error}
+        </div>
+      ) : (
+        <ProductTable
+          products={filteredProducts}
+          onEdit={handleEdit}
+          onArchive={handleArchive}
+          onRestore={handleRestore}
+        />
+      )}
 
       {/* Add/Edit modal */}
       {showForm && (
@@ -272,14 +230,10 @@ function SummaryCard({ title, count, icon }) {
     <div className="flex items-center justify-between rounded-xl border bg-white p-5">
       <div>
         <p className="text-sm text-gray-500">{title}</p>
-        <p className="mt-2 text-2xl font-semibold text-[#183D3D]">
-          {count}
-        </p>
+        <p className="mt-2 text-2xl font-semibold text-[#183D3D]">{count}</p>
       </div>
 
-      <div className="rounded-lg bg-[#E8F0EF] p-3 text-[#183D3D]">
-        {icon}
-      </div>
+      <div className="rounded-lg bg-[#E8F0EF] p-3 text-[#183D3D]">{icon}</div>
     </div>
   );
 }

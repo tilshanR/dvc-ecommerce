@@ -3,6 +3,7 @@ import {
   getAdminCategories,
   createCategory,
   updateCategory,
+  archiveCategory,
 } from "../services/adminCategoryApi";
 
 import {
@@ -401,7 +402,7 @@ const AdminCategories = () => {
     }
   };
 
-  const handleArchive = (category) => {
+  const handleArchive = async (category) => {
     if (category.parent === null) {
       const hasActiveChildren = categories.some(
         (child) => child.parent === category.id && child.status === "active",
@@ -421,11 +422,16 @@ const AdminCategories = () => {
 
     if (!confirmed) return;
 
-    setCategories((previous) =>
-      previous.map((item) =>
-        item.id === category.id ? { ...item, status: "archived" } : item,
-      ),
-    );
+    try {
+      await archiveCategory(category.id);
+
+      const refreshedCategories = await getAdminCategories();
+      setCategories(refreshedCategories);
+
+      window.alert("Category archived successfully.");
+    } catch (err) {
+      window.alert(err.message || "Failed to archive category.");
+    }
   };
 
   const handleRestore = (category) => {
@@ -888,11 +894,6 @@ const AdminCategories = () => {
               </div>
             </section>
           )}
-
-          <p className="text-xs text-gray-400">
-            Preview data only. Category changes are currently stored in frontend
-            state and will reset when the page reloads.
-          </p>
         </>
       )}
     </div>

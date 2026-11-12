@@ -4,6 +4,7 @@ import {
   createCategory,
   updateCategory,
   archiveCategory,
+  restoreCategory,
 } from "../services/adminCategoryApi";
 
 import {
@@ -61,6 +62,8 @@ const AdminCategories = () => {
   const [showCreationChooser, setShowCreationChooser] = useState(false);
   const [creationMode, setCreationMode] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
+  const [restoreTarget, setRestoreTarget] = useState(null);
+  const [selectedSubcategoryIds, setSelectedSubcategoryIds] = useState([]);
 
   const [initialSubcategories, setInitialSubcategories] = useState([""]);
 
@@ -434,7 +437,24 @@ const AdminCategories = () => {
     }
   };
 
-  const handleRestore = (category) => {
+  const performRestore = async (category, subcategoryIds = []) => {
+    try {
+      await restoreCategory(category.id, subcategoryIds);
+
+      const refreshedCategories = await getAdminCategories();
+      setCategories(refreshedCategories);
+
+      setRestoreTarget(null);
+      setSelectedSubcategoryIds([]);
+
+      window.alert("Category restored successfully.");
+    } catch (err) {
+      window.alert(err.message || "Failed to restore category.");
+    }
+  };
+
+  const handleRestore = async (category) => {
+    // Individual subcategory restoration.
     if (category.parent !== null) {
       const parent = categories.find((item) => item.id === category.parent);
 
@@ -444,13 +464,49 @@ const AdminCategories = () => {
         );
         return;
       }
+
+      const confirmed = window.confirm(
+        `Are you sure you want to restore "${category.name}"?`,
+      );
+
+      if (!confirmed) return;
+
+      await performRestore(category, []);
+      return;
     }
 
-    setCategories((previous) =>
-      previous.map((item) =>
-        item.id === category.id ? { ...item, status: "active" } : item,
-      ),
+    // Main category restoration.
+    const archivedChildren = categories.filter(
+      (item) => item.parent === category.id && item.status === "archived",
     );
+
+    // If archived subcategories exist, let the admin choose.
+    if (archivedChildren.length > 0) {
+      setRestoreTarget(category);
+      setSelectedSubcategoryIds([]);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to restore "${category.name}"?`,
+    );
+
+    if (!confirmed) return;
+
+    await performRestore(category, []);
+  };
+  const archivedSubcategories = restoreTarget
+    ? categories.filter(
+        (category) =>
+          category.parent === restoreTarget.id &&
+          category.status === "archived",
+      )
+    : [];
+
+  const handleConfirmRestore = async () => {
+    if (!restoreTarget) return;
+
+    await performRestore(restoreTarget, selectedSubcategoryIds);
   };
 
   const renderCategoryRow = (category, isSubcategory = false) => (
@@ -549,6 +605,88 @@ const AdminCategories = () => {
           </button>
         )}
       </div>
+
+      {/* Restore category dialog */}
+      {restoreTarget && (
+        <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Restore {restoreTarget.name}
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Select any archived subcategories you also want to restore.
+                Leave them unchecked to restore only the main category.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setRestoreTarget(null);
+                setSelectedSubcategoryIds([]);
+              }}
+              className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
+              aria-label="Close restore dialog"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {archivedSubcategories.map((subcategory) => (
+              <label
+                key={subcategory.id}
+                className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedSubcategoryIds.includes(subcategory.id)}
+                  onChange={(event) => {
+                    const isChecked = event.target.checked;
+
+                    setSelectedSubcategoryIds((previous) =>
+                      isChecked
+                        ? [...previous, subcategory.id]
+                        : previous.filter((id) => id !== subcategory.id),
+                    );
+                  }}
+                  className="h-4 w-4 accent-[#183D3D]"
+                />
+
+                <span className="text-sm font-medium text-gray-700">
+                  {subcategory.name}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          <div className="mt-5 flex flex-col-reverse justify-end gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => {
+                setRestoreTarget(null);
+                setSelectedSubcategoryIds([]);
+              }}
+              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              onClick={handleConfirmRestore}
+              className="rounded-lg bg-[#183D3D] px-4 py-2 text-sm font-medium text-white hover:bg-[#245252]"
+            >
+              Restore Category
+              {selectedSubcategoryIds.length > 0
+                ? ` + ${selectedSubcategoryIds.length} Subcategories`
+                : ""}
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

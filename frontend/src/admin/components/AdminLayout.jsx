@@ -54,8 +54,12 @@ export default function AdminLayout() {
           onToggleTheme={() => setIsDark((previous) => !previous)}
         />
 
-        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <Outlet />
+        <main
+          className={`mx-auto min-h-[calc(100vh-64px)] max-w-7xl px-4 py-6 transition-colors duration-300 sm:px-6 lg:px-8 lg:py-8 ${
+            isDark ? "bg-gray-950 text-gray-100" : "bg-gray-50 text-gray-900"
+          }`}
+        >
+          <Outlet context={{ isDark }} />
         </main>
       </div>
     </div>

@@ -6,9 +6,9 @@ import {
   archiveCategory,
   restoreCategory,
 } from "../services/adminCategoryApi";
+import { useOutletContext } from "react-router-dom";
 
 import {
-  Search,
   Tags,
   FolderTree,
   RotateCcw,
@@ -34,6 +34,19 @@ const slugify = (value) =>
 const AdminCategories = () => {
   const [categories, setCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { isDark } = useOutletContext();
+
+  const surfaceClass = isDark
+    ? "border-gray-700 bg-gray-900"
+    : "border-gray-200 bg-white";
+  const headingClass = isDark ? "text-gray-100" : "text-gray-900";
+  const bodyTextClass = isDark ? "text-gray-300" : "text-gray-700";
+  const mutedTextClass = isDark ? "text-gray-400" : "text-gray-500";
+  const borderClass = isDark ? "border-gray-700" : "border-gray-200";
+  const inputClass = isDark
+    ? "border-gray-700 bg-gray-800 text-gray-100 placeholder:text-gray-500"
+    : "border-gray-300 bg-white text-gray-900 placeholder:text-gray-400";
+
   const [error, setError] = useState("");
   useEffect(() => {
     const fetchCategories = async () => {
@@ -42,7 +55,6 @@ const AdminCategories = () => {
         setError("");
 
         const result = await getAdminCategories();
-
         setCategories(result);
       } catch (err) {
         setError(err.message || "Failed to load categories.");
@@ -56,17 +68,13 @@ const AdminCategories = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
   const [expandedCategories, setExpandedCategories] = useState(new Set());
-
   const [showCreationChooser, setShowCreationChooser] = useState(false);
   const [creationMode, setCreationMode] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
   const [restoreTarget, setRestoreTarget] = useState(null);
   const [selectedSubcategoryIds, setSelectedSubcategoryIds] = useState([]);
-
   const [initialSubcategories, setInitialSubcategories] = useState([""]);
-
   const [childNamesError, setChildNamesError] = useState("");
 
   const isFormOpen = Boolean(creationMode || editingCategory);
@@ -142,15 +150,12 @@ const AdminCategories = () => {
   const activeCount = categories.filter(
     (category) => category.status === "active",
   ).length;
-
   const archivedCount = categories.filter(
     (category) => category.status === "archived",
   ).length;
-
   const mainCategoryCount = categories.filter(
     (category) => category.parent === null,
   ).length;
-
   const subcategoryCount = categories.filter(
     (category) => category.parent !== null,
   ).length;
@@ -495,6 +500,7 @@ const AdminCategories = () => {
 
     await performRestore(category, []);
   };
+
   const archivedSubcategories = restoreTarget
     ? categories.filter(
         (category) =>
@@ -510,11 +516,16 @@ const AdminCategories = () => {
   };
 
   const renderCategoryRow = (category, isSubcategory = false) => (
-    <tr key={category.id} className="border-t border-gray-100 hover:bg-gray-50">
+    <tr
+      key={category.id}
+      className={`border-t ${borderClass} ${
+        isDark ? "hover:bg-gray-800" : "hover:bg-gray-50"
+      }`}
+    >
       <td className="px-5 py-4">
         <div className="flex items-center gap-3">
           {isSubcategory ? (
-            <span className="ml-8 text-gray-400">↳</span>
+            <span className={`ml-8 ${mutedTextClass}`}>↳</span>
           ) : (
             <span className="text-[#183D3D]">
               <FolderTree size={18} />
@@ -522,26 +533,32 @@ const AdminCategories = () => {
           )}
 
           <div>
-            <p className="font-medium text-gray-800">{category.name}</p>
-            <p className="text-xs text-gray-400">{category.slug}</p>
+            <p className={`font-medium ${bodyTextClass}`}>{category.name}</p>
+            <p className={`text-xs ${mutedTextClass}`}>{category.slug}</p>
           </div>
         </div>
       </td>
 
-      <td className="px-5 py-4 text-sm text-gray-600">
+      <td className={`px-5 py-4 text-sm ${bodyTextClass}`}>
         {isSubcategory
           ? categories.find((item) => item.id === category.parent)?.name || "—"
           : "Main category"}
       </td>
 
-      <td className="px-5 py-4 text-sm text-gray-600">{category.sortOrder}</td>
+      <td className={`px-5 py-4 text-sm ${bodyTextClass}`}>
+        {category.sortOrder}
+      </td>
 
       <td className="px-5 py-4">
         <span
           className={`rounded-full px-3 py-1 text-xs font-medium ${
             category.status === "active"
-              ? "bg-green-50 text-green-700"
-              : "bg-gray-100 text-gray-500"
+              ? isDark
+                ? "bg-green-900/40 text-green-300"
+                : "bg-green-50 text-green-700"
+              : isDark
+                ? "bg-gray-800 text-gray-400"
+                : "bg-gray-100 text-gray-500"
           }`}
         >
           {category.status === "active" ? "Active" : "Archived"}
@@ -553,7 +570,11 @@ const AdminCategories = () => {
           <button
             type="button"
             onClick={() => openEditForm(category)}
-            className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-[#183D3D]"
+            className={`rounded-lg p-2 ${
+              isDark
+                ? "text-gray-400 hover:bg-gray-700 hover:text-white"
+                : "text-gray-500 hover:bg-gray-100 hover:text-[#183D3D]"
+            }`}
             title="Edit category"
           >
             <Pencil size={16} />
@@ -563,7 +584,11 @@ const AdminCategories = () => {
             <button
               type="button"
               onClick={() => handleArchive(category)}
-              className="rounded-lg p-2 text-gray-500 hover:bg-red-50 hover:text-red-600"
+              className={`rounded-lg p-2 ${
+                isDark
+                  ? "text-gray-400 hover:bg-red-900/30 hover:text-red-400"
+                  : "text-gray-500 hover:bg-red-50 hover:text-red-600"
+              }`}
               title="Archive category"
             >
               <X size={16} />
@@ -572,7 +597,11 @@ const AdminCategories = () => {
             <button
               type="button"
               onClick={() => handleRestore(category)}
-              className="rounded-lg p-2 text-gray-500 hover:bg-green-50 hover:text-green-600"
+              className={`rounded-lg p-2 ${
+                isDark
+                  ? "text-gray-400 hover:bg-green-900/30 hover:text-green-400"
+                  : "text-gray-500 hover:bg-green-50 hover:text-green-600"
+              }`}
               title="Restore category"
             >
               <RotateCcw size={16} />
@@ -588,8 +617,10 @@ const AdminCategories = () => {
       {/* Page heading */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Categories</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className={`text-2xl font-semibold ${headingClass}`}>
+            Categories
+          </h1>
+          <p className={`mt-1 text-sm ${mutedTextClass}`}>
             Organize your store products into categories and subcategories.
           </p>
         </div>
@@ -608,14 +639,13 @@ const AdminCategories = () => {
 
       {/* Restore category dialog */}
       {restoreTarget && (
-        <section className="rounded-xl border border-gray-200 bg-white p-5">
+        <section className={`rounded-xl border p-5 ${surfaceClass}`}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className={`text-lg font-semibold ${headingClass}`}>
                 Restore {restoreTarget.name}
               </h2>
-
-              <p className="mt-1 text-sm text-gray-500">
+              <p className={`mt-1 text-sm ${mutedTextClass}`}>
                 Select any archived subcategories you also want to restore.
                 Leave them unchecked to restore only the main category.
               </p>
@@ -627,7 +657,11 @@ const AdminCategories = () => {
                 setRestoreTarget(null);
                 setSelectedSubcategoryIds([]);
               }}
-              className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
+              className={`rounded-lg p-2 ${
+                isDark
+                  ? "text-gray-400 hover:bg-gray-800"
+                  : "text-gray-400 hover:bg-gray-100"
+              }`}
               aria-label="Close restore dialog"
             >
               <X size={18} />
@@ -638,7 +672,11 @@ const AdminCategories = () => {
             {archivedSubcategories.map((subcategory) => (
               <label
                 key={subcategory.id}
-                className="flex cursor-pointer items-center gap-3 rounded-lg border border-gray-200 p-3 hover:bg-gray-50"
+                className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 ${
+                  isDark
+                    ? "border-gray-700 hover:bg-gray-800"
+                    : "border-gray-200 hover:bg-gray-50"
+                }`}
               >
                 <input
                   type="checkbox"
@@ -654,8 +692,7 @@ const AdminCategories = () => {
                   }}
                   className="h-4 w-4 accent-[#183D3D]"
                 />
-
-                <span className="text-sm font-medium text-gray-700">
+                <span className={`text-sm font-medium ${bodyTextClass}`}>
                   {subcategory.name}
                 </span>
               </label>
@@ -669,11 +706,14 @@ const AdminCategories = () => {
                 setRestoreTarget(null);
                 setSelectedSubcategoryIds([]);
               }}
-              className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className={`rounded-lg border px-4 py-2 text-sm font-medium ${
+                isDark
+                  ? "border-gray-600 text-gray-300 hover:bg-gray-800"
+                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
+              }`}
             >
               Cancel
             </button>
-
             <button
               type="button"
               onClick={handleConfirmRestore}
@@ -717,13 +757,13 @@ const AdminCategories = () => {
           return (
             <div
               key={stat.label}
-              className="rounded-xl border border-gray-200 bg-white p-5"
+              className={`rounded-xl border p-5 ${surfaceClass}`}
             >
               <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">{stat.label}</p>
+                <p className={`text-sm ${mutedTextClass}`}>{stat.label}</p>
                 <Icon size={19} className="text-[#183D3D]" />
               </div>
-              <p className="mt-3 text-2xl font-semibold text-gray-900">
+              <p className={`mt-3 text-2xl font-semibold ${headingClass}`}>
                 {stat.value}
               </p>
             </div>
@@ -733,13 +773,13 @@ const AdminCategories = () => {
 
       {/* Creation mode chooser */}
       {showCreationChooser && (
-        <section className="rounded-xl border border-gray-200 bg-white p-5">
+        <section className={`rounded-xl border p-5 ${surfaceClass}`}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className={`text-lg font-semibold ${headingClass}`}>
                 What would you like to create?
               </h2>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className={`mt-1 text-sm ${mutedTextClass}`}>
                 Choose how this category should fit into your store hierarchy.
               </p>
             </div>
@@ -747,7 +787,11 @@ const AdminCategories = () => {
             <button
               type="button"
               onClick={closeForm}
-              className="rounded-lg p-2 text-gray-400 hover:bg-gray-100"
+              className={`rounded-lg p-2 ${
+                isDark
+                  ? "text-gray-400 hover:bg-gray-800"
+                  : "text-gray-400 hover:bg-gray-100"
+              }`}
               aria-label="Close"
             >
               <X size={18} />
@@ -758,13 +802,17 @@ const AdminCategories = () => {
             <button
               type="button"
               onClick={() => chooseCreationMode("main")}
-              className="rounded-xl border border-gray-200 p-5 text-left transition hover:border-[#183D3D] hover:bg-[#E8F0EF]"
+              className={`rounded-xl border p-5 text-left transition hover:border-[#183D3D] ${
+                isDark
+                  ? "border-gray-700 hover:bg-gray-800"
+                  : "border-gray-200 hover:bg-[#E8F0EF]"
+              }`}
             >
               <FolderTree size={24} className="text-[#183D3D]" />
-              <h3 className="mt-3 font-semibold text-gray-900">
+              <h3 className={`mt-3 font-semibold ${headingClass}`}>
                 Create Main Category
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className={`mt-1 text-sm ${mutedTextClass}`}>
                 Create a top-level category, such as Stationery. You can also
                 add its initial subcategories now.
               </p>
@@ -773,13 +821,17 @@ const AdminCategories = () => {
             <button
               type="button"
               onClick={() => chooseCreationMode("subcategory")}
-              className="rounded-xl border border-gray-200 p-5 text-left transition hover:border-[#183D3D] hover:bg-[#E8F0EF]"
+              className={`rounded-xl border p-5 text-left transition hover:border-[#183D3D] ${
+                isDark
+                  ? "border-gray-700 hover:bg-gray-800"
+                  : "border-gray-200 hover:bg-[#E8F0EF]"
+              }`}
             >
               <FolderPlus size={24} className="text-[#183D3D]" />
-              <h3 className="mt-3 font-semibold text-gray-900">
+              <h3 className={`mt-3 font-semibold ${headingClass}`}>
                 Create Subcategory
               </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className={`mt-1 text-sm ${mutedTextClass}`}>
                 Add a more specific category under an existing active main
                 category, such as Books under Stationery.
               </p>
@@ -790,17 +842,16 @@ const AdminCategories = () => {
 
       {/* Category form */}
       {isFormOpen && (
-        <section className="rounded-xl border border-gray-200 bg-white p-5">
+        <section className={`rounded-xl border p-5 ${surfaceClass}`}>
           <div className="mb-5">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className={`text-lg font-semibold ${headingClass}`}>
               {editingCategory
                 ? "Edit Category"
                 : creationMode === "main"
                   ? "Create Main Category"
                   : "Create Subcategory"}
             </h2>
-
-            <p className="mt-1 text-sm text-gray-500">
+            <p className={`mt-1 text-sm ${mutedTextClass}`}>
               {creationMode === "main"
                 ? "Create a main category and optionally add its subcategories."
                 : creationMode === "subcategory"
@@ -823,20 +874,23 @@ const AdminCategories = () => {
             requireParent={creationMode === "subcategory"}
             onSubmit={handleSaveCategory}
             onCancel={closeForm}
+            isDark={isDark}
           />
 
           {/* Optional initial subcategories */}
           {creationMode === "main" && (
-            <div className="mt-6 border-t border-gray-100 pt-5">
+            <div className={`mt-6 border-t ${borderClass} pt-5`}>
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div>
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className={`font-semibold ${headingClass}`}>
                     Initial Subcategories
-                    <span className="ml-2 text-xs font-normal text-gray-400">
+                    <span
+                      className={`ml-2 text-xs font-normal ${mutedTextClass}`}
+                    >
                       Optional
                     </span>
                   </h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className={`mt-1 text-sm ${mutedTextClass}`}>
                     Add subcategories now, or create them later.
                   </p>
                 </div>
@@ -844,7 +898,11 @@ const AdminCategories = () => {
                 <button
                   type="button"
                   onClick={addSubcategoryInput}
-                  className="inline-flex items-center gap-2 self-start rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className={`inline-flex items-center gap-2 self-start rounded-lg border px-3 py-2 text-sm font-medium ${
+                    isDark
+                      ? "border-gray-600 text-gray-300 hover:bg-gray-800"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-50"
+                  }`}
                 >
                   <Plus size={16} />
                   Add Subcategory
@@ -862,14 +920,18 @@ const AdminCategories = () => {
                       }
                       placeholder={`Subcategory name ${index + 1}`}
                       maxLength={100}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#183D3D] focus:ring-2 focus:ring-[#183D3D]/10"
+                      className={`w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-[#183D3D] focus:ring-2 focus:ring-[#183D3D]/10 ${inputClass}`}
                     />
 
                     <button
                       type="button"
                       onClick={() => removeSubcategoryInput(index)}
                       disabled={initialSubcategories.length === 1}
-                      className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
+                      className={`rounded-lg p-2 disabled:cursor-not-allowed disabled:opacity-30 ${
+                        isDark
+                          ? "text-gray-400 hover:bg-red-900/30 hover:text-red-400"
+                          : "text-gray-400 hover:bg-red-50 hover:text-red-600"
+                      }`}
                       title="Remove subcategory"
                     >
                       <Trash2 size={17} />
@@ -879,7 +941,7 @@ const AdminCategories = () => {
               </div>
 
               {childNamesError && (
-                <p className="mt-3 text-sm text-red-600">{childNamesError}</p>
+                <p className="mt-3 text-sm text-red-500">{childNamesError}</p>
               )}
             </div>
           )}
@@ -890,30 +952,48 @@ const AdminCategories = () => {
       {!isFormOpen && !showCreationChooser && (
         <>
           {isLoading ? (
-            <div className="rounded-xl border bg-white p-8 text-center text-gray-500">
+            <div
+              className={`rounded-xl border p-8 text-center ${surfaceClass} ${mutedTextClass}`}
+            >
               Loading categories...
             </div>
           ) : error ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+            <div
+              className={`rounded-xl border p-4 text-sm ${
+                isDark
+                  ? "border-red-900 bg-red-950/40 text-red-300"
+                  : "border-red-200 bg-red-50 text-red-600"
+              }`}
+            >
               {error}
             </div>
           ) : (
-            <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <section
+              className={`overflow-hidden rounded-xl border ${surfaceClass}`}
+            >
               <div className="flex items-center justify-between px-5 py-4">
                 <div>
-                  <h2 className="font-semibold text-gray-900">Category List</h2>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <h2 className={`font-semibold ${headingClass}`}>
+                    Category List
+                  </h2>
+                  <p className={`mt-1 text-xs ${mutedTextClass}`}>
                     Main categories and their subcategories
                   </p>
                 </div>
-                <span className="text-sm text-gray-500">
+                <span className={`text-sm ${mutedTextClass}`}>
                   {categoryGroups.length} main categories
                 </span>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full min-w-187.5 text-left">
-                  <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                  <thead
+                    className={`text-xs uppercase tracking-wide ${
+                      isDark
+                        ? "bg-gray-800 text-gray-400"
+                        : "bg-gray-50 text-gray-500"
+                    }`}
+                  >
                     <tr>
                       <th className="px-5 py-3 font-medium">Category</th>
                       <th className="px-5 py-3 font-medium">Parent</th>
@@ -928,13 +1008,21 @@ const AdminCategories = () => {
                   <tbody>
                     {categoryGroups.map((mainCategory) => (
                       <Fragment key={mainCategory.id}>
-                        <tr className="border-t border-gray-100 bg-gray-50/60">
+                        <tr
+                          className={`border-t ${borderClass} ${
+                            isDark ? "bg-gray-800/50" : "bg-gray-50/60"
+                          }`}
+                        >
                           <td className="px-5 py-4">
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => toggleExpanded(mainCategory.id)}
-                                className="rounded p-1 text-gray-500 hover:bg-gray-200"
+                                className={`rounded p-1 ${
+                                  isDark
+                                    ? "text-gray-400 hover:bg-gray-700"
+                                    : "text-gray-500 hover:bg-gray-200"
+                                }`}
                                 aria-label="Toggle subcategories"
                               >
                                 {expandedCategories.has(mainCategory.id) ? (
@@ -945,21 +1033,20 @@ const AdminCategories = () => {
                               </button>
 
                               <div>
-                                <p className="font-semibold text-gray-800">
+                                <p className={`font-semibold ${bodyTextClass}`}>
                                   {mainCategory.name}
                                 </p>
-                                <p className="text-xs text-gray-400">
+                                <p className={`text-xs ${mutedTextClass}`}>
                                   {mainCategory.slug}
                                 </p>
                               </div>
                             </div>
                           </td>
 
-                          <td className="px-5 py-4 text-sm text-gray-500">
+                          <td className={`px-5 py-4 text-sm ${mutedTextClass}`}>
                             Main category
                           </td>
-
-                          <td className="px-5 py-4 text-sm text-gray-600">
+                          <td className={`px-5 py-4 text-sm ${bodyTextClass}`}>
                             {mainCategory.sortOrder}
                           </td>
 
@@ -967,8 +1054,12 @@ const AdminCategories = () => {
                             <span
                               className={`rounded-full px-3 py-1 text-xs font-medium ${
                                 mainCategory.status === "active"
-                                  ? "bg-green-50 text-green-700"
-                                  : "bg-gray-100 text-gray-500"
+                                  ? isDark
+                                    ? "bg-green-900/40 text-green-300"
+                                    : "bg-green-50 text-green-700"
+                                  : isDark
+                                    ? "bg-gray-700 text-gray-300"
+                                    : "bg-gray-100 text-gray-500"
                               }`}
                             >
                               {mainCategory.status === "active"
@@ -978,34 +1069,48 @@ const AdminCategories = () => {
                           </td>
 
                           <td className="px-5 py-4 text-right">
-                            <button
-                              type="button"
-                              onClick={() => openEditForm(mainCategory)}
-                              className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-[#183D3D]"
-                              title="Edit category"
-                            >
-                              <Pencil size={16} />
-                            </button>
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openEditForm(mainCategory)}
+                                className={`rounded-lg p-2 ${
+                                  isDark
+                                    ? "text-gray-400 hover:bg-gray-700 hover:text-white"
+                                    : "text-gray-500 hover:bg-gray-100 hover:text-[#183D3D]"
+                                }`}
+                                title="Edit category"
+                              >
+                                <Pencil size={16} />
+                              </button>
 
-                            {mainCategory.status === "active" ? (
-                              <button
-                                type="button"
-                                onClick={() => handleArchive(mainCategory)}
-                                className="rounded-lg p-2 text-gray-500 hover:bg-red-50 hover:text-red-600"
-                                title="Archive category"
-                              >
-                                <X size={16} />
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => handleRestore(mainCategory)}
-                                className="rounded-lg p-2 text-gray-500 hover:bg-green-50 hover:text-green-600"
-                                title="Restore category"
-                              >
-                                <RotateCcw size={16} />
-                              </button>
-                            )}
+                              {mainCategory.status === "active" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleArchive(mainCategory)}
+                                  className={`rounded-lg p-2 ${
+                                    isDark
+                                      ? "text-gray-400 hover:bg-red-900/30 hover:text-red-400"
+                                      : "text-gray-500 hover:bg-red-50 hover:text-red-600"
+                                  }`}
+                                  title="Archive category"
+                                >
+                                  <X size={16} />
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRestore(mainCategory)}
+                                  className={`rounded-lg p-2 ${
+                                    isDark
+                                      ? "text-gray-400 hover:bg-green-900/30 hover:text-green-400"
+                                      : "text-gray-500 hover:bg-green-50 hover:text-green-600"
+                                  }`}
+                                  title="Restore category"
+                                >
+                                  <RotateCcw size={16} />
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
 
@@ -1020,7 +1125,7 @@ const AdminCategories = () => {
                       <tr>
                         <td
                           colSpan={5}
-                          className="px-5 py-12 text-center text-sm text-gray-500"
+                          className={`px-5 py-12 text-center text-sm ${mutedTextClass}`}
                         >
                           No categories found. Try changing your search or
                           filters.

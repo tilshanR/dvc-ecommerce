@@ -15,8 +15,9 @@ export default function CategoryForm({
   categories = [],
   initialCategory = null,
   hasChildren = false,
-    requireParent = false,
-     forceMainCategory = false,
+  requireParent = false,
+  isDark = false,
+  forceMainCategory = false,
 
   onSubmit = () => {},
   onCancel = () => {},
@@ -63,9 +64,9 @@ export default function CategoryForm({
       return;
     }
     if (requireParent && !formData.parent) {
-  setError("Please select a main category for this subcategory.");
-  return;
-}
+      setError("Please select a main category for this subcategory.");
+      return;
+    }
 
     if (!formData.slug.trim()) {
       setError("Category slug is required.");
@@ -83,7 +84,7 @@ export default function CategoryForm({
       name: formData.name.trim(),
       slug: formData.slug.trim(),
       description: formData.description.trim(),
-     parent: forceMainCategory ? null : formData.parent || null,
+      parent: forceMainCategory ? null : formData.parent || null,
       sortOrder,
       attributes: initialCategory?.attributes ?? [],
     };
@@ -103,23 +104,42 @@ export default function CategoryForm({
     );
   });
 
-  const inputClass =
-    "mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10";
+  const inputClass = `mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 ${
+    isDark
+      ? "border-gray-700 bg-gray-900 text-gray-100 placeholder:text-gray-500 disabled:bg-gray-800"
+      : "border-gray-300 bg-white text-gray-900 placeholder:text-gray-400 disabled:bg-gray-100"
+  }`;
 
-  const labelClass = "text-sm font-medium text-gray-700";
+  const labelClass = `text-sm font-medium ${
+    isDark ? "text-gray-200" : "text-gray-700"
+  }`;
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-xl border border-gray-200 bg-white"
+      className={`rounded-xl border ${
+        isDark ? "border-gray-700 bg-gray-900" : "border-gray-200 bg-white"
+      }`}
     >
       {/* Form heading */}
-      <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+      <div
+        className={`flex items-center justify-between border-b px-5 py-4 ${
+          isDark ? "border-gray-700" : "border-gray-200"
+        }`}
+      >
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">
+          <h2
+            className={`text-lg font-semibold ${
+              isDark ? "text-gray-100" : "text-gray-900"
+            }`}
+          >
             {initialCategory ? "Edit Category" : "Create Category"}
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p
+            className={`mt-1 text-sm ${
+              isDark ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
             Enter the category information below.
           </p>
         </div>
@@ -127,7 +147,11 @@ export default function CategoryForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+          className={`rounded-lg p-2 transition ${
+            isDark
+              ? "text-gray-400 hover:bg-gray-800 hover:text-gray-200"
+              : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          }`}
           aria-label="Close category form"
         >
           <X className="h-5 w-5" />
@@ -137,7 +161,13 @@ export default function CategoryForm({
       {/* Form fields */}
       <div className="space-y-5 p-5">
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div
+            className={`rounded-lg border px-4 py-3 text-sm ${
+              isDark
+                ? "border-red-900 bg-red-950 text-red-300"
+                : "border-red-200 bg-red-50 text-red-700"
+            }`}
+          >
             {error}
           </div>
         )}
@@ -181,7 +211,11 @@ export default function CategoryForm({
               required
             />
 
-            <p className="mt-1 text-xs text-gray-400">
+            <p
+              className={`mt-1 text-xs ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
               Automatically generated from the category name.
             </p>
           </div>
@@ -195,11 +229,11 @@ export default function CategoryForm({
             <select
               id="parent"
               name="parent"
-             value={forceMainCategory ? "" : formData.parent}
+              value={forceMainCategory ? "" : formData.parent}
               onChange={handleChange}
               disabled={hasChildren || forceMainCategory}
               required={requireParent}
-              className={`${inputClass} disabled:cursor-not-allowed disabled:bg-gray-100`}
+              className={`${inputClass} disabled:cursor-not-allowed`}
             >
               <option value="">None (Main Category)</option>
 
@@ -214,12 +248,20 @@ export default function CategoryForm({
             </select>
 
             {hasChildren && (
-              <p className="mt-1 text-xs text-gray-500">
+              <p
+                className={`mt-1 text-xs ${
+                  isDark ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
                 This category has subcategories and cannot become a subcategory.
               </p>
             )}
 
-            <p className="mt-1 text-xs text-gray-400">
+            <p
+              className={`mt-1 text-xs ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
               Select a parent to create a subcategory.
             </p>
           </div>
@@ -261,21 +303,35 @@ export default function CategoryForm({
         </div>
 
         {/* Condition setting */}
-        <div className="rounded-lg border border-gray-200 p-4">
+        <div
+          className={`rounded-lg border p-4 ${
+            isDark ? "border-gray-700" : "border-gray-200"
+          }`}
+        >
           <label className="flex cursor-pointer items-start gap-3">
             <input
               type="checkbox"
               name="allowCondition"
               checked={formData.allowCondition}
               onChange={handleChange}
-              className="mt-1 h-4 w-4 rounded border-gray-300 accent-teal-800"
+              className={`mt-1 h-4 w-4 rounded accent-teal-800 ${
+                isDark ? "border-gray-600 bg-gray-800" : "border-gray-300"
+              }`}
             />
 
             <span>
-              <span className="block text-sm font-medium text-gray-800">
+              <span
+                className={`block text-sm font-medium ${
+                  isDark ? "text-gray-200" : "text-gray-800"
+                }`}
+              >
                 Allow product condition
               </span>
-              <span className="mt-1 block text-xs text-gray-500">
+              <span
+                className={`mt-1 block text-xs ${
+                  isDark ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
                 Enable condition options such as New and Used for products in
                 this category.
               </span>
@@ -285,11 +341,19 @@ export default function CategoryForm({
       </div>
 
       {/* Form actions */}
-      <div className="flex flex-col-reverse gap-3 border-t border-gray-200 px-5 py-4 sm:flex-row sm:justify-end">
+      <div
+        className={`flex flex-col-reverse gap-3 border-t px-5 py-4 sm:flex-row sm:justify-end ${
+          isDark ? "border-gray-700" : "border-gray-200"
+        }`}
+      >
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+          className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition ${
+            isDark
+              ? "border-gray-600 text-gray-200 hover:bg-gray-800"
+              : "border-gray-300 text-gray-700 hover:bg-gray-50"
+          }`}
         >
           Cancel
         </button>

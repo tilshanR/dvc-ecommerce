@@ -1,4 +1,7 @@
 import DynamicAttributeFields from "./DynamicAttributeFields";
+import AdminInput from "../../components/ui/AdminInput";
+import AdminTextarea from "../../components/ui/AdminTextarea";
+import AdminSelect from "../../components/ui/AdminSelect";
 export default function ProductFormFields({
   formData,
   onChange,
@@ -40,9 +43,8 @@ export default function ProductFormFields({
         <h3 className="font-semibold text-gray-800">Basic Information</h3>
 
         <div>
-          <label className={labelClass}>Product Name *</label>
-          <input
-            className={inputClass}
+          <AdminInput
+            label="Product Name *"
             value={formData.name}
             onChange={(e) => onChange("name", e.target.value)}
             required
@@ -51,19 +53,18 @@ export default function ProductFormFields({
         </div>
 
         <div>
-          <label className={labelClass}>SKU</label>
-          <input
-            className={inputClass}
+          <AdminInput
+            label="SKU"
             value={formData.sku}
             onChange={(e) => onChange("sku", e.target.value)}
           />
         </div>
 
         <div>
-          <label className={labelClass}>Description</label>
-          <textarea
-            className={inputClass}
+          <AdminTextarea
+            label="Description"
             rows={3}
+            placeholder="e.g. This product is .."
             value={formData.description}
             onChange={(e) => onChange("description", e.target.value)}
           />
@@ -75,9 +76,8 @@ export default function ProductFormFields({
         <h3 className="font-semibold text-gray-800">Classification</h3>
 
         <div>
-          <label className={labelClass}>Category *</label>
-          <select
-            className={inputClass}
+          <AdminSelect
+            label="Category *"
             value={formData.category}
             onChange={(e) => {
               onChange("category", e.target.value);
@@ -100,7 +100,7 @@ export default function ProductFormFields({
                 {category.name}
               </option>
             ))}
-          </select>
+          </AdminSelect>
         </div>
 
         <div>
@@ -148,13 +148,12 @@ export default function ProductFormFields({
         <h3 className="font-semibold text-gray-800">Pricing</h3>
 
         <div>
-          <label className={labelClass}>Selling Price (Rs.) *</label>
-          <input
+          <AdminInput
+            label="Selling Price (Rs.) *"
             type="number"
             min="0"
             step="1"
             placeholder="e.g. 3000"
-            className={inputClass}
             value={formData.price}
             onChange={(e) => onChange("price", e.target.value)}
             required
@@ -162,13 +161,12 @@ export default function ProductFormFields({
         </div>
 
         <div>
-          <label className={labelClass}>Original Price (Rs.)</label>
-          <input
+          <AdminInput
+            label="Original Price (Rs.)"
             type="number"
             min="0"
             step="1"
             placeholder="e.g. 2000"
-            className={inputClass}
             value={formData.originalPrice}
             onChange={(e) => onChange("originalPrice", e.target.value)}
           />
@@ -176,62 +174,62 @@ export default function ProductFormFields({
       </section>
 
       {/* Inventory */}
-{/* Inventory */}
-<section className="space-y-3">
-  <h3 className="font-semibold text-gray-800">Inventory</h3>
+      {/* Inventory */}
+      <section className="space-y-3">
+        <h3 className="font-semibold text-gray-800">Inventory</h3>
 
-  <div>
-    <label className={labelClass}>On-hand Quantity *</label>
-    <input
-      type="number"
-      min="0"
-      step="1"
-      className={inputClass}
-      value={formData.inventory.onHand}
-      onChange={(e) => updateInventory("onHand", e.target.value)}
-      required
-    /><p className="mt-1 text-xs text-gray-500">
-  Leave empty to use 0.
-</p>
-  </div>
+        <div>
+          <AdminInput
+            label="On-hand Quantity *"
+            type="number"
+            min="0"
+            step="1"
+            value={formData.inventory.onHand}
+            onChange={(e) => updateInventory("onHand", e.target.value)}
+            required
+            helperText="Leave empty to use 0."
+          />
+          <p className="mt-1 text-xs text-gray-500">Leave empty to use 0.</p>
+        </div>
 
-  <div>
-    <label className={labelClass}>Reserved Quantity</label>
-    <input
-      type="number"
-      min="0"
-      max={formData.inventory.onHand}
-      step="1"
-      className={inputClass}
-      value={formData.inventory.reserved}
-      onChange={(e) => updateInventory("reserved", e.target.value)}
-    />
-    <p className="mt-1 text-xs text-gray-500">
-        Leave empty to use 0. Reserved stock cannot exceed the on-hand quantity.
-    </p>
-  </div>
+        <div>
+          <AdminInput
+            label="Reserved Quantity"
+            type="number"
+            min="0"
+            max={formData.inventory.onHand}
+            step="1"
+            value={formData.inventory.reserved}
+            onChange={(e) => updateInventory("reserved", e.target.value)}
+            helperText="Leave empty to use 0. Reserved stock cannot exceed the on-hand quantity."
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Leave empty to use 0. Reserved stock cannot exceed the on-hand
+            quantity.
+          </p>
+        </div>
 
-  <div className="rounded-lg bg-[#E8F0EF] p-3">
-    <p className="text-sm text-gray-600">Available Stock</p>
-    <p className="text-lg font-semibold text-[#183D3D]">
-      {Number(formData.inventory.onHand || 0) -
-        Number(formData.inventory.reserved || 0)}
-    </p>
-  </div>
-</section>
+        <div className="rounded-lg bg-[#E8F0EF] p-3">
+          <p className="text-sm text-gray-600">Available Stock</p>
+          <p className="text-lg font-semibold text-[#183D3D]">
+            {Number(formData.inventory.onHand || 0) -
+              Number(formData.inventory.reserved || 0)}
+          </p>
+        </div>
+      </section>
 
       {/* Image */}
       <section className="space-y-3">
         <h3 className="font-semibold text-gray-800">Product Image</h3>
 
         <div>
-          <label className={labelClass}>Image URL</label>
-          <input
+          <AdminInput
+            label="Image URL"
             type="url"
-            className={inputClass}
             value={formData.images[0]?.url || ""}
             onChange={(e) => updateImage(e.target.value.trim())}
             placeholder="https://example.com/product.jpg"
+            helperText="MVP uses an image URL. Image uploads can be added later."
           />
           <p className="mt-1 text-xs text-gray-500">
             MVP uses an image URL. Image uploads can be added later.
@@ -244,12 +242,11 @@ export default function ProductFormFields({
         <h3 className="font-semibold text-gray-800">Additional Information</h3>
 
         <div>
-          <label className={labelClass}>Warranty</label>
-          <input
-            className={inputClass}
-            maxLength={300}
+          <AdminInput
+            label="Warranty"
             value={formData.warranty}
             onChange={(e) => onChange("warranty", e.target.value)}
+            maxLength={300}
           />
         </div>
 

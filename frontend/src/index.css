@@ -5,3 +5,74 @@
   --color-dvcAmber: #EF6C00;
   --color-dvcRed: #C62828;
 }
+
+  /* ADMIN LIGHT THEME*/
+
+:root {
+  color-scheme: light;
+
+  --admin-bg: #f8fafc;
+  --admin-surface: #ffffff;
+  --admin-text: #111827;
+  --admin-muted: #6b7280;
+  --admin-border: #e5e7eb;
+  --admin-hover: #f3f4f6;
+  --admin-input-bg: #ffffff;
+  --admin-overlay: rgb(0 0 0 / 0.5);
+}
+
+/*  ADMIN DARK THEME*/
+
+[data-admin-theme="dark"] {
+  color-scheme: dark;
+
+  --admin-bg: #111827;
+  --admin-surface: #1f2937;
+  --admin-text: #f9fafb;
+  --admin-muted: #9ca3af;
+  --admin-border: #374151;
+  --admin-hover: #374151;
+  --admin-input-bg: #1f2937;
+  --admin-overlay: rgb(0 0 0 / 0.7);
+}
+
+
+ /*  REUSABLE ADMIN THEME CLASSES*/
+
+.admin-page {
+  background-color: var(--admin-bg);
+  color: var(--admin-text);
+}
+
+.admin-card {
+  background-color: var(--admin-surface);
+  color: var(--admin-text);
+  border: 1px solid var(--admin-border);
+}
+
+.admin-input {
+  background-color: var(--admin-input-bg);
+  color: var(--admin-text);
+  border: 1px solid var(--admin-border);
+}
+
+.admin-input::placeholder {
+  color: var(--admin-muted);
+}
+
+.admin-muted {
+  color: var(--admin-muted);
+}
+
+.admin-border {
+  border-color: var(--admin-border);
+}
+
+.admin-hover:hover {
+  background-color: var(--admin-hover);
+}
+.admin-label {
+  color: var(--admin-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+}

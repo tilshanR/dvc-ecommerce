@@ -2,17 +2,24 @@ import mongoose from "mongoose";
 
 import {
   findAllProducts,
+  findProductById,
   findActiveProductById,
   findActiveProductBySlug,
-} from "./productRepository.js";
-
-import Category from "../category/categoryModel.js";
-import {
   createProduct,
+  updateProductById,
+  archiveProductById,
+  restoreProductById,
   findProductBySku,
   productSlugExists,
 } from "./productRepository.js";
-import { createProductSchema } from "./productValidation.js";
+
+import Category from "../category/categoryModel.js";
+
+import {
+  createProductSchema,
+  updateProductSchema,
+  productQuerySchema,
+} from "./productValidation.js";
 /* --------------------------------
    SHOP PRODUCT LISTING
 --------------------------------- */
@@ -158,7 +165,7 @@ const validateCategoryAttributes = (
 --------------------------------- */
 
 export const createProductService = async (input) => {
-  // 1. Validate the incoming product data.
+  //  Validate the incoming product data.
   const validation = createProductSchema.safeParse(input);
 
   if (!validation.success) {
@@ -171,7 +178,7 @@ export const createProductService = async (input) => {
 
   const productData = validation.data;
 
-  // 2. Check whether the category exists and is active.
+  //  Check whether the category exists and is active.
   const category = await Category.findOne({
     _id: productData.category,
     status: "active",
@@ -181,17 +188,36 @@ export const createProductService = async (input) => {
     throw createServiceError("Active category not found.", 404);
   }
 
-  // 3. Validate category-specific conditions.
-  if (productData.condition !== null && !category.allowCondition) {
+  // Validate category-specific conditions
+  if (!category.allowCondition) {
+    productData.condition = null;
+  } else if (!["new", "used"].includes(productData.condition)) {
     throw createServiceError(
-      "This category does not support product conditions.",
+      "A valid product condition (new or used) is required for this category.",
+      400,
     );
   }
+  //  Apply the category warranty policy.
+  if (category.warrantyPolicy === "none") {
+    // This category does not support warranties.
+    productData.warranty = {
+      type: "none",
+      duration: null,
+      unit: null,
+    };
+  } else if (category.warrantyPolicy === "required") {
+    // This category requires a warranty.
+    if (!productData.warranty || productData.warranty.type === "none") {
+      throw createServiceError(
+        "A warranty is required for products in this category.",
+      );
+    }
+  }
 
-  // 4. Validate dynamic category attributes.
+  //  Validate dynamic category attributes.
   validateCategoryAttributes(category.attributes, productData.attributes);
 
-  // 5. Check SKU uniqueness.
+  // Check SKU uniqueness.
   if (productData.sku) {
     const existingSku = await findProductBySku(productData.sku);
 
@@ -256,10 +282,7 @@ export const getShopProducts = async (filters = {}) => {
 
   return await findAllProducts(productFilters);
 };
-
-/* --------------------------------
-   SINGLE SHOP PRODUCT
---------------------------------- */
+//single shop product
 
 /**
  * Retrieve one active product using its MongoDB ID or slug.
@@ -271,7 +294,6 @@ export const getShopProduct = async (identifier) => {
   if (typeof identifier !== "string" || !identifier.trim()) {
     return null;
   }
-
   const productIdentifier = identifier.trim();
 
   // Find by MongoDB ObjectId.
@@ -281,4 +303,217 @@ export const getShopProduct = async (identifier) => {
 
   // Otherwise, find by slug.
   return await findActiveProductBySlug(productIdentifier);
+};
+/**
+ * Retrieves a filtered list of products for admin users.
+ *
+ * @param {Object} [filters={}] - Query parameters and filter criteria for products.
+ * @throws {ServiceError} Throws a 400 error if the provided filters fail validation.
+ * @returns {Promise<Array>} A promise that resolves to the list of matching products.
+ */
+export const getAdminProducts = async (filters = {}) => {
+  const validation = productQuerySchema.safeParse(filters);
+
+  if (!validation.success) {
+    throw createServiceError("Invalid product filters.", 400);
+  }
+  return await findAllProducts(validation.data);
+};
+/**
+ * Retrieves a single product by its unique identifier for admin users.
+ *
+ * @param {string} productId - The unique MongoDB ObjectId of the product to retrieve.
+ * @throws {ServiceError} Throws a 400 error if the productId is invalid, or a 404 error if the product does not exist.
+ * @returns {Promise<Object>} A promise that resolves to the product object.
+ */
+export const getAdminProduct = async (productId) => {
+  if (!mongoose.isValidObjectId(productId)) {
+    throw createServiceError("Invalid product ID.", 400);
+  }
+  const product = await findProductById(productId);
+
+  if (!product) {
+    throw createServiceError("Product not found.", 404);
+  }
+
+  return product;
+};
+/**
+ * Updates an existing product with new data, ensuring validation, uniqueness, inventory consistency, and category compatibility.
+ *
+ * @param {string} productId - The unique MongoDB ObjectId of the product to update.
+ * @param {Object} input - The partial or full object containing fields to update.
+ * @throws {ServiceError} Throws errors for invalid IDs (400), non-existent products/categories (404), invalid schema data or logic conflicts (400), or duplicate SKUs (409).
+ * @returns {Promise<Object>} A promise that resolves to the updated product object.
+ */
+export const updateProductService = async (productId, input) => {
+  // 1. Validate product ID
+  if (!mongoose.isValidObjectId(productId)) {
+    throw createServiceError("Invalid product ID.", 400);
+  }
+  // 2. Find existing product
+  const existingProduct = await findProductById(productId);
+
+  if (!existingProduct) {
+    throw createServiceError("Product not found.", 404);
+  }
+  // 3. Validate incoming update data
+  const validation = updateProductSchema.safeParse(input);
+
+  if (!validation.success) {
+    const error = createServiceError("Invalid product update data.", 400);
+    error.details = validation.error.issues;
+    throw error;
+  }
+  const updates = validation.data;
+
+  if (!updates || Object.keys(updates).length === 0) {
+    throw createServiceError(
+      "At least one field is required for an update.",
+      400,
+    );
+  }
+  // 4. Check SKU uniqueness
+  if (updates.sku) {
+    const existingSkuProduct = await findProductBySku(updates.sku);
+
+    if (
+      existingSkuProduct &&
+      existingSkuProduct._id.toString() !== existingProduct._id.toString()
+    ) {
+      throw createServiceError("This SKU is already in use.", 409);
+    }
+  }
+  // 5. Merge and validate inventory
+  if (updates.inventory) {
+    const nextInventory = {
+      onHand:
+        updates.inventory.onHand ?? existingProduct.inventory?.onHand ?? 0,
+
+      reserved:
+        updates.inventory.reserved ?? existingProduct.inventory?.reserved ?? 0,
+    };
+
+    if (nextInventory.reserved > nextInventory.onHand) {
+      throw createServiceError(
+        "Reserved stock cannot exceed on-hand stock.",
+        400,
+      );
+    }
+
+    updates.inventory = nextInventory;
+  }
+
+  // 6. Determine the resulting category
+  const existingCategoryId =
+    existingProduct.category?._id || existingProduct.category;
+
+  const nextCategoryId = updates.category ?? existingCategoryId;
+
+  const categoryChanged =
+    updates.category &&
+    updates.category.toString() !== existingCategoryId.toString();
+
+  const attributesSubmitted = Object.hasOwn(updates, "attributes");
+  const conditionSubmitted = Object.hasOwn(updates, "condition");
+  const warrantySubmitted = Object.hasOwn(updates, "warranty");
+
+  // 7. Validate category attributes and condition when relevant
+  {
+    const category = await Category.findById(nextCategoryId);
+
+    if (!category) {
+      throw createServiceError("Selected category not found.", 404);
+    }
+
+    if (category.status !== "active") {
+      throw createServiceError("Selected category is not active.", 400);
+    }
+
+    const nextAttributes = attributesSubmitted
+      ? updates.attributes
+      : categoryChanged
+        ? {}
+        : existingProduct.attributes || {};
+
+    if (categoryChanged || attributesSubmitted) {
+      validateCategoryAttributes(category.attributes || [], nextAttributes);
+
+      updates.attributes = nextAttributes;
+    }
+    let nextCondition = conditionSubmitted
+      ? updates.condition
+      : existingProduct.condition;
+
+    // Handle category condition requirements.
+    if (!category.allowCondition) {
+      nextCondition = null;
+      updates.condition = null;
+    } else if (!["new", "used"].includes(nextCondition)) {
+      throw createServiceError(
+        "A valid product condition (new or used) is required for this category.",
+        400,
+      );
+    }
+
+    // Validate the category warranty policy.
+    const nextWarranty = warrantySubmitted
+      ? updates.warranty
+      : existingProduct.warranty;
+
+    if (category.warrantyPolicy === "none") {
+      updates.warranty = {
+        type: "none",
+        duration: null,
+        unit: null,
+      };
+    } else if (
+      category.warrantyPolicy === "required" &&
+      (!nextWarranty || nextWarranty.type === "none")
+    ) {
+      throw createServiceError(
+        "A warranty is required for products in this category.",
+        400,
+      );
+    }
+  }
+  // 8. Save the updated product
+  const updatedProduct = await updateProductById(productId, updates);
+
+  if (!updatedProduct) {
+    throw createServiceError("Product not found.", 404);
+  }
+  return updatedProduct;
+};
+
+/**
+ * Archives a product.
+ */
+export const archiveProductService = async (productId) => {
+  if (!mongoose.isValidObjectId(productId)) {
+    throw createServiceError("Invalid product ID.", 400);
+  }
+
+  const product = await archiveProductById(productId);
+
+  if (!product) {
+    throw createServiceError("Product not found.", 404);
+  }
+  return product;
+};
+
+/**
+ * Restores an archived product to draft status.
+ */
+export const restoreProductService = async (productId) => {
+  if (!mongoose.isValidObjectId(productId)) {
+    throw createServiceError("Invalid product ID.", 400);
+  }
+
+  const product = await restoreProductById(productId);
+
+  if (!product) {
+    throw createServiceError("Product not found.", 404);
+  }
+  return product;
 };

@@ -107,6 +107,9 @@ const categorySchema = z
     attributes: attributesSchema,
 
     allowCondition: z.boolean().default(false),
+    warrantyPolicy: z
+      .enum(["none", "optional", "required"])
+      .default("optional"),
 
     status: z.enum(["active", "archived"]).default("active"),
   })

@@ -8,6 +8,7 @@ import errorMiddleware from "./middleware/errorMiddleware.js";
 import contactRoutes from "./modules/contact/contactRoutes.js";
 import categoryRoutes from "./modules/catalog/category/categoryRoutes.js";
 import productRoutes from "./modules/catalog/product/productRoutes.js"
+import adminProductRoutes from "./modules/catalog/product/admin/adminProductRoutes.js";
 
 const app = express();
 
@@ -40,6 +41,10 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/contact", contactRoutes);
 
 app.use("/api/products", productRoutes);
+
+//admin related routes
+app.use("/api/products", productRoutes);
+app.use("/api/admin/products", adminProductRoutes);
 
 //  Health-check endpoint
 // GET /api/health checks whether the API is responding

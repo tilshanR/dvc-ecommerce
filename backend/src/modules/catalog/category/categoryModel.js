@@ -129,6 +129,11 @@ const categorySchema = new Schema(
       type: Boolean,
       default: false,
     },
+    warrantyPolicy: {
+      type: String,
+      enum: ["none", "optional", "required"],
+      default: "optional",
+    },
 
     status: {
       type: String,
@@ -155,7 +160,7 @@ categorySchema.virtual("subcategories", {
 
 // Check whether this is a main category.
 categorySchema.virtual("isMainCategory").get(function () {
-    return !this.parent;
+  return !this.parent;
 });
 
 /* INDEXES */

@@ -65,6 +65,30 @@ inventorySchema.pre("validate", function () {
   }
 });
 
+// Product warranty schema
+const warrantySchema = new Schema(
+  {
+    type: {
+      type: String,
+      enum: ["manufacturer", "checking", "none"],
+      required: true,
+    },
+
+    duration: {
+      type: Number,
+      min: 1,
+      default: null,
+    },
+
+    unit: {
+      type: String,
+      enum: ["days", "months", "years", null],
+      default: null,
+    },
+  },
+  { _id: false },
+);
+
 //main product schema
 const productSchema = new Schema(
   {
@@ -196,11 +220,10 @@ const productSchema = new Schema(
     },
 
     // WARRANTY
+
     warranty: {
-      type: String,
-      trim: true,
+      type: warrantySchema,
       default: null,
-      maxlength: 300,
     },
 
     // PRODUCT RATINGS

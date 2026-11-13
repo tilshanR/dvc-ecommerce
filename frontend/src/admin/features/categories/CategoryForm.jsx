@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, Save } from "lucide-react";
 import AdminInput from "../../components/ui/AdminInput";
+import AdminSelect from "../../components/ui/AdminSelect";
 
 const slugify = (value) =>
   value
@@ -219,18 +220,15 @@ export default function CategoryForm({
 
           {/* Parent category */}
           <div>
-            <label htmlFor="parent" className={labelClass}>
-              Parent Category
-            </label>
-
-            <select
+            <AdminSelect
               id="parent"
               name="parent"
+              label="Parent Category"
               value={forceMainCategory ? "" : formData.parent}
               onChange={handleChange}
               disabled={hasChildren || forceMainCategory}
               required={requireParent}
-              className={`${inputClass} disabled:cursor-not-allowed`}
+              className="disabled:cursor-not-allowed"
             >
               <option value="">None (Main Category)</option>
 
@@ -242,7 +240,7 @@ export default function CategoryForm({
                   {category.name}
                 </option>
               ))}
-            </select>
+            </AdminSelect>
 
             {hasChildren && (
               <p

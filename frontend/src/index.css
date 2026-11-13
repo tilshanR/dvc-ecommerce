@@ -71,3 +71,8 @@
 .admin-hover:hover {
   background-color: var(--admin-hover);
 }
+.admin-label {
+  color: var(--admin-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+}

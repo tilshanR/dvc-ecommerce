@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X, Save } from "lucide-react";
+import AdminInput from "../../components/ui/AdminInput";
 
 const slugify = (value) =>
   value
@@ -175,18 +176,14 @@ export default function CategoryForm({
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {/* Category name */}
           <div>
-            <label htmlFor="name" className={labelClass}>
-              Category Name <span className="text-red-500">*</span>
-            </label>
-
-            <input
+            <AdminInput
               id="name"
               name="name"
+              label="Category Name *"
               type="text"
               value={formData.name}
               onChange={(event) => handleNameChange(event.target.value)}
               placeholder="e.g. Mobile Phones"
-              className={inputClass}
               required
             />
           </div>

@@ -4,6 +4,7 @@ import ProductFilters from "../features/products/ProductFilters";
 import ProductTable from "../features/products/ProductTable";
 import ProductForm from "../features/products/ProductForm";
 import { getAdminProducts } from "../services/adminProductApi";
+import AdminCard from "../components/ui/AdminCard";
 const mockCategories = [
   { _id: "mock-smartphones", name: "Smartphones" },
   { _id: "mock-ram", name: "RAM" },
@@ -227,13 +228,17 @@ export default function AdminProducts() {
 
 function SummaryCard({ title, count, icon }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border bg-white p-5">
+    <AdminCard className="flex items-center justify-between">
       <div>
-        <p className="text-sm text-gray-500">{title}</p>
-        <p className="mt-2 text-2xl font-semibold text-[#183D3D]">{count}</p>
+        <p className="admin-muted text-sm">{title}</p>
+        <p className="mt-2 text-2xl font-semibold text-[var(--admin-text)">
+          {count}
+        </p>
       </div>
 
-      <div className="rounded-lg bg-[#E8F0EF] p-3 text-[#183D3D]">{icon}</div>
-    </div>
+      <div className="rounded-lg bg-(--admin-hover) p-3 text-(--admin-text)">
+        {icon}
+      </div>
+    </AdminCard>
   );
 }

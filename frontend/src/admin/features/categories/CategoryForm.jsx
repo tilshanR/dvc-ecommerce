@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, Save } from "lucide-react";
 import AdminInput from "../../components/ui/AdminInput";
 import AdminSelect from "../../components/ui/AdminSelect";
+import AdminTextarea from "../../components/ui/AdminTextarea";
 
 const slugify = (value) =>
   value
@@ -282,18 +283,14 @@ export default function CategoryForm({
 
         {/* Description */}
         <div>
-          <label htmlFor="description" className={labelClass}>
-            Description
-          </label>
-
-          <textarea
+          <AdminTextarea
             id="description"
             name="description"
-            rows="3"
+            label="Description"
+            rows={3}
             value={formData.description}
             onChange={handleChange}
             placeholder="Describe this category..."
-            className={inputClass}
           />
         </div>
 

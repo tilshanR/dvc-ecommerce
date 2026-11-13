@@ -229,7 +229,7 @@ export default function ProductFormFields({
             value={formData.images[0]?.url || ""}
             onChange={(e) => updateImage(e.target.value.trim())}
             placeholder="https://example.com/product.jpg"
-            helperText="MVP uses an image URL. Image uploads can be added later."
+           
           />
           <p className="mt-1 text-xs text-gray-500">
             MVP uses an image URL. Image uploads can be added later.

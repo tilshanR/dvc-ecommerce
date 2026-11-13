@@ -3,13 +3,13 @@ import { Plus, Package, Archive, FileText } from "lucide-react";
 import ProductFilters from "../features/products/ProductFilters";
 import ProductTable from "../features/products/ProductTable";
 import ProductForm from "../features/products/ProductForm";
-import { getAdminProducts } from "../services/adminProductApi";
+import {
+  getAdminProducts,
+  createProduct,
+  updateProduct,
+} from "../services/adminProductApi";
 import AdminCard from "../components/ui/AdminCard";
-const mockCategories = [
-  { _id: "mock-smartphones", name: "Smartphones" },
-  { _id: "mock-ram", name: "RAM" },
-  { _id: "mock-notebooks", name: "Notebooks" },
-];
+import { getAdminCategories } from "../services/adminCategoryApi";
 
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
@@ -20,6 +20,7 @@ export default function AdminProducts() {
   const [showForm, setShowForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [notice, setNotice] = useState("");
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -38,6 +39,20 @@ export default function AdminProducts() {
     };
 
     fetchProducts();
+  }, []);
+
+  //fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const result = await getAdminCategories();
+        setCategories(result);
+      } catch (err) {
+        setError(err.message || "Failed to load categories.");
+      }
+    };
+
+    fetchCategories();
   }, []);
 
   const filteredProducts = useMemo(() => {
@@ -69,42 +84,32 @@ export default function AdminProducts() {
   };
 
   const handleSave = async (formData) => {
-    if (selectedProduct) {
-      setProducts((prev) =>
-        prev.map((product) =>
-          product._id === selectedProduct._id
-            ? {
-                ...product,
-                ...formData,
-                category:
-                  mockCategories.find(
-                    (category) => category._id === formData.category,
-                  ) || null,
-                availableStock:
-                  formData.inventory.onHand - formData.inventory.reserved,
-              }
-            : product,
-        ),
-      );
+    try {
+      if (selectedProduct) {
+        const result = await updateProduct(selectedProduct._id, formData);
 
-      setNotice("Product updated successfully.");
-    } else {
-      const newProduct = {
-        ...formData,
-        _id: `mock-${Date.now()}`,
-        category:
-          mockCategories.find(
-            (category) => category._id === formData.category,
-          ) || null,
-        availableStock: formData.inventory.onHand - formData.inventory.reserved,
-      };
+        setProducts((prev) =>
+          prev.map((product) =>
+            product._id === selectedProduct._id ? result.product : product,
+          ),
+        );
 
-      setProducts((prev) => [newProduct, ...prev]);
-      setNotice("Product created successfully.");
+        setNotice(result.message);
+        console.log("Notice message:", result.message);
+      } else {
+        const result = await createProduct(formData);
+
+        setProducts((prev) => [result.product, ...prev]);
+
+        setNotice(result.message);
+        console.log("Notice message:", result.message);
+      }
+
+      setShowForm(false);
+      setSelectedProduct(null);
+    } catch (error) {
+      throw error;
     }
-
-    setShowForm(false);
-    setSelectedProduct(null);
   };
 
   const handleArchive = (id) => {
@@ -173,11 +178,15 @@ export default function AdminProducts() {
         />
       </div>
 
-      {/* Notice */}
       {notice && (
-        <div className="flex items-center justify-between rounded-lg bg-[#E8F0EF] p-3 text-sm text-[#183D3D]">
-          {notice}
-          <button onClick={() => setNotice("")}>Dismiss</button>
+        <div className="flex items-center justify-between rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">
+          <span>{notice}</span>
+          <button
+            onClick={() => setNotice("")}
+            className="font-medium hover:underline"
+          >
+            Dismiss
+          </button>
         </div>
       )}
 
@@ -213,7 +222,7 @@ export default function AdminProducts() {
       {showForm && (
         <ProductForm
           product={selectedProduct}
-          categories={mockCategories}
+          categories={categories}
           brands={[]}
           onSubmit={handleSave}
           onClose={() => {

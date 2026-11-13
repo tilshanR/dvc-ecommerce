@@ -6,7 +6,8 @@ import ProductForm from "../features/products/ProductForm";
 import {
   getAdminProducts,
   createProduct,
-  updateProduct,
+  updateProduct,archiveProduct,
+  restoreProduct,
 } from "../services/adminProductApi";
 import AdminCard from "../components/ui/AdminCard";
 import { getAdminCategories } from "../services/adminCategoryApi";
@@ -78,15 +79,39 @@ export default function AdminProducts() {
     setShowForm(true);
   };
 
+  // const handleEdit = (product) => {
+  //   setSelectedProduct(product);
+  //   setShowForm(true);
+  // };
   const handleEdit = (product) => {
-    setSelectedProduct(product);
+    // Strip out read-only / database-managed fields to prevent Zod strict validation errors
+    const { 
+      _id, 
+      slug, 
+      mainImage, 
+      availableStock, 
+      stock, 
+      averageRating, 
+      reviewCount, 
+      createdAt, 
+      updatedAt, 
+      ...editableProduct 
+    } = product;
+
+    //   _id is separately  handled by handleSave, 
+    // but pass only clean editable fields + original _id reference for updating.
+    setSelectedProduct({ ...editableProduct, _id: product._id });
     setShowForm(true);
   };
 
-  const handleSave = async (formData) => {
+const handleSave = async (formData) => {
     try {
       if (selectedProduct) {
-        const result = await updateProduct(selectedProduct._id, formData);
+        // Strip _id out of formData so it isn't sent in the request body
+        const { _id, ...cleanUpdateData } = formData;
+
+        // Send the clean data, using selectedProduct._id for the URL
+        const result = await updateProduct(selectedProduct._id, cleanUpdateData);
 
         setProducts((prev) =>
           prev.map((product) =>
@@ -95,14 +120,13 @@ export default function AdminProducts() {
         );
 
         setNotice(result.message);
-        console.log("Notice message:", result.message);
       } else {
+        // For creation, just send formData normally
         const result = await createProduct(formData);
 
         setProducts((prev) => [result.product, ...prev]);
 
         setNotice(result.message);
-        console.log("Notice message:", result.message);
       }
 
       setShowForm(false);
@@ -112,26 +136,49 @@ export default function AdminProducts() {
     }
   };
 
-  const handleArchive = (id) => {
+  
+
+  // const handleRestore = (id) => {
+  //   setProducts((prev) =>
+  //     prev.map((product) =>
+  //       product._id === id ? { ...product, status: "draft" } : product,
+  //     ),
+  //   );
+
+  //   setNotice("Product restored as draft.");
+  // };
+
+  const handleArchive = async (id) => {
+  try {
+    const result = await archiveProduct(id);
+
     setProducts((prev) =>
       prev.map((product) =>
-        product._id === id ? { ...product, status: "archived" } : product,
+        product._id === id ? result.product : product,
       ),
     );
 
-    setNotice("Product archived.");
-  };
+    setNotice(result.message);
+  } catch (err) {
+    setError(err.message || "Failed to archive product.");
+  }
+};
 
-  const handleRestore = (id) => {
+const handleRestore = async (id) => {
+  try {
+    const result = await restoreProduct(id);
+
     setProducts((prev) =>
       prev.map((product) =>
-        product._id === id ? { ...product, status: "draft" } : product,
+        product._id === id ? result.product : product,
       ),
     );
 
-    setNotice("Product restored as draft.");
-  };
-
+    setNotice(result.message);
+  } catch (err) {
+    setError(err.message || "Failed to restore product.");
+  }
+};
   const handleClearFilters = () => {
     setSearch("");
     setStatus("");

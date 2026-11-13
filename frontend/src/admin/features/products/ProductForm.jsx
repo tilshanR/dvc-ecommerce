@@ -12,11 +12,15 @@ const initialFormData = {
   originalPrice: "",
   inventory: {
     onHand: "",
-    reserved:"",
+    reserved: "",
   },
   condition: null,
   attributes: {},
-  warranty: "",
+  warranty: {
+    type: "none",
+    duration: null,
+    unit: null,
+  },
   images: [],
   status: "draft",
 };
@@ -39,6 +43,7 @@ export default function ProductForm({
     },
     images: product?.images || [],
     attributes: product?.attributes || {},
+    warranty: product?.warranty || initialFormData.warranty,
   }));
 
   const [error, setError] = useState("");
@@ -69,11 +74,12 @@ export default function ProductForm({
     }
 
     if (
-      formData.originalPrice !== "" &&
-      (!Number.isFinite(Number(formData.originalPrice)) ||
-        Number(formData.originalPrice) < 0)
+      (!product && formData.originalPrice === "") ||
+      (formData.originalPrice !== "" &&
+        (!Number.isFinite(Number(formData.originalPrice)) ||
+          Number(formData.originalPrice) < 0))
     ) {
-      return "Original price must be a valid non-negative number.";
+      return "Please enter a valid original price.";
     }
 
     const quantity = Number(formData.inventory.onHand);
@@ -94,8 +100,47 @@ export default function ProductForm({
       return "Please select a valid category.";
     }
 
+    // Validate product condition.
     if (!selectedCategory.allowCondition && formData.condition) {
       return "Condition is not allowed for this category.";
+    }
+
+    if (
+      selectedCategory.allowCondition &&
+      !["new", "used"].includes(formData.condition)
+    ) {
+      return "Please select a product condition.";
+    }
+
+    // Validate warranty according to category policy.
+    const warranty = formData.warranty;
+
+    if (selectedCategory.warrantyPolicy === "none") {
+      // No warranty configuration is allowed for this category.
+    } else {
+      if (
+        !warranty ||
+        !["manufacturer", "checking", "none"].includes(warranty.type)
+      ) {
+        return "Please select a valid warranty type.";
+      }
+
+      if (
+        selectedCategory.warrantyPolicy === "required" &&
+        warranty.type === "none"
+      ) {
+        return "A warranty is required for this category.";
+      }
+
+      if (warranty.type !== "none") {
+        if (!Number.isInteger(warranty.duration) || warranty.duration < 1) {
+          return "Please enter a valid warranty duration.";
+        }
+
+        if (!["days", "months", "years"].includes(warranty.unit)) {
+          return "Please select a warranty duration unit.";
+        }
+      }
     }
 
     for (const field of selectedCategory.attributes || []) {
@@ -117,61 +162,60 @@ export default function ProductForm({
     return "";
   };
   const validateImageAndInventory = () => {
-  const { onHand, reserved } = formData.inventory;
+    const { onHand, reserved } = formData.inventory;
 
-  // Validate on-hand quantity
-  if (
-    onHand === "" ||
-    !Number.isInteger(Number(onHand)) ||
-    Number(onHand) < 0
-  ) {
-    return "On-hand quantity must be a non-negative whole number.";
-  }
-
-  // Validate reserved quantity
-  if (
-    reserved === "" ||
-    !Number.isInteger(Number(reserved)) ||
-    Number(reserved) < 0
-  ) {
-    return "Reserved quantity must be a non-negative whole number.";
-  }
-
-  if (Number(reserved) > Number(onHand)) {
-    return "Reserved quantity cannot exceed on-hand quantity.";
-  }
-
-  // Validate images
-  const images = formData.images || [];
-
-  if (images.length > 0) {
-    if (images.length !== 1) {
-      return "Only one product image is supported currently.";
+    // Validate on-hand quantity
+    if (
+      reserved !== "" &&
+      (!Number.isInteger(Number(reserved)) || Number(reserved) < 0)
+    ) {
+      return "On-hand quantity must be a non-negative whole number.";
     }
 
-    const imageUrl = images[0]?.url?.trim();
-
-    if (!imageUrl) {
-      return "Please enter a valid image URL.";
+    // Validate reserved quantity
+    if (
+      reserved === "" ||
+      !Number.isInteger(Number(reserved)) ||
+      Number(reserved) < 0
+    ) {
+      return "Reserved quantity must be a non-negative whole number.";
     }
 
-    try {
-      const url = new URL(imageUrl);
+    if (Number(reserved) > Number(onHand)) {
+      return "Reserved quantity cannot exceed on-hand quantity.";
+    }
 
-      if (!["http:", "https:"].includes(url.protocol)) {
-        return "Image URL must use HTTP or HTTPS.";
+    // Validate images
+    const images = formData.images || [];
+
+    if (images.length > 0) {
+      if (images.length !== 1) {
+        return "Only one product image is supported currently.";
       }
-    } catch {
-      return "Please enter a valid image URL.";
+
+      const imageUrl = images[0]?.url?.trim();
+
+      if (!imageUrl) {
+        return "Please enter a valid image URL.";
+      }
+
+      try {
+        const url = new URL(imageUrl);
+
+        if (!["http:", "https:"].includes(url.protocol)) {
+          return "Image URL must use HTTP or HTTPS.";
+        }
+      } catch {
+        return "Please enter a valid image URL.";
+      }
+
+      if (!images[0].isPrimary) {
+        return "The product image must be marked as primary.";
+      }
     }
 
-    if (!images[0].isPrimary) {
-      return "The product image must be marked as primary.";
-    }
-  }
-
-  return "";
-};
+    return "";
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -190,19 +234,29 @@ export default function ProductForm({
       setError(imageInventoryError);
       return;
     }
+    const selectedCategory = categories.find(
+      (category) => (category._id || category.id) === formData.category,
+    );
 
     const payload = {
       ...formData,
       name: formData.name.trim(),
       sku: formData.sku.trim() || undefined,
       price: Number(formData.price),
-      originalPrice:
-        formData.originalPrice === "" ? null : Number(formData.originalPrice),
+      originalPrice: Number(formData.originalPrice),
       inventory: {
         onHand: Number(formData.inventory.onHand),
-        reserved: Number(formData.inventory.reserved),
+        reserved: Number(formData.inventory.reserved || 0),
       },
-      warranty: formData.warranty || null,
+      condition: selectedCategory.allowCondition ? formData.condition : null,
+      warranty:
+        selectedCategory.warrantyPolicy === "none"
+          ? {
+              type: "none",
+              duration: null,
+              unit: null,
+            }
+          : formData.warranty,
     };
 
     try {

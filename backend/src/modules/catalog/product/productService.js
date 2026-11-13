@@ -188,10 +188,13 @@ export const createProductService = async (input) => {
     throw createServiceError("Active category not found.", 404);
   }
 
-  //  Validate category-specific conditions.
-  if (productData.condition !== null && !category.allowCondition) {
+  // Validate category-specific conditions
+  if (!category.allowCondition) {
+    productData.condition = null;
+  } else if (!["new", "used"].includes(productData.condition)) {
     throw createServiceError(
-      "This category does not support product conditions.",
+      "A valid product condition (new or used) is required for this category.",
+      400,
     );
   }
   //  Apply the category warranty policy.
@@ -446,9 +449,9 @@ export const updateProductService = async (productId, input) => {
     if (!category.allowCondition) {
       nextCondition = null;
       updates.condition = null;
-    } else if (!nextCondition) {
+    } else if (!["new", "used"].includes(nextCondition)) {
       throw createServiceError(
-        "A product condition is required for this category.",
+        "A valid product condition (new or used) is required for this category.",
         400,
       );
     }

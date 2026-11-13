@@ -35,6 +35,7 @@ export default function CategoryForm({
         : (initialCategory?.parent ?? ""),
     sortOrder: initialCategory?.sortOrder ?? 0,
     allowCondition: initialCategory?.allowCondition ?? false,
+    warrantyPolicy: initialCategory?.warrantyPolicy ?? "optional",
   }));
 
   const [slugEdited, setSlugEdited] = useState(Boolean(initialCategory?.slug));
@@ -329,6 +330,34 @@ export default function CategoryForm({
               </span>
             </span>
           </label>
+        </div>
+        {/* Warranty policy setting */}
+        <div>
+          <label htmlFor="warrantyPolicy" className={labelClass}>
+            Warranty Policy *
+          </label>
+
+          <select
+            id="warrantyPolicy"
+            name="warrantyPolicy"
+            value={formData.warrantyPolicy}
+            onChange={handleChange}
+            className={inputClass}
+            required
+          >
+            <option value="none">No Warranty</option>
+            <option value="optional">Optional</option>
+            <option value="required">Required</option>
+          </select>
+
+          <p
+            className={`mt-1 text-xs ${
+              isDark ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            Determines whether products in this category can or must have a
+            warranty.
+          </p>
         </div>
       </div>
 

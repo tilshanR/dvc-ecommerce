@@ -27,6 +27,15 @@ export default function ProductFormFields({
         : [],
     }));
   };
+  const updateWarranty = (field, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      warranty: {
+        ...prev.warranty,
+        [field]: value,
+      },
+    }));
+  };
   const selectedCategory = categories.find(
     (category) => (category._id || category.id) === formData.category,
   );
@@ -121,13 +130,30 @@ export default function ProductFormFields({
 
         {selectedCategory?.allowCondition && (
           <div>
-            <label className={labelClass}>Condition</label>
+            <label className={labelClass}>Condition *</label>
             <select
               className={inputClass}
               value={formData.condition || ""}
-              onChange={(e) => onChange("condition", e.target.value || null)}
+              onChange={(e) => {
+                const condition = e.target.value;
+
+                setFormData((prev) => ({
+                  ...prev,
+                  condition,
+                  warranty: {
+                    ...prev.warranty,
+                    type:
+                      condition === "new"
+                        ? "manufacturer"
+                        : condition === "used"
+                          ? "checking"
+                          : "none",
+                  },
+                }));
+              }}
+              required
             >
-              <option value="">Not specified</option>
+              <option value="">Select condition</option>
               <option value="new">New</option>
               <option value="used">Used</option>
             </select>
@@ -229,26 +255,88 @@ export default function ProductFormFields({
             value={formData.images[0]?.url || ""}
             onChange={(e) => updateImage(e.target.value.trim())}
             placeholder="https://example.com/product.jpg"
-           
           />
-          <p className="mt-1 text-xs text-gray-500">
-            MVP uses an image URL. Image uploads can be added later.
-          </p>
         </div>
       </section>
 
       {/* Additional Information */}
+      {/* Additional Information */}
       <section className="space-y-3">
         <h3 className="font-semibold text-gray-800">Additional Information</h3>
 
-        <div>
-          <AdminInput
-            label="Warranty"
-            value={formData.warranty}
-            onChange={(e) => onChange("warranty", e.target.value)}
-            maxLength={300}
-          />
-        </div>
+        {selectedCategory && selectedCategory.warrantyPolicy !== "none" && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium text-gray-700">
+              Warranty Configuration
+            </h4>
+
+            <div>
+              <label className={labelClass}>Warranty Type *</label>
+              <select
+                className={inputClass}
+                value={formData.warranty?.type || "none"}
+                onChange={(e) => {
+                  const type = e.target.value;
+
+                  onChange("warranty", {
+                    type,
+                    duration:
+                      type === "none"
+                        ? null
+                        : formData.warranty?.duration || null,
+                    unit:
+                      type === "none" ? null : formData.warranty?.unit || null,
+                  });
+                }}
+                required={selectedCategory.warrantyPolicy === "required"}
+              >
+                {selectedCategory.warrantyPolicy === "optional" && (
+                  <option value="none">No Warranty</option>
+                )}
+                <option value="manufacturer">Manufacturer Warranty</option>
+                <option value="checking">Checking Warranty</option>
+              </select>
+            </div>
+
+            {formData.warranty?.type !== "none" && (
+              <>
+                <div>
+                  <AdminInput
+                    label="Warranty Duration *"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={formData.warranty?.duration ?? ""}
+                    onChange={(e) =>
+                      updateWarranty(
+                        "duration",
+                        e.target.value === "" ? null : Number(e.target.value),
+                      )
+                    }
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Duration Unit *</label>
+                  <select
+                    className={inputClass}
+                    value={formData.warranty?.unit || ""}
+                    onChange={(e) =>
+                      updateWarranty("unit", e.target.value || null)
+                    }
+                    required
+                  >
+                    <option value="">Select unit</option>
+                    <option value="days">Days</option>
+                    <option value="months">Months</option>
+                    <option value="years">Years</option>
+                  </select>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <div>
           <label className={labelClass}>Status</label>

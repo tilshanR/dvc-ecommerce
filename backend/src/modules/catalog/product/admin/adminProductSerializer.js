@@ -1,4 +1,3 @@
-
 const serializeAdminProduct = (product) => {
   if (!product) return null;
 
@@ -48,7 +47,13 @@ const serializeAdminProduct = (product) => {
 
     condition: item.condition,
     attributes: item.attributes || {},
-    warranty: item.warranty,
+    warranty: item.warranty
+      ? {
+          type: item.warranty.type,
+          duration: item.warranty.duration,
+          unit: item.warranty.unit,
+        }
+      : null,
 
     status: item.status,
 

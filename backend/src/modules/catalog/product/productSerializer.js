@@ -42,7 +42,13 @@ const serializeProduct = (product) => {
 
     condition: item.condition,
     attributes: item.attributes || {},
-    warranty: item.warranty,
+    warranty: item.warranty
+      ? {
+          type: item.warranty.type,
+          duration: item.warranty.duration,
+          unit: item.warranty.unit,
+        }
+      : null,
 
     averageRating: item.averageRating ?? 0,
     reviewCount: item.reviewCount ?? 0,

@@ -1,4 +1,3 @@
-
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 
 export default function StatCard({
@@ -13,15 +12,15 @@ export default function StatCard({
   const isPositive = trendDirection === "up";
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+    <div className="rounded-xl border border-(--admin-border) bg-(--admin-surface) p-5 text-(--admin-text) shadow-sm transition hover:shadow-md">
       {/* Card heading */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-gray-500">
+          <p className="text-sm font-medium text-(--admin-muted)">
             {title}
           </p>
 
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-gray-900">
+          <h2 className="mt-2 text-2xl font-bold tracking-tight text-(--admin-text)">
             {value}
           </h2>
         </div>
@@ -40,8 +39,8 @@ export default function StatCard({
           <span
             className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold ${
               isPositive
-                ? "bg-green-50 text-green-700"
-                : "bg-red-50 text-red-700"
+                ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"
+                : "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300"
             }`}
           >
             {isPositive ? (
@@ -54,7 +53,7 @@ export default function StatCard({
           </span>
         )}
 
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-(--admin-muted)">
           {description || trendLabel}
         </span>
       </div>

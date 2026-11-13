@@ -29,7 +29,7 @@ export default function PageHeader({
                 {item.href && !isLast ? (
                   <Link
                     to={item.href}
-                    className="text-gray-500 transition hover:text-[#183D3D]"
+                    className="text-var(--admin-muted) transition hover:text-(--admin-text)"
                   >
                     {item.label}
                   </Link>
@@ -37,8 +37,8 @@ export default function PageHeader({
                   <span
                     className={
                       isLast
-                        ? "font-medium text-[#183D3D]"
-                        : "text-gray-500"
+                        ? "font-medium text-(--admin-text)"
+                        : "text-(--admin-muted)"
                     }
                   >
                     {item.label}
@@ -46,7 +46,10 @@ export default function PageHeader({
                 )}
 
                 {!isLast && (
-                  <ChevronRight size={15} className="text-gray-400" />
+                  <ChevronRight
+                    size={15}
+                    className="text-(--admin-muted)"
+                  />
                 )}
               </div>
             );
@@ -57,19 +60,19 @@ export default function PageHeader({
       {/* Page heading and action */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h2 className="text-2xl font-bold tracking-tight text-(--admin-text)">
             {title}
           </h2>
 
           {description && (
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-(--admin-muted)">
               {description}
             </p>
           )}
         </div>
 
-        {actionLabel && (
-          actionLink ? (
+        {actionLabel &&
+          (actionLink ? (
             <Link
               to={actionLink}
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#183D3D] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#245454]"
@@ -86,8 +89,7 @@ export default function PageHeader({
               <Plus size={18} />
               {actionLabel}
             </button>
-          )
-        )}
+          ))}
       </div>
     </div>
   );

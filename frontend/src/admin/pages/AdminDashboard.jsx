@@ -14,9 +14,8 @@ import {
 
 import { useNavigate } from "react-router-dom";
 
-import StatCard from "../components/StatCard";
-import PageHeader from "../components/PageHeader";
-
+import StatCard from "../components/ui/StatCard";
+import PageHeader from "../components/ui/PageHeader";
 const stats = [
   {
     title: "Total Products",

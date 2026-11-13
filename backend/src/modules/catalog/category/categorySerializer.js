@@ -29,6 +29,11 @@ export const categoryDTO = (category) => {
     allowCondition: data.allowCondition,
     status: data.status,
 
+    attributes: data.attributes ?? [],
+    allowCondition: data.allowCondition,
+    warrantyPolicy: data.warrantyPolicy,
+    status: data.status,
+
     isMainCategory: parentId === null,
 
     createdAt: data.createdAt,
@@ -58,6 +63,7 @@ export const shopCategoryDTO = (category) => {
     sortOrder: category.sortOrder,
 
     allowCondition: category.allowCondition,
+    warrantyPolicy: category.warrantyPolicy,
 
     attributes: (category.attributes ?? [])
       .filter((attribute) => attribute.isFilterable)

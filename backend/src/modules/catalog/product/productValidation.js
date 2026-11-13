@@ -104,6 +104,37 @@ const updateInventorySchema = z
 const attributesSchema = z.record(z.string(), z.unknown());
 
 /* --------------------------------
+   WARRANTY VALIDATION
+--------------------------------- */
+
+const warrantySchema = z
+  .object({
+    type: z.enum(["manufacturer", "checking", "none"]),
+
+    duration: z.number().int().positive().nullable(),
+
+    unit: z.enum(["days", "months", "years"]).nullable(),
+  })
+  .strict()
+  .superRefine((warranty, ctx) => {
+    if (warranty.type === "none") {
+      if (warranty.duration !== null || warranty.unit !== null) {
+        ctx.addIssue({
+          code: "custom",
+          message: "A product without warranty cannot have a duration or unit.",
+        });
+      }
+    } else {
+      if (warranty.duration === null || warranty.unit === null) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Warranty duration and unit are required.",
+        });
+      }
+    }
+  });
+
+/* --------------------------------
    CREATE PRODUCT
 --------------------------------- */
 
@@ -121,7 +152,7 @@ export const createProductSchema = z
 
     price: priceSchema,
 
-    originalPrice: priceSchema.nullable().optional().default(null),
+    originalPrice: priceSchema,
 
     images: productImagesSchema,
 
@@ -134,7 +165,7 @@ export const createProductSchema = z
 
     attributes: attributesSchema.optional().default({}),
 
-    warranty: z.string().trim().max(300).nullable().optional().default(null),
+    warranty: warrantySchema.nullable().optional().default(null),
 
     status: statusSchema.optional().default("draft"),
   })
@@ -170,7 +201,7 @@ export const updateProductSchema = z.preprocess(
       inventory: updateInventorySchema.optional(),
       condition: conditionSchema.optional(),
       attributes: attributesSchema.optional(),
-      warranty: z.string().trim().max(300).nullable().optional(),
+      warranty: warrantySchema.nullable().optional(),
       status: statusSchema.optional(),
     })
     .strict(),

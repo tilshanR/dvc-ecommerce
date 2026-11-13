@@ -15,7 +15,11 @@ import {
 
 import Category from "../category/categoryModel.js";
 
-import { createProductSchema,   updateProductSchema, productQuerySchema, } from "./productValidation.js";
+import {
+  createProductSchema,
+  updateProductSchema,
+  productQuerySchema,
+} from "./productValidation.js";
 /* --------------------------------
    SHOP PRODUCT LISTING
 --------------------------------- */
@@ -161,7 +165,7 @@ const validateCategoryAttributes = (
 --------------------------------- */
 
 export const createProductService = async (input) => {
-  // 1. Validate the incoming product data.
+  //  Validate the incoming product data.
   const validation = createProductSchema.safeParse(input);
 
   if (!validation.success) {
@@ -174,7 +178,7 @@ export const createProductService = async (input) => {
 
   const productData = validation.data;
 
-  // 2. Check whether the category exists and is active.
+  //  Check whether the category exists and is active.
   const category = await Category.findOne({
     _id: productData.category,
     status: "active",
@@ -184,17 +188,33 @@ export const createProductService = async (input) => {
     throw createServiceError("Active category not found.", 404);
   }
 
-  // 3. Validate category-specific conditions.
+  //  Validate category-specific conditions.
   if (productData.condition !== null && !category.allowCondition) {
     throw createServiceError(
       "This category does not support product conditions.",
     );
   }
+  //  Apply the category warranty policy.
+  if (category.warrantyPolicy === "none") {
+    // This category does not support warranties.
+    productData.warranty = {
+      type: "none",
+      duration: null,
+      unit: null,
+    };
+  } else if (category.warrantyPolicy === "required") {
+    // This category requires a warranty.
+    if (!productData.warranty || productData.warranty.type === "none") {
+      throw createServiceError(
+        "A warranty is required for products in this category.",
+      );
+    }
+  }
 
-  // 4. Validate dynamic category attributes.
+  //  Validate dynamic category attributes.
   validateCategoryAttributes(category.attributes, productData.attributes);
 
-  // 5. Check SKU uniqueness.
+  // Check SKU uniqueness.
   if (productData.sku) {
     const existingSku = await findProductBySku(productData.sku);
 
@@ -283,7 +303,7 @@ export const getShopProduct = async (identifier) => {
 };
 /**
  * Retrieves a filtered list of products for admin users.
- * 
+ *
  * @param {Object} [filters={}] - Query parameters and filter criteria for products.
  * @throws {ServiceError} Throws a 400 error if the provided filters fail validation.
  * @returns {Promise<Array>} A promise that resolves to the list of matching products.
@@ -298,7 +318,7 @@ export const getAdminProducts = async (filters = {}) => {
 };
 /**
  * Retrieves a single product by its unique identifier for admin users.
- * 
+ *
  * @param {string} productId - The unique MongoDB ObjectId of the product to retrieve.
  * @throws {ServiceError} Throws a 400 error if the productId is invalid, or a 404 error if the product does not exist.
  * @returns {Promise<Object>} A promise that resolves to the product object.
@@ -317,7 +337,7 @@ export const getAdminProduct = async (productId) => {
 };
 /**
  * Updates an existing product with new data, ensuring validation, uniqueness, inventory consistency, and category compatibility.
- * 
+ *
  * @param {string} productId - The unique MongoDB ObjectId of the product to update.
  * @param {Object} input - The partial or full object containing fields to update.
  * @throws {ServiceError} Throws errors for invalid IDs (400), non-existent products/categories (404), invalid schema data or logic conflicts (400), or duplicate SKUs (409).
@@ -337,7 +357,7 @@ export const updateProductService = async (productId, input) => {
   // 3. Validate incoming update data
   const validation = updateProductSchema.safeParse(input);
 
- if (!validation.success) {
+  if (!validation.success) {
     const error = createServiceError("Invalid product update data.", 400);
     error.details = validation.error.issues;
     throw error;
@@ -345,7 +365,10 @@ export const updateProductService = async (productId, input) => {
   const updates = validation.data;
 
   if (!updates || Object.keys(updates).length === 0) {
-    throw createServiceError("At least one field is required for an update.", 400);
+    throw createServiceError(
+      "At least one field is required for an update.",
+      400,
+    );
   }
   // 4. Check SKU uniqueness
   if (updates.sku) {
@@ -362,20 +385,16 @@ export const updateProductService = async (productId, input) => {
   if (updates.inventory) {
     const nextInventory = {
       onHand:
-        updates.inventory.onHand ??
-        existingProduct.inventory?.onHand ??
-        0,
+        updates.inventory.onHand ?? existingProduct.inventory?.onHand ?? 0,
 
       reserved:
-        updates.inventory.reserved ??
-        existingProduct.inventory?.reserved ??
-        0,
+        updates.inventory.reserved ?? existingProduct.inventory?.reserved ?? 0,
     };
 
     if (nextInventory.reserved > nextInventory.onHand) {
       throw createServiceError(
         "Reserved stock cannot exceed on-hand stock.",
-        400
+        400,
       );
     }
 
@@ -394,16 +413,17 @@ export const updateProductService = async (productId, input) => {
 
   const attributesSubmitted = Object.hasOwn(updates, "attributes");
   const conditionSubmitted = Object.hasOwn(updates, "condition");
+  const warrantySubmitted = Object.hasOwn(updates, "warranty");
 
   // 7. Validate category attributes and condition when relevant
-  if (categoryChanged || attributesSubmitted || conditionSubmitted) {
+  {
     const category = await Category.findById(nextCategoryId);
 
     if (!category) {
       throw createServiceError("Selected category not found.", 404);
     }
 
-   if (category.status !== "active") {
+    if (category.status !== "active") {
       throw createServiceError("Selected category is not active.", 400);
     }
 
@@ -414,21 +434,43 @@ export const updateProductService = async (productId, input) => {
         : existingProduct.attributes || {};
 
     if (categoryChanged || attributesSubmitted) {
-      validateCategoryAttributes(
-        category.attributes || [],
-        nextAttributes
-      );
+      validateCategoryAttributes(category.attributes || [], nextAttributes);
 
       updates.attributes = nextAttributes;
     }
-    const nextCondition = conditionSubmitted
+    let nextCondition = conditionSubmitted
       ? updates.condition
       : existingProduct.condition;
 
-    if (nextCondition && !category.allowCondition) {
+    // Handle category condition requirements.
+    if (!category.allowCondition) {
+      nextCondition = null;
+      updates.condition = null;
+    } else if (!nextCondition) {
       throw createServiceError(
-        "This category does not allow product conditions.",
-        400
+        "A product condition is required for this category.",
+        400,
+      );
+    }
+
+    // Validate the category warranty policy.
+    const nextWarranty = warrantySubmitted
+      ? updates.warranty
+      : existingProduct.warranty;
+
+    if (category.warrantyPolicy === "none") {
+      updates.warranty = {
+        type: "none",
+        duration: null,
+        unit: null,
+      };
+    } else if (
+      category.warrantyPolicy === "required" &&
+      (!nextWarranty || nextWarranty.type === "none")
+    ) {
+      throw createServiceError(
+        "A warranty is required for products in this category.",
+        400,
       );
     }
   }
@@ -438,7 +480,6 @@ export const updateProductService = async (productId, input) => {
   if (!updatedProduct) {
     throw createServiceError("Product not found.", 404);
   }
-
   return updatedProduct;
 };
 
@@ -455,7 +496,6 @@ export const archiveProductService = async (productId) => {
   if (!product) {
     throw createServiceError("Product not found.", 404);
   }
-
   return product;
 };
 
@@ -472,6 +512,5 @@ export const restoreProductService = async (productId) => {
   if (!product) {
     throw createServiceError("Product not found.", 404);
   }
-
   return product;
 };

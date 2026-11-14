@@ -1,6 +1,5 @@
-
 import { Router } from "express";
-
+import { upload } from "../../../../middleware/uploadMiddleware.js";
 import {
   getAdminProductsHandler,
   getAdminProductHandler,
@@ -15,8 +14,12 @@ const router = Router();
 // Admin product routes
 router.get("/", getAdminProductsHandler);
 router.get("/:productId", getAdminProductHandler);
-router.post("/", createAdminProductHandler);
-router.patch("/:productId", updateAdminProductHandler);
+
+// INJECT MULTIPART FILE UPLOAD MIDDLEWARE HERE:
+// upload.single("image") intercepts the file named "image" from FormData
+router.post("/", upload.single("image"), createAdminProductHandler);
+router.patch("/:productId", upload.single("image"), updateAdminProductHandler);
+
 router.patch("/:productId/archive", archiveAdminProductHandler);
 router.patch("/:productId/restore", restoreAdminProductHandler);
 

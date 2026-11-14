@@ -150,11 +150,12 @@ export default function ProductDetails() {
             cartError={cartError}
           />
         </div>
-
-        <ProductSpecifications
-          description={product.description}
-          specifications={product.specifications}
-        />
+        <div id="product-specifications-section">
+          <ProductSpecifications
+            description={product.description}
+            specifications={product.specifications}
+          />
+        </div>
       </section>
     </main>
   );

@@ -15,8 +15,7 @@ function getImageUrl(image) {
 
 export function normalizeProduct(raw) {
   const pricing = raw.pricing || {};
-  const brand =
-    typeof raw.brand === "object" ? raw.brand?.name : raw.brand;
+  const brand = typeof raw.brand === "object" ? raw.brand?.name : raw.brand;
   const category =
     typeof raw.category === "object" ? raw.category?.name : raw.category;
 
@@ -37,7 +36,7 @@ export function normalizeProduct(raw) {
   const originalPrice = pricing.originalPrice ?? raw.oldPrice ?? null;
   const price = pricing.finalPrice ?? raw.price ?? raw.sellingPrice ?? 0;
   const stock = Number(
-    raw.availableStock ?? raw.stock ?? raw.quantityInStock ?? 0
+    raw.availableStock ?? raw.stock ?? raw.quantityInStock ?? 0,
   );
 
   return {
@@ -53,10 +52,12 @@ export function normalizeProduct(raw) {
         ? null
         : Number(originalPrice),
     images: [...new Set(gallery)].slice(0, 6),
+    description: raw.description || "",
     description: raw.description || "No description available.",
     availableStock: Number.isFinite(stock) ? Math.max(0, stock) : 0,
     condition: raw.condition || "new",
     warranty: raw.warranty || null,
+    specifications: raw.attributes || raw.specifications || raw.specs || {},
     specifications: raw.specifications || raw.specs || {},
     rating: Number(raw.rating ?? raw.averageRating ?? 0),
     reviewCount: Number(raw.reviewCount ?? raw.numReviews ?? 0),

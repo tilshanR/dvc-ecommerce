@@ -39,12 +39,11 @@ export default function CategoryForm({
   }));
   //attributes state
   const [attributes, setAttributes] = useState(
-  (initialCategory?.attributes || []).map((attr) => ({
-    ...attr,
-    optionsText: attr.options?.join(", ") || "", 
-  }))
-);
-
+    (initialCategory?.attributes || []).map((attr) => ({
+      ...attr,
+      optionsText: attr.options?.join(", ") || "",
+    })),
+  );
 
   const handleAddAttribute = () => {
     setAttributes((prev) => [
@@ -54,6 +53,7 @@ export default function CategoryForm({
         label: "",
         type: "text",
         isRequired: false,
+        isFilterable: true,
         options: [],
         optionsText: "",
         unit: "",
@@ -127,7 +127,10 @@ export default function CategoryForm({
     const formattedAttributes = attributes.map((attr) => ({
       ...attr,
       options: attr.optionsText
-        ? attr.optionsText.split(",").map((s) => s.trim()).filter(Boolean)
+        ? attr.optionsText
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
         : [],
     }));
 
@@ -408,19 +411,32 @@ export default function CategoryForm({
           </p>
         </div>
         {/* ... [keep your existing Condition and Warranty policy divs] ... */}
-        
+
         {/* ADD THIS ENTIRE SECTION BELOW WARRANTY POLICY */}
-        <div className={`mt-8 border-t pt-6 ${isDark ? "border-gray-700" : "border-gray-200"}`}>
+        <div
+          className={`mt-8 border-t pt-6 ${isDark ? "border-gray-700" : "border-gray-200"}`}
+        >
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className={`font-semibold ${isDark ? "text-gray-200" : "text-gray-800"}`}>Category Specifications</h3>
-              <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>Define dynamic attributes for products in this category (e.g., RAM, Storage).</p>
+              <h3
+                className={`font-semibold ${isDark ? "text-gray-200" : "text-gray-800"}`}
+              >
+                Category Specifications
+              </h3>
+              <p
+                className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}
+              >
+                Define dynamic attributes for products in this category (e.g.,
+                RAM, Storage).
+              </p>
             </div>
             <button
               type="button"
               onClick={handleAddAttribute}
               className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
-                isDark ? "border-gray-600 text-gray-200 hover:bg-gray-800" : "border-gray-300 text-teal-800 hover:bg-gray-50"
+                isDark
+                  ? "border-gray-600 text-gray-200 hover:bg-gray-800"
+                  : "border-gray-300 text-teal-800 hover:bg-gray-50"
               }`}
             >
               <Plus size={16} /> Add Specification
@@ -429,7 +445,10 @@ export default function CategoryForm({
 
           <div className="space-y-4">
             {attributes.map((attr, index) => (
-              <div key={index} className={`relative rounded-lg border p-4 ${isDark ? "border-gray-700 bg-gray-800/50" : "border-gray-200 bg-gray-50"}`}>
+              <div
+                key={index}
+                className={`relative rounded-lg border p-4 ${isDark ? "border-gray-700 bg-gray-800/50" : "border-gray-200 bg-gray-50"}`}
+              >
                 <button
                   type="button"
                   onClick={() => handleRemoveAttribute(index)}
@@ -445,7 +464,9 @@ export default function CategoryForm({
                       type="text"
                       placeholder="e.g. Screen Size"
                       value={attr.label}
-                      onChange={(e) => handleUpdateAttribute(index, "label", e.target.value)}
+                      onChange={(e) =>
+                        handleUpdateAttribute(index, "label", e.target.value)
+                      }
                       className={inputClass}
                       required
                     />
@@ -457,7 +478,9 @@ export default function CategoryForm({
                       type="text"
                       placeholder="e.g. screen_size"
                       value={attr.key}
-                      onChange={(e) => handleUpdateAttribute(index, "key", e.target.value)}
+                      onChange={(e) =>
+                        handleUpdateAttribute(index, "key", e.target.value)
+                      }
                       className={inputClass}
                       required
                     />
@@ -467,7 +490,9 @@ export default function CategoryForm({
                     <label className={labelClass}>Input Type *</label>
                     <select
                       value={attr.type}
-                      onChange={(e) => handleUpdateAttribute(index, "type", e.target.value)}
+                      onChange={(e) =>
+                        handleUpdateAttribute(index, "type", e.target.value)
+                      }
                       className={inputClass}
                     >
                       <option value="text">Text</option>
@@ -480,12 +505,20 @@ export default function CategoryForm({
 
                   {["select", "multiselect"].includes(attr.type) && (
                     <div className="sm:col-span-2">
-                      <label className={labelClass}>Options (Comma separated) *</label>
+                      <label className={labelClass}>
+                        Options (Comma separated) *
+                      </label>
                       <input
                         type="text"
                         placeholder="e.g. 128GB, 256GB, 512GB"
-                       value={attr.optionsText ?? ""}
-                        onChange={(e) => handleUpdateAttribute(index, "optionsText", e.target.value)}
+                        value={attr.optionsText ?? ""}
+                        onChange={(e) =>
+                          handleUpdateAttribute(
+                            index,
+                            "optionsText",
+                            e.target.value,
+                          )
+                        }
                         className={inputClass}
                         required
                       />
@@ -498,20 +531,49 @@ export default function CategoryForm({
                       type="text"
                       placeholder="e.g. inches, GB"
                       value={attr.unit || ""}
-                      onChange={(e) => handleUpdateAttribute(index, "unit", e.target.value)}
+                      onChange={(e) =>
+                        handleUpdateAttribute(index, "unit", e.target.value)
+                      }
                       className={inputClass}
                     />
                   </div>
 
-                  <div className="flex items-end pb-2">
-                    <label className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                  {/* Replace your current "Required Field" div with this: */}
+                  <div className="flex flex-col justify-end gap-2 pb-2 sm:col-span-2 lg:col-span-1">
+                    <label
+                      className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                    >
                       <input
                         type="checkbox"
                         checked={attr.isRequired}
-                        onChange={(e) => handleUpdateAttribute(index, "isRequired", e.target.checked)}
+                        onChange={(e) =>
+                          handleUpdateAttribute(
+                            index,
+                            "isRequired",
+                            e.target.checked,
+                          )
+                        }
                         className="rounded accent-teal-800"
                       />
                       Required Field
+                    </label>
+
+                    <label
+                      className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={attr.isFilterable ?? false}
+                        onChange={(e) =>
+                          handleUpdateAttribute(
+                            index,
+                            "isFilterable",
+                            e.target.checked,
+                          )
+                        }
+                        className="rounded accent-teal-800"
+                      />
+                      Use as Shop Filter
                     </label>
                   </div>
                 </div>
@@ -519,9 +581,6 @@ export default function CategoryForm({
             ))}
           </div>
         </div>
-    
-
-    
       </div>
 
       {/* Form actions */}

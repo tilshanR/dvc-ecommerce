@@ -1,4 +1,3 @@
-
 import { SlidersHorizontal } from "lucide-react";
 import FilterSection from "./FilterSection";
 
@@ -28,9 +27,7 @@ export default function FilterSidebar({
           type="button"
           onClick={clearFilters}
           disabled={
-            activeFilterCount === 0 &&
-            category === "all" &&
-            sort === "newest"
+            activeFilterCount === 0 && category === "all" && sort === "newest"
           }
           className="text-xs font-semibold text-dvcGreen hover:underline disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline"
         >
@@ -43,9 +40,7 @@ export default function FilterSidebar({
           <input
             type="checkbox"
             checked={inStockOnly}
-            onChange={(e) =>
-              updateQuery({ availability: e.target.checked })
-            }
+            onChange={(e) => updateQuery({ availability: e.target.checked })}
             className="accent-dvcGreen"
           />
           In stock only
@@ -91,31 +86,35 @@ export default function FilterSidebar({
         </select>
       </FilterSection>
 
-      {selectedCategoryAttributes.map((attribute) => (
-        <div
-          key={attribute.key}
-          className="border-b border-gray-200 py-3"
-        >
-          <label className="font-medium text-gray-800">
-            {attribute.label}
-          </label>
+      {/* Dynamic Category Attributes */}
+      {/* Dynamic Category Attributes */}
+      {selectedCategoryAttributes?.map((attribute) => {
+        if (!attribute.options || attribute.options.length === 0) return null;
 
-          <select
-            aria-label={attribute.label}
-            value={attributeFilters[attribute.key] || ""}
-            onChange={(e) => setAttribute(attribute.key, e.target.value)}
-            className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
+        return (
+          <FilterSection
+            key={attribute.key}
+            title={attribute.label}
+            defaultOpen
           >
-            <option value="">All</option>
+            <select
+              aria-label={attribute.label}
+              value={attributeFilters[attribute.key] || ""}
+              onChange={(e) => setAttribute(attribute.key, e.target.value)}
+              className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
+            >
+              <option value="">All</option>
 
-            {attribute.options.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      ))}
+              {/* Change this map back to using .value and .label */}
+              {attribute.options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </FilterSection>
+        );
+      })}
     </aside>
   );
 }

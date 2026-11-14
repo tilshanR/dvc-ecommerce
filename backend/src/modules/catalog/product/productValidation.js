@@ -35,9 +35,7 @@ const conditionSchema = z.enum(["new", "used"]).nullable();
 // Product status.
 const statusSchema = z.enum(["draft", "active", "archived"]);
 
-/* --------------------------------
-   PRODUCT IMAGE VALIDATION
---------------------------------- */
+//PRODUCT IMAGE VALIDATION
 
 const productImageSchema = z
   .object({
@@ -63,9 +61,7 @@ const productImagesSchema = z
     }
   });
 
-/* --------------------------------
-   INVENTORY VALIDATION
---------------------------------- */
+//INVENTORY VALIDATION
 
 // Used when creating a product.
 // Both values default to zero.
@@ -95,17 +91,13 @@ const updateInventorySchema = z
   })
   .strict();
 
-/* --------------------------------
-   DYNAMIC ATTRIBUTES
---------------------------------- */
+//DYNAMIC ATTRIBUTES
 
 // Category-specific attribute validation will happen
 // in productService.js because it requires Category data.
 const attributesSchema = z.record(z.string(), z.unknown());
 
-/* --------------------------------
-   WARRANTY VALIDATION
---------------------------------- */
+/// WARRANTY VALIDATION
 
 const warrantySchema = z
   .object({
@@ -134,9 +126,7 @@ const warrantySchema = z
     }
   });
 
-/* --------------------------------
-   CREATE PRODUCT
---------------------------------- */
+// CREATE PRODUCT
 
 export const createProductSchema = z
   .object({
@@ -155,7 +145,7 @@ export const createProductSchema = z
     originalPrice: priceSchema,
 
     images: productImagesSchema,
-
+    imageFile: z.any().optional(),
     inventory: createInventorySchema.optional().default({
       onHand: 0,
       reserved: 0,
@@ -171,9 +161,7 @@ export const createProductSchema = z
   })
   .strict();
 
-/* --------------------------------
-   UPDATE PRODUCT
---------------------------------- */
+//  UPDATE PRODUCT
 
 export const updateProductSchema = z.preprocess(
   (input) => {
@@ -198,6 +186,7 @@ export const updateProductSchema = z.preprocess(
       price: priceSchema.optional(),
       originalPrice: priceSchema.nullable().optional(),
       images: productImagesSchema.optional(),
+      imageFile: z.any().optional(),
       inventory: updateInventorySchema.optional(),
       condition: conditionSchema.optional(),
       attributes: attributesSchema.optional(),
@@ -207,9 +196,7 @@ export const updateProductSchema = z.preprocess(
     .strict(),
 );
 
-/* --------------------------------
-   PRODUCT ID VALIDATION
---------------------------------- */
+// PRODUCT ID VALIDATION
 
 export const productIdSchema = z
   .object({
@@ -217,9 +204,7 @@ export const productIdSchema = z
   })
   .strict();
 
-/* --------------------------------
-   PRODUCT QUERY VALIDATION
---------------------------------- */
+// PRODUCT QUERY VALIDATION
 
 export const productQuerySchema = z
   .object({

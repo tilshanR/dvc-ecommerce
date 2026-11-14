@@ -186,35 +186,38 @@ export default function ProductForm({
     }
 
     // Validate images
+    // Validate images
     const images = formData.images || [];
 
-    if (images.length > 0) {
-      if (images.length !== 1) {
-        return "Only one product image is supported currently.";
-      }
+    if (images.length === 0) {
+      return "A product image is required.";
+    }
 
-      const imageUrl = images[0]?.url?.trim();
+    if (images.length > 1) {
+      return "Only one product image is supported currently.";
+    }
 
-      if (!imageUrl) {
-        return "Please enter a valid image URL.";
-      }
+    const imageUrl = images[0]?.url?.trim();
+    if (!imageUrl) {
+      return "Please provide a valid product image.";
+    }
 
+    // Only strictly validate the HTTP/HTTPS protocol if it is an existing
+    // Cloudinary URL (meaning no new local file has been selected yet).
+    if (!formData.imageFile) {
       try {
         const url = new URL(imageUrl);
-
         if (!["http:", "https:"].includes(url.protocol)) {
           return "Image URL must use HTTP or HTTPS.";
         }
       } catch {
         return "Please enter a valid image URL.";
       }
-
-      if (!images[0].isPrimary) {
-        return "The product image must be marked as primary.";
-      }
     }
 
-    return "";
+    if (!images[0].isPrimary) {
+      return "The product image must be marked as primary.";
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -238,26 +241,51 @@ export default function ProductForm({
       (category) => (category._id || category.id) === formData.category,
     );
 
-    const payload = {
-      ...formData,
-      name: formData.name.trim(),
-      sku: formData.sku.trim() || undefined,
-      price: Number(formData.price),
-      originalPrice: Number(formData.originalPrice),
-      inventory: {
+    // Initialize native FormData object
+    const payload = new FormData();
+
+    // Append all flat text and number fields
+    payload.append("name", formData.name.trim());
+    if (formData.sku?.trim()) payload.append("sku", formData.sku.trim());
+    if (formData.description?.trim())
+      payload.append("description", formData.description.trim());
+
+    payload.append("category", formData.category);
+    if (formData.brand) payload.append("brand", formData.brand);
+
+    payload.append("price", Number(formData.price));
+    if (formData.originalPrice !== "") {
+      payload.append("originalPrice", Number(formData.originalPrice));
+    }
+
+    if (selectedCategory?.allowCondition && formData.condition) {
+      payload.append("condition", formData.condition);
+    }
+    payload.append("status", formData.status);
+
+    // Stringify nested JSON objects (backend will parse them back)
+    payload.append(
+      "inventory",
+      JSON.stringify({
         onHand: Number(formData.inventory.onHand),
         reserved: Number(formData.inventory.reserved || 0),
-      },
-      condition: selectedCategory.allowCondition ? formData.condition : null,
-      warranty:
-        selectedCategory.warrantyPolicy === "none"
-          ? {
-              type: "none",
-              duration: null,
-              unit: null,
-            }
-          : formData.warranty,
-    };
+      }),
+    );
+
+    payload.append("attributes", JSON.stringify(formData.attributes || {}));
+
+    const warrantyData =
+      selectedCategory?.warrantyPolicy === "none"
+        ? { type: "none", duration: null, unit: null }
+        : formData.warranty;
+    payload.append("warranty", JSON.stringify(warrantyData));
+
+    if (formData.imageFile) {
+      payload.append("image", formData.imageFile);
+    } else if (formData.images && formData.images.length > 0) {
+      // Send the existing images so backend validation passes
+      payload.append("images", JSON.stringify(formData.images));
+    }
 
     try {
       setSaving(true);
@@ -270,7 +298,6 @@ export default function ProductForm({
       setSaving(false);
     }
   };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white shadow-xl">

@@ -12,7 +12,9 @@ export default function ProductFormFields({
   brands = [],
 }) {
   // Setup local state to handle the image preview (handles both existing Cloudinary URLs and new uploads)
-  const [imagePreview, setImagePreview] = useState(formData.images?.[0]?.url || "");
+  const [imagePreview, setImagePreview] = useState(
+    formData.images?.[0]?.url || "",
+  );
   // Cleanup temporary object URLs to prevent memory leaks
   useEffect(() => {
     return () => {
@@ -31,7 +33,9 @@ export default function ProductFormFields({
       setFormData((prev) => ({
         ...prev,
         imageFile: file, // Store the physical file for FormData submission
-        images: [{ url: previewUrl, alt: prev.name, isPrimary: true, sortOrder: 0 }], // Keeps existing validation happy
+        images: [
+          { url: previewUrl, alt: prev.name, isPrimary: true, sortOrder: 0 },
+        ], // Keeps existing validation happy
       }));
     }
   };
@@ -235,7 +239,6 @@ export default function ProductFormFields({
       </section>
 
       {/* Inventory */}
-      {/* Inventory */}
       <section className="space-y-3">
         <h3 className="font-semibold text-gray-800">Inventory</h3>
 
@@ -274,7 +277,6 @@ export default function ProductFormFields({
         </div>
       </section>
 
-
       {/* Image */}
       <section className="space-y-3">
         <h3 className="font-semibold text-gray-800">Product Image *</h3>
@@ -285,12 +287,12 @@ export default function ProductFormFields({
               <img
                 src={imagePreview}
                 alt="Product Preview"
-                className="h-40 w-40 rounded-lg object-contain shadow-sm border border-gray-200 bg-white"
+                className="h-40 w-40 rounded-lg border border-gray-200 bg-white object-contain shadow-sm"
               />
               <button
                 type="button"
                 onClick={clearImage}
-                className="absolute -right-3 -top-3 rounded-full bg-red-500 p-1.5 text-white shadow-md transition hover:bg-red-600 hover:scale-105"
+                className="absolute -right-3 -top-3 rounded-full bg-red-500 p-1.5 text-white shadow-md transition hover:scale-105 hover:bg-red-600"
                 aria-label="Remove image"
               >
                 <X size={16} strokeWidth={2.5} />
@@ -299,8 +301,12 @@ export default function ProductFormFields({
           ) : (
             <label className="flex cursor-pointer flex-col items-center p-4">
               <Upload className="mb-3 text-gray-400" size={32} />
-              <span className="text-sm font-medium text-[#183D3D]">Click to upload product image</span>
-              <span className="mt-1 text-xs text-gray-500">JPG, PNG, WEBP (Max 5MB)</span>
+              <span className="text-sm font-medium text-[#183D3D]">
+                Click to upload product image
+              </span>
+              <span className="mt-1 text-xs text-gray-500">
+                JPG, PNG, WEBP (Max 5MB)
+              </span>
               <input
                 type="file"
                 accept="image/jpeg, image/png, image/webp"
@@ -311,7 +317,6 @@ export default function ProductFormFields({
           )}
         </div>
       </section>
-
 
       {/* Additional Information */}
       <section className="space-y-3">
@@ -330,7 +335,6 @@ export default function ProductFormFields({
                 value={formData.warranty?.type || "none"}
                 onChange={(e) => {
                   const type = e.target.value;
-
                   onChange("warranty", {
                     type,
                     duration:

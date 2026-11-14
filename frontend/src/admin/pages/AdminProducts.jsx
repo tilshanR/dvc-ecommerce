@@ -6,7 +6,8 @@ import ProductForm from "../features/products/ProductForm";
 import {
   getAdminProducts,
   createProduct,
-  updateProduct,archiveProduct,
+  updateProduct,
+  archiveProduct,
   restoreProduct,
 } from "../services/adminProductApi";
 import AdminCard from "../components/ui/AdminCard";
@@ -79,39 +80,33 @@ export default function AdminProducts() {
     setShowForm(true);
   };
 
-  // const handleEdit = (product) => {
-  //   setSelectedProduct(product);
-  //   setShowForm(true);
-  // };
   const handleEdit = (product) => {
     // Strip out read-only / database-managed fields to prevent Zod strict validation errors
-    const { 
-      _id, 
-      slug, 
-      mainImage, 
-      availableStock, 
-      stock, 
-      averageRating, 
-      reviewCount, 
-      createdAt, 
-      updatedAt, 
-      ...editableProduct 
+    const {
+      _id,
+      slug,
+      mainImage,
+      availableStock,
+      stock,
+      averageRating,
+      reviewCount,
+      createdAt,
+      updatedAt,
+      ...editableProduct
     } = product;
 
-    //   _id is separately  handled by handleSave, 
-    // but pass only clean editable fields + original _id reference for updating.
+    //   _id is separately  handled by handleSave,
+    //  passes only the clean editable fields + original _id reference for updating.
     setSelectedProduct({ ...editableProduct, _id: product._id });
     setShowForm(true);
   };
 
-const handleSave = async (formData) => {
+  const handleSave = async (formData) => {
     try {
       if (selectedProduct) {
-        // Strip _id out of formData so it isn't sent in the request body
-        const { _id, ...cleanUpdateData } = formData;
-
-        // Send the clean data, using selectedProduct._id for the URL
-        const result = await updateProduct(selectedProduct._id, cleanUpdateData);
+        // Do NOT destructure or spread formData.
+        // Pass the raw FormData object directly to the update function.
+        const result = await updateProduct(selectedProduct._id, formData);
 
         setProducts((prev) =>
           prev.map((product) =>
@@ -136,49 +131,33 @@ const handleSave = async (formData) => {
     }
   };
 
-  
-
-  // const handleRestore = (id) => {
-  //   setProducts((prev) =>
-  //     prev.map((product) =>
-  //       product._id === id ? { ...product, status: "draft" } : product,
-  //     ),
-  //   );
-
-  //   setNotice("Product restored as draft.");
-  // };
-
   const handleArchive = async (id) => {
-  try {
-    const result = await archiveProduct(id);
+    try {
+      const result = await archiveProduct(id);
 
-    setProducts((prev) =>
-      prev.map((product) =>
-        product._id === id ? result.product : product,
-      ),
-    );
+      setProducts((prev) =>
+        prev.map((product) => (product._id === id ? result.product : product)),
+      );
 
-    setNotice(result.message);
-  } catch (err) {
-    setError(err.message || "Failed to archive product.");
-  }
-};
+      setNotice(result.message);
+    } catch (err) {
+      setError(err.message || "Failed to archive product.");
+    }
+  };
 
-const handleRestore = async (id) => {
-  try {
-    const result = await restoreProduct(id);
+  const handleRestore = async (id) => {
+    try {
+      const result = await restoreProduct(id);
 
-    setProducts((prev) =>
-      prev.map((product) =>
-        product._id === id ? result.product : product,
-      ),
-    );
+      setProducts((prev) =>
+        prev.map((product) => (product._id === id ? result.product : product)),
+      );
 
-    setNotice(result.message);
-  } catch (err) {
-    setError(err.message || "Failed to restore product.");
-  }
-};
+      setNotice(result.message);
+    } catch (err) {
+      setError(err.message || "Failed to restore product.");
+    }
+  };
   const handleClearFilters = () => {
     setSearch("");
     setStatus("");
@@ -246,7 +225,6 @@ const handleRestore = async (id) => {
         onClear={handleClearFilters}
       />
 
-      {/* Product table */}
       {/* Product table */}
       {isLoading ? (
         <div className="rounded-lg border bg-white p-8 text-center text-gray-500">

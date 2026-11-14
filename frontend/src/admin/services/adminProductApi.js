@@ -21,14 +21,24 @@ export async function getAdminProducts(params = {}) {
   };
 }
 
+
+
+
 // POST /api/admin/products
 export async function createProduct(productData) {
-  const { data } = await api.post("/admin/products", productData);
+  const { data } = await api.post("/admin/products", productData, {
+    transformRequest: [(data, headers) => {
+      // Safely strips the global JSON header so Axios can auto-build the boundary
+      delete headers["Content-Type"];
+      return data;
+    }],
+  });
   return data;
 }
 
-// PATCH /api/admin/products/:id
+
 export async function updateProduct(id, productData) {
+  // No custom headers or transformers needed. 
   const { data } = await api.patch(`/admin/products/${id}`, productData);
   return data;
 }

@@ -77,9 +77,7 @@ const ProductCard = ({ product, onAddToCart, index = 0 }) => {
     "computer-hardware-accessories",
   ].includes(categorySlug);
 
- const stockStatus = getStockStatus(
-  product.availableStock ?? product.stock
-);
+  const stockStatus = getStockStatus(product.availableStock ?? product.stock);
   const isUsed = product.condition === "used";
 
   const showCondition =
@@ -104,82 +102,84 @@ const ProductCard = ({ product, onAddToCart, index = 0 }) => {
       }}
       className="group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white transition duration-300 hover:-translate-y-1 hover:border-dvcGreen hover:shadow-lg"
     >
-      {/* Product image */}
+      {/* WRAP BOTH IMAGE AND INFO IN ONE MAIN LINK */}
       <Link
         to={productUrl}
         aria-label={`View ${productName}`}
-        className="block overflow-hidden bg-gray-100"
+        className="flex flex-1 flex-col"
       >
-        <div className="aspect-square">
-          <img
-            src={product.image || "/images/product-placeholder.png"}
-            alt={productName}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+        {/* Product image */}
+        <div className="block overflow-hidden bg-gray-100">
+          <div className="aspect-square">
+            <img
+              src={product.image || "/images/product-placeholder.png"}
+              alt={productName}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          </div>
+        </div>
+
+        {/* Product information */}
+        <div className="flex flex-1 flex-col p-3 pb-0 sm:p-4 sm:pb-0">
+          <p className="mb-2 line-clamp-1 text-xs font-medium text-gray-500">
+            {categoryName || "Uncategorized"}
+          </p>
+
+          <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-gray-900 sm:text-base">
+            {/* 2. CHANGED FROM <Link> TO <span> TO PREVENT INVALID HTML (NESTED LINKS) */}
+            <span className="rounded-sm transition-colors group-hover:text-dvcGreen">
+              {productName}
+            </span>
+          </h3>
+
+          <p className="mt-3 text-base font-bold text-gray-900 sm:text-lg">
+            {formatPrice(product.price)}
+          </p>
+
+          {/* Neutral condition badge for computer hardware only */}
+          <div className="mt-2 min-h-6">
+            {showCondition && (
+              <span className="inline-flex rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
+                {isUsed ? "Used - Tested" : "Brand New"}
+              </span>
+            )}
+          </div>
+
+          {/* Exact available stock */}
+          <p className={`mt-2 text-xs font-medium ${stockStatus.className}`}>
+            {stockStatus.text}
+          </p>
         </div>
       </Link>
-      {/* Product information */}
-      <div className="flex flex-1 flex-col p-3 sm:p-4">
-        <p className="mb-2 line-clamp-1 text-xs font-medium text-gray-500">
-          {categoryName || "Uncategorized"}
-        </p>
 
-        <h3 className="line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-gray-900 sm:text-base">
-          <Link
-            to={productUrl}
-            className="rounded-sm outline-offset-2 hover:text-dvcGreen focus-visible:outline-2 focus-visible:outline-dvcGreen"
-          >
-            {productName}
-          </Link>
-        </h3>
+      {/* KEEP ACTIONS OUTSIDE THE MAIN LINK SO THE BUTTON CLICKS WORK PROPERLY */}
+      <div className="mt-auto grid grid-cols-1 gap-2 p-3 sm:p-4">
+        <Link
+          to={productUrl}
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-dvcGreen px-3 py-2 text-sm font-semibold text-dvcGreen transition-colors hover:bg-dvcGreen hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dvcGreen"
+        >
+          View Product
+          <span aria-hidden="true">→</span>
+        </Link>
 
-        <p className="mt-3 text-base font-bold text-gray-900 sm:text-lg">
-          {formatPrice(product.price)}
-        </p>
-
-        {/* Neutral condition badge for computer hardware only */}
-        <div className="mt-2 min-h-6">
-          {showCondition && (
-            <span className="inline-flex rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700">
-              {isUsed ? "Used - Tested" : "Brand New"}
-            </span>
-          )}
-        </div>
-
-        {/* Exact available stock */}
-        <p className={`mt-2 text-xs font-medium ${stockStatus.className}`}>
-          {stockStatus.text}
-        </p>
-
-        {/* Actions stay aligned at the bottom */}
-        <div className="mt-auto grid grid-cols-1 gap-2 pt-4">
-          <Link
-            to={productUrl}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-dvcGreen px-3 py-2 text-sm font-semibold text-dvcGreen transition-colors hover:bg-dvcGreen hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dvcGreen"
-          >
-            View Product
-            <span aria-hidden="true">→</span>
-          </Link>
-
-          <button
-            type="button"
-            onClick={handleAddToCart}
-            disabled={
-              !stockStatus.canAddToCart || typeof onAddToCart !== "function"
-            }
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-dvcGreen px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dvcGreen disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600"
-          >
-            <ShoppingCart size={18} strokeWidth={2} aria-hidden="true" />
-            {!stockStatus.canAddToCart
-              ? stockStatus.text === "Stock unavailable"
-                ? "Stock Unavailable"
-                : "Out of Stock"
-              : typeof onAddToCart === "function"
-                ? "Add to Cart"
-                : "Cart Coming Soon"}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          disabled={
+            !stockStatus.canAddToCart || typeof onAddToCart !== "function"
+          }
+          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-dvcGreen px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dvcGreen disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-600"
+        >
+          <ShoppingCart size={18} strokeWidth={2} aria-hidden="true" />
+          {!stockStatus.canAddToCart
+            ? stockStatus.text === "Stock unavailable"
+              ? "Stock Unavailable"
+              : "Out of Stock"
+            : typeof onAddToCart === "function"
+              ? "Add to Cart"
+              : "Cart Coming Soon"}
+        </button>
       </div>
     </motion.article>
   );

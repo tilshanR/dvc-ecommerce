@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+import { Upload, X } from "lucide-react";
 import DynamicAttributeFields from "./DynamicAttributeFields";
 import AdminInput from "../../components/ui/AdminInput";
 import AdminTextarea from "../../components/ui/AdminTextarea";
@@ -9,6 +11,39 @@ export default function ProductFormFields({
   categories = [],
   brands = [],
 }) {
+  // Setup local state to handle the image preview (handles both existing Cloudinary URLs and new uploads)
+  const [imagePreview, setImagePreview] = useState(formData.images?.[0]?.url || "");
+  // Cleanup temporary object URLs to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+  //  Handle physical file selection
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+
+      setFormData((prev) => ({
+        ...prev,
+        imageFile: file, // Store the physical file for FormData submission
+        images: [{ url: previewUrl, alt: prev.name, isPrimary: true, sortOrder: 0 }], // Keeps existing validation happy
+      }));
+    }
+  };
+  // Clear selected image
+  const clearImage = () => {
+    setImagePreview("");
+    setFormData((prev) => ({
+      ...prev,
+      imageFile: null,
+      images: [],
+    }));
+  };
   const updateInventory = (field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -215,7 +250,6 @@ export default function ProductFormFields({
             required
             helperText="Leave empty to use 0."
           />
-          <p className="mt-1 text-xs text-gray-500">Leave empty to use 0.</p>
         </div>
 
         <div>
@@ -229,10 +263,6 @@ export default function ProductFormFields({
             onChange={(e) => updateInventory("reserved", e.target.value)}
             helperText="Leave empty to use 0. Reserved stock cannot exceed the on-hand quantity."
           />
-          <p className="mt-1 text-xs text-gray-500">
-            Leave empty to use 0. Reserved stock cannot exceed the on-hand
-            quantity.
-          </p>
         </div>
 
         <div className="rounded-lg bg-[#E8F0EF] p-3">
@@ -244,22 +274,45 @@ export default function ProductFormFields({
         </div>
       </section>
 
+
       {/* Image */}
       <section className="space-y-3">
-        <h3 className="font-semibold text-gray-800">Product Image</h3>
+        <h3 className="font-semibold text-gray-800">Product Image *</h3>
 
-        <div>
-          <AdminInput
-            label="Image URL"
-            type="url"
-            value={formData.images[0]?.url || ""}
-            onChange={(e) => updateImage(e.target.value.trim())}
-            placeholder="https://example.com/product.jpg"
-          />
+        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center transition-colors hover:bg-gray-100">
+          {imagePreview ? (
+            <div className="relative">
+              <img
+                src={imagePreview}
+                alt="Product Preview"
+                className="h-40 w-40 rounded-lg object-contain shadow-sm border border-gray-200 bg-white"
+              />
+              <button
+                type="button"
+                onClick={clearImage}
+                className="absolute -right-3 -top-3 rounded-full bg-red-500 p-1.5 text-white shadow-md transition hover:bg-red-600 hover:scale-105"
+                aria-label="Remove image"
+              >
+                <X size={16} strokeWidth={2.5} />
+              </button>
+            </div>
+          ) : (
+            <label className="flex cursor-pointer flex-col items-center p-4">
+              <Upload className="mb-3 text-gray-400" size={32} />
+              <span className="text-sm font-medium text-[#183D3D]">Click to upload product image</span>
+              <span className="mt-1 text-xs text-gray-500">JPG, PNG, WEBP (Max 5MB)</span>
+              <input
+                type="file"
+                accept="image/jpeg, image/png, image/webp"
+                className="hidden"
+                onChange={handleImageChange}
+              />
+            </label>
+          )}
         </div>
       </section>
 
-      {/* Additional Information */}
+
       {/* Additional Information */}
       <section className="space-y-3">
         <h3 className="font-semibold text-gray-800">Additional Information</h3>

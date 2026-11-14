@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Save } from "lucide-react";
+import { X, Save, Plus, Trash2 } from "lucide-react";
 import AdminInput from "../../components/ui/AdminInput";
 import AdminSelect from "../../components/ui/AdminSelect";
 import AdminTextarea from "../../components/ui/AdminTextarea";
@@ -37,6 +37,47 @@ export default function CategoryForm({
     allowCondition: initialCategory?.allowCondition ?? false,
     warrantyPolicy: initialCategory?.warrantyPolicy ?? "optional",
   }));
+  //attributes state
+  const [attributes, setAttributes] = useState(
+  (initialCategory?.attributes || []).map((attr) => ({
+    ...attr,
+    optionsText: attr.options?.join(", ") || "", 
+  }))
+);
+
+
+  const handleAddAttribute = () => {
+    setAttributes((prev) => [
+      ...prev,
+      {
+        key: "",
+        label: "",
+        type: "text",
+        isRequired: false,
+        options: [],
+        optionsText: "",
+        unit: "",
+        sortOrder: prev.length,
+      },
+    ]);
+  };
+
+  const handleUpdateAttribute = (index, field, value) => {
+    setAttributes((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+
+      // Auto-generate key from label
+      if (field === "label" && !updated[index].key) {
+        updated[index].key = value.toLowerCase().replace(/[^a-z0-9]/g, "_");
+      }
+      return updated;
+    });
+  };
+
+  const handleRemoveAttribute = (index) => {
+    setAttributes((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const [slugEdited, setSlugEdited] = useState(Boolean(initialCategory?.slug));
 
@@ -82,6 +123,13 @@ export default function CategoryForm({
       setError("Sort order must be a whole number greater than or equal to 0.");
       return;
     }
+    // Transform optionsText back into an array before saving
+    const formattedAttributes = attributes.map((attr) => ({
+      ...attr,
+      options: attr.optionsText
+        ? attr.optionsText.split(",").map((s) => s.trim()).filter(Boolean)
+        : [],
+    }));
 
     const payload = {
       ...formData,
@@ -90,7 +138,7 @@ export default function CategoryForm({
       description: formData.description.trim(),
       parent: forceMainCategory ? null : formData.parent || null,
       sortOrder,
-      attributes: initialCategory?.attributes ?? [],
+      attributes: formattedAttributes,
     };
 
     onSubmit(payload);
@@ -359,6 +407,121 @@ export default function CategoryForm({
             warranty.
           </p>
         </div>
+        {/* ... [keep your existing Condition and Warranty policy divs] ... */}
+        
+        {/* ADD THIS ENTIRE SECTION BELOW WARRANTY POLICY */}
+        <div className={`mt-8 border-t pt-6 ${isDark ? "border-gray-700" : "border-gray-200"}`}>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className={`font-semibold ${isDark ? "text-gray-200" : "text-gray-800"}`}>Category Specifications</h3>
+              <p className={`text-sm ${isDark ? "text-gray-400" : "text-gray-500"}`}>Define dynamic attributes for products in this category (e.g., RAM, Storage).</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddAttribute}
+              className={`flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm font-medium transition ${
+                isDark ? "border-gray-600 text-gray-200 hover:bg-gray-800" : "border-gray-300 text-teal-800 hover:bg-gray-50"
+              }`}
+            >
+              <Plus size={16} /> Add Specification
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {attributes.map((attr, index) => (
+              <div key={index} className={`relative rounded-lg border p-4 ${isDark ? "border-gray-700 bg-gray-800/50" : "border-gray-200 bg-gray-50"}`}>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveAttribute(index)}
+                  className="absolute right-3 top-3 text-red-500 hover:text-red-700 transition"
+                >
+                  <Trash2 size={16} />
+                </button>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mr-6">
+                  <div>
+                    <label className={labelClass}>Label *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Screen Size"
+                      value={attr.label}
+                      onChange={(e) => handleUpdateAttribute(index, "label", e.target.value)}
+                      className={inputClass}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Database Key *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. screen_size"
+                      value={attr.key}
+                      onChange={(e) => handleUpdateAttribute(index, "key", e.target.value)}
+                      className={inputClass}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Input Type *</label>
+                    <select
+                      value={attr.type}
+                      onChange={(e) => handleUpdateAttribute(index, "type", e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="text">Text</option>
+                      <option value="number">Number</option>
+                      <option value="select">Dropdown (Select)</option>
+                      <option value="multiselect">Multi-select</option>
+                      <option value="boolean">Yes/No (Boolean)</option>
+                    </select>
+                  </div>
+
+                  {["select", "multiselect"].includes(attr.type) && (
+                    <div className="sm:col-span-2">
+                      <label className={labelClass}>Options (Comma separated) *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 128GB, 256GB, 512GB"
+                       value={attr.optionsText ?? ""}
+                        onChange={(e) => handleUpdateAttribute(index, "optionsText", e.target.value)}
+                        className={inputClass}
+                        required
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className={labelClass}>Unit (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. inches, GB"
+                      value={attr.unit || ""}
+                      onChange={(e) => handleUpdateAttribute(index, "unit", e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div className="flex items-end pb-2">
+                    <label className={`flex items-center gap-2 text-sm ${isDark ? "text-gray-300" : "text-gray-700"}`}>
+                      <input
+                        type="checkbox"
+                        checked={attr.isRequired}
+                        onChange={(e) => handleUpdateAttribute(index, "isRequired", e.target.checked)}
+                        className="rounded accent-teal-800"
+                      />
+                      Required Field
+                    </label>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+    
+
+    
       </div>
 
       {/* Form actions */}

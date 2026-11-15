@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { ArrowLeft, CheckCircle2, Package, MapPin } from "lucide-react";
-
+import { createOrder } from "../services/orderApi";
 // Utilities & Context
 import { checkoutSchema, checkoutOptions } from "../utils/checkoutUtils";
 import { useCart } from "../context/CartContext";
@@ -80,13 +79,25 @@ export default function Checkout() {
     const schema = checkoutSchema.superRefine((data, context) => {
       if (isDelivery) {
         if (!data.streetAddress?.trim()) {
-          context.addIssue({ code: "custom", path: ["streetAddress"], message: "Enter your street address." });
+          context.addIssue({
+            code: "custom",
+            path: ["streetAddress"],
+            message: "Enter your street address.",
+          });
         }
         if (!data.city?.trim()) {
-          context.addIssue({ code: "custom", path: ["city"], message: "Enter your town or city." });
+          context.addIssue({
+            code: "custom",
+            path: ["city"],
+            message: "Enter your town or city.",
+          });
         }
         if (!data.postcode?.trim()) {
-          context.addIssue({ code: "custom", path: ["postcode"], message: "Enter your postcode." });
+          context.addIssue({
+            code: "custom",
+            path: ["postcode"],
+            message: "Enter your postcode.",
+          });
         }
       }
     });
@@ -127,22 +138,19 @@ export default function Checkout() {
       })),
       checkoutMethod,
     };
-
-    //  Execute API Call
+    
     try {
-      const response = await axios.post(
-        "http://localhost:8000/api/orders/checkout",
-        orderPayload
-      );
+      // Use the new centralized API service instead of direct axios
+      const response = await createOrder(orderPayload);
 
-      const newOrder = response.data.data;
-      
+      const newOrder = response.data;
+
       setSubmitMessage(`Order ${newOrder.orderNumber} placed successfully!`);
-      
-      // Clear the global cart context so the user doesn't double-order
-      if (clearCart) clearCart(); 
 
-      // Payment Routing
+      //  Clear the global cart context so the user doesn't double-order
+      if (clearCart) clearCart();
+
+      //  Payment Routing
       if (newOrder.methods.paymentMethod === "Online Payment") {
         // PayHere integration triggers here
         console.log("Proceeding to PayHere with order:", newOrder.orderNumber);
@@ -150,12 +158,13 @@ export default function Checkout() {
         // Redirect to a thank you page for Store Pickups
         // navigate(`/order-confirmation/${newOrder.id}`);
       }
-
     } catch (error) {
       console.error("Checkout error:", error);
       setErrors((prev) => ({
         ...prev,
-        submit: error.response?.data?.message || "Failed to place order. Please try again.",
+        // The centralized api.js intercepts errors and passes a clean Error object.
+        // We pull the message directly from error.message instead of error.response.data
+        submit: error.message || "Failed to place order. Please try again.",
       }));
     } finally {
       setIsSubmitting(false);
@@ -208,13 +217,43 @@ export default function Checkout() {
               </div>
 
               <div className="grid gap-5 sm:grid-cols-2">
-                <CheckoutInput name="firstName" label="First Name" value={formData.firstName} onChange={handleChange} error={errors.firstName} autoComplete="given-name" />
-                <CheckoutInput name="lastName" label="Last Name" value={formData.lastName} onChange={handleChange} error={errors.lastName} autoComplete="family-name" />
+                <CheckoutInput
+                  name="firstName"
+                  label="First Name"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  error={errors.firstName}
+                  autoComplete="given-name"
+                />
+                <CheckoutInput
+                  name="lastName"
+                  label="Last Name"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  error={errors.lastName}
+                  autoComplete="family-name"
+                />
                 <div className="sm:col-span-2">
-                  <CheckoutInput name="email" type="email" label="Email Address" value={formData.email} onChange={handleChange} error={errors.email} autoComplete="email" />
+                  <CheckoutInput
+                    name="email"
+                    type="email"
+                    label="Email Address"
+                    value={formData.email}
+                    onChange={handleChange}
+                    error={errors.email}
+                    autoComplete="email"
+                  />
                 </div>
                 <div className="sm:col-span-2">
-                  <CheckoutInput name="phone" type="tel" label="Phone Number" value={formData.phone} onChange={handleChange} error={errors.phone} autoComplete="tel" />
+                  <CheckoutInput
+                    name="phone"
+                    type="tel"
+                    label="Phone Number"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    error={errors.phone}
+                    autoComplete="tel"
+                  />
                 </div>
               </div>
             </section>
@@ -230,9 +269,30 @@ export default function Checkout() {
                   </h2>
                 </div>
                 <div className="space-y-5">
-                  <CheckoutInput name="streetAddress" label="Street Address" value={formData.streetAddress} onChange={handleChange} error={errors.streetAddress} autoComplete="street-address" />
-                  <CheckoutInput name="city" label="Town / City" value={formData.city} onChange={handleChange} error={errors.city} autoComplete="address-level2" />
-                  <CheckoutInput name="postcode" label="Postcode / ZIP" value={formData.postcode} onChange={handleChange} error={errors.postcode} autoComplete="postal-code" />
+                  <CheckoutInput
+                    name="streetAddress"
+                    label="Street Address"
+                    value={formData.streetAddress}
+                    onChange={handleChange}
+                    error={errors.streetAddress}
+                    autoComplete="street-address"
+                  />
+                  <CheckoutInput
+                    name="city"
+                    label="Town / City"
+                    value={formData.city}
+                    onChange={handleChange}
+                    error={errors.city}
+                    autoComplete="address-level2"
+                  />
+                  <CheckoutInput
+                    name="postcode"
+                    label="Postcode / ZIP"
+                    value={formData.postcode}
+                    onChange={handleChange}
+                    error={errors.postcode}
+                    autoComplete="postal-code"
+                  />
                 </div>
               </section>
             )}
@@ -244,7 +304,10 @@ export default function Checkout() {
             )}
 
             {submitMessage && (
-              <div role="status" className="flex gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+              <div
+                role="status"
+                className="flex gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"
+              >
                 <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
                 <p>{submitMessage}</p>
               </div>
@@ -254,14 +317,16 @@ export default function Checkout() {
               type="submit"
               disabled={isSubmitting}
               className={`w-full rounded-xl px-6 py-4 font-semibold text-white transition focus:outline-none focus:ring-2 focus:ring-[#183d3d] focus:ring-offset-2 ${
-                isSubmitting ? "bg-gray-400 cursor-not-allowed" : "bg-[#183d3d] hover:bg-[#245454]"
+                isSubmitting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#183d3d] hover:bg-[#245454]"
               }`}
             >
-              {isSubmitting 
-                ? "Processing..." 
+              {isSubmitting
+                ? "Processing..."
                 : checkoutMethod === "pickup-store"
-                ? "Reserve Order"
-                : "Continue to Payment"}
+                  ? "Reserve Order"
+                  : "Continue to Payment"}
             </button>
           </form>
 

@@ -18,6 +18,7 @@ import AdminLayout from "./admin/components/AdminLayout";
 import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminCategories from "./admin/pages/AdminCategories";
 import AdminProducts from "./admin/pages/AdminProducts";
+import AdminOrders from "./admin/pages/AdminOrders";
 // Public storefront layout
 function PublicLayout() {
   return (
@@ -52,6 +53,8 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="categories" element={<AdminCategories />} />
            <Route path="products" element={<AdminProducts />} />
+           <Route path="orders" element={<AdminOrders />} />
+
           </Route>
         </Routes>
       </CartProvider>

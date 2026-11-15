@@ -5,12 +5,14 @@ import {
   Store,
   X,
   ChevronRight,
+  ShoppingCart,
 } from "lucide-react";
 
 const navigationItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "products", label: "Products", icon: Package },
   { id: "categories", label: "Categories", icon: Tags },
+  { id: "orders", label: "Orders", icon: ShoppingCart },
 ];
 
 export default function AdminSidebar({

@@ -10,6 +10,9 @@ import categoryRoutes from "./modules/catalog/category/categoryRoutes.js";
 import productRoutes from "./modules/catalog/product/productRoutes.js"
 import adminProductRoutes from "./modules/catalog/product/admin/adminProductRoutes.js";
 
+import orderRoutes from "./modules/order/orderRoutes.js";
+import adminOrderRoutes from "./modules/order/admin/adminOrderRoutes.js";
+
 const app = express();
 
 //  Security middleware
@@ -45,6 +48,12 @@ app.use("/api/products", productRoutes);
 //admin related routes
 app.use("/api/products", productRoutes);
 app.use("/api/admin/products", adminProductRoutes);
+
+// Mount public routes orders
+app.use("/api/orders", orderRoutes);
+
+// Mount admin routes orders
+app.use("/api/admin/orders", adminOrderRoutes);
 
 //  Health-check endpoint
 // GET /api/health checks whether the API is responding

@@ -1,5 +1,5 @@
-import { paymentService } from '../services/paymentService.js';
-import {Order} from '../order/orderModel.js';
+import { paymentService } from './paymentService.js';
+import Order from '../order/orderModel.js';
 
 export const paymentController = {
   /**
@@ -18,14 +18,14 @@ export const paymentController = {
 
       const hash = paymentService.generateCheckoutHash(
         order._id.toString(), 
-        order.totalAmount, 
+        order.total, 
         order.currency || 'LKR'
       );
 
       res.status(200).json({
         merchantId: process.env.PAYHERE_MERCHANT_ID,
         hash,
-        amount: Number(order.totalAmount).toFixed(2),
+        amount: Number(order.total).toFixed(2),
         currency: order.currency || 'LKR'
       });
     } catch (error) {

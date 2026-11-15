@@ -13,6 +13,7 @@ import adminProductRoutes from "./modules/catalog/product/admin/adminProductRout
 import orderRoutes from "./modules/order/orderRoutes.js";
 import adminOrderRoutes from "./modules/order/admin/adminOrderRoutes.js";
 
+import paymentRoutes from "./modules/payment/paymentRoutes.js";
 const app = express();
 
 //  Security middleware
@@ -54,6 +55,9 @@ app.use("/api/orders", orderRoutes);
 
 // Mount admin routes orders
 app.use("/api/admin/orders", adminOrderRoutes);
+
+app.use('/api/payments', paymentRoutes);
+
 
 //  Health-check endpoint
 // GET /api/health checks whether the API is responding

@@ -67,7 +67,7 @@ export const createOrderService = async (input) => {
           {
             $inc: { "inventory.reserved": item.quantity },
           },
-          { session, new: true },
+          { session, returnDocument: "after" },
         );
 
         if (!product) {

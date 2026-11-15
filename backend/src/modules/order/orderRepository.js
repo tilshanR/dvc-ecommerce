@@ -29,13 +29,13 @@ export const findOrderByOrderNumber = async (orderNumber) => {
 /**
  * Update an order by its MongoDB ObjectId.
  */
+
 export const updateOrderById = async (orderId, updateData) => {
   return await Order.findByIdAndUpdate(orderId, updateData, {
-    new: true, // Return the updated document
+    returnDocument: "after",
     runValidators: true,
   });
 };
-
 /**
  * Find all orders using filters, search, sorting, and pagination.
  * Used exclusively by the Admin dashboard.

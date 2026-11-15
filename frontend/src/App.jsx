@@ -19,6 +19,7 @@ import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminCategories from "./admin/pages/AdminCategories";
 import AdminProducts from "./admin/pages/AdminProducts";
 import AdminOrders from "./admin/pages/AdminOrders";
+import AdminOrderDetails from "./admin/pages/AdminOrderDetails";
 // Public storefront layout
 function PublicLayout() {
   return (
@@ -29,8 +30,6 @@ function PublicLayout() {
     </div>
   );
 }
-
-
 
 function App() {
   return (
@@ -52,9 +51,9 @@ function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="categories" element={<AdminCategories />} />
-           <Route path="products" element={<AdminProducts />} />
-           <Route path="orders" element={<AdminOrders />} />
-
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="orders" element={<AdminOrders />} />
+            <Route path="orders/:orderId" element={<AdminOrderDetails />} />
           </Route>
         </Routes>
       </CartProvider>

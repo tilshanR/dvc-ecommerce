@@ -12,3 +12,7 @@ export const createOrder = async (orderPayload) => {
   const response = await api.post("/orders/checkout", orderPayload);
   return response.data;
 };
+
+export const getOrderById = async (orderId) => {
+  return await api.get(`/orders/${orderId}`); 
+};

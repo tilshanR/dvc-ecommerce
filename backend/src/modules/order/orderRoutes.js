@@ -1,5 +1,6 @@
 import express from "express";
-import { createOrder } from "./orderController.js";
+import { createOrder, getOrderById } from "./orderController.js";
+
 
 const router = express.Router();
 
@@ -9,5 +10,12 @@ const router = express.Router();
  * @access  Public
  */
 router.post("/checkout", createOrder);
+
+/**
+ * @route   GET /api/orders/:id
+ * @desc    Get order details by ID (used for the success page)
+ * @access  Public
+ */
+router.get("/:id", getOrderById);
 
 export default router;

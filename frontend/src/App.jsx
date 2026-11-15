@@ -20,6 +20,7 @@ import AdminCategories from "./admin/pages/AdminCategories";
 import AdminProducts from "./admin/pages/AdminProducts";
 import AdminOrders from "./admin/pages/AdminOrders";
 import AdminOrderDetails from "./admin/pages/AdminOrderDetails";
+import OrderSuccess from "./pages/OrderSuccess";
 // Public storefront layout
 function PublicLayout() {
   return (
@@ -45,6 +46,7 @@ function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/order-success/:orderId" element={<OrderSuccess />} />
           </Route>
 
           {/* Admin routes */}

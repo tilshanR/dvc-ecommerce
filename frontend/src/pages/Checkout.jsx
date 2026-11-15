@@ -5,6 +5,7 @@ import { createOrder } from "../services/orderApi";
 // Utilities & Context
 import { checkoutSchema, checkoutOptions } from "../utils/checkoutUtils";
 import { useCart } from "../context/CartContext";
+import { getPaymentHash } from "../services/paymentApi";
 
 // UI Components
 import CheckoutInput from "../components/checkout/CheckoutInput";
@@ -70,6 +71,153 @@ export default function Checkout() {
     setSubmitMessage("");
   };
 
+  // --- NEW: PayHere Integration Function ---
+  //   const initiatePayHerePayment = async (order) => {
+  //     try {
+  //       const orderIdString = order._id || order.id;
+  //       console.log("1. Fetching hash for order ID:", order._id);
+  //       // 1. Fetch the secure hash from your backend
+  //       const { merchantId, hash, amount, currency } = await getPaymentHash(order._id);
+  // console.log("2. Hash received successfully:", { merchantId, hash, amount, currency });
+  //       // 2. Define PayHere SDK event callbacks
+  //       window.payhere.onCompleted = function onCompleted(orderId) {
+  //         console.log("Payment completed. OrderID:" + orderId);
+  //         // Backend handles the DB update via webhook. Redirect user to success.
+  //         navigate(`/order-success/${order._id}`);
+  //       };
+
+  //       window.payhere.onDismissed = function onDismissed() {
+  //         console.log("Payment dismissed by user");
+  //         setErrors((prev) => ({
+  //           ...prev,
+  //           submit: "Payment was cancelled. You can complete it later from your orders.",
+  //         }));
+  //         setIsSubmitting(false);
+  //       };
+
+  //       window.payhere.onError = function onError(error) {
+  //         console.error("PayHere Error:", error);
+  //         setErrors((prev) => ({
+  //           ...prev,
+  //           submit: "Payment gateway error. Please try again or contact support.",
+  //         }));
+  //         setIsSubmitting(false);
+  //       };
+
+  //       // 3. Construct the payment variables object
+  //       const payment = {
+  //         sandbox: true, // IMPORTANT: Set to false in production
+  //         merchant_id: merchantId,
+  //         return_url: `${window.location.origin}/order-success/${order._id}`,
+  //         cancel_url: `${window.location.origin}/checkout`,
+  //         notify_url: import.meta.env.VITE_PAYHERE_NOTIFY_URL,// REPLACE THIS for local webhook testing
+  //         order_id: order._id,
+  //         items: "Order #" + order.orderNumber,
+  //         amount: amount,
+  //         currency: currency,
+  //         hash: hash,
+
+  //         // Customer Details
+  //         first_name: order.customer.firstName,
+  //         last_name: order.customer.lastName,
+  //         email: order.customer.email,
+  //         phone: order.customer.phone,
+  //         address: order.shippingAddress?.streetAddress || "N/A",
+  //         city: order.shippingAddress?.city || "N/A",
+  //         country: "Sri Lanka",
+  //       };
+
+  //       // 4. Trigger the popup
+  //       window.payhere.startPayment(payment);
+
+  //     } catch (error) {
+  //       console.error("Failed to initiate PayHere:", error);
+  //       setErrors((prev) => ({
+  //         ...prev,
+  //         submit: "Could not connect to the payment gateway.",
+  //       }));
+  //       setIsSubmitting(false);
+  //     }
+  //   };
+  const initiatePayHerePayment = async (order) => {
+    try {
+      // Safely grab the ID whether it was serialized as _id or id
+      const orderIdString = order._id || order.id;
+
+      console.log("1. Fetching hash for order ID:", orderIdString);
+
+      // 1. Fetch the secure hash from your backend
+      const { merchantId, hash, amount, currency } =
+        await getPaymentHash(orderIdString);
+
+      console.log("2. Hash received successfully:", {
+        merchantId,
+        hash,
+        amount,
+        currency,
+      });
+
+      // 2. Define PayHere SDK event callbacks
+      window.payhere.onCompleted = function onCompleted(orderId) {
+        console.log("Payment completed. OrderID:" + orderId);
+        // Backend handles the DB update via webhook. Redirect user to success.
+        navigate(`/order-success/${orderIdString}`);
+      };
+
+      window.payhere.onDismissed = function onDismissed() {
+        console.log("Payment dismissed by user");
+        setErrors((prev) => ({
+          ...prev,
+          submit:
+            "Payment was cancelled. You can complete it later from your orders.",
+        }));
+        setIsSubmitting(false);
+      };
+
+      window.payhere.onError = function onError(error) {
+        console.error("PayHere Error:", error);
+        setErrors((prev) => ({
+          ...prev,
+          submit: "Payment gateway error. Please try again or contact support.",
+        }));
+        setIsSubmitting(false);
+      };
+
+      // 3. Construct the payment variables object
+      const payment = {
+        sandbox: true, // IMPORTANT: Set to false in production
+        merchant_id: merchantId,
+        return_url: `${window.location.origin}/order-success/${orderIdString}`,
+        cancel_url: `${window.location.origin}/checkout`,
+        notify_url: import.meta.env.VITE_PAYHERE_NOTIFY_URL,
+        order_id: orderIdString,
+        items: "Order #" + order.orderNumber,
+        amount: amount,
+        currency: currency,
+        hash: hash,
+
+        // Customer Details
+        first_name: order.customer.firstName,
+        last_name: order.customer.lastName,
+        email: order.customer.email,
+        phone: order.customer.phone,
+        address: order.shippingAddress?.streetAddress || "N/A",
+        city: order.shippingAddress?.city || "N/A",
+        country: "Sri Lanka",
+      };
+
+      // 4. Trigger the popup
+      window.payhere.startPayment(payment);
+    } catch (error) {
+      console.error("Failed to initiate PayHere:", error);
+      setErrors((prev) => ({
+        ...prev,
+        submit: "Could not connect to the payment gateway.",
+      }));
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsSubmitting(true);
@@ -117,7 +265,7 @@ export default function Checkout() {
       return;
     }
 
-    //  Prepare Payload
+    // Prepare Payload
     const orderPayload = {
       customer: {
         firstName: result.data.firstName,
@@ -138,35 +286,30 @@ export default function Checkout() {
       })),
       checkoutMethod,
     };
-    
+
     try {
       // Use the new centralized API service instead of direct axios
       const response = await createOrder(orderPayload);
-
       const newOrder = response.data;
-
+      console.log("Order saved to DB:", newOrder); // Let's log it just to be sure!
       setSubmitMessage(`Order ${newOrder.orderNumber} placed successfully!`);
 
-      //  Clear the global cart context so the user doesn't double-order
+      // Clear the global cart context so the user doesn't double-order
       if (clearCart) clearCart();
 
-      //  Payment Routing
-      if (newOrder.methods.paymentMethod === "Online Payment") {
-        // PayHere integration triggers here
-        console.log("Proceeding to PayHere with order:", newOrder.orderNumber);
+      if (checkoutMethod === "delivery-online" || checkoutMethod === "pickup-online") {
+        console.log("Triggering Online Payment Flow...");
+        await initiatePayHerePayment(newOrder);
       } else {
-        // Redirect to a thank you page for Store Pickups
-        // navigate(`/order-confirmation/${newOrder.id}`);
+        console.log("Store Pickup selected. Redirecting to success...");
+        navigate(`/order-success/${newOrder._id || newOrder.id}`);
       }
     } catch (error) {
       console.error("Checkout error:", error);
       setErrors((prev) => ({
         ...prev,
-        // The centralized api.js intercepts errors and passes a clean Error object.
-        // We pull the message directly from error.message instead of error.response.data
         submit: error.message || "Failed to place order. Please try again.",
       }));
-    } finally {
       setIsSubmitting(false);
     }
   };

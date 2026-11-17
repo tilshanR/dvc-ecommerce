@@ -11,6 +11,8 @@ import FounderSection from "../components/about/FounderSection";
 import FAQSection from "../components/about/FAQSection";
 import StoreDetailsSection from "../components/about/StoreDetailsSection";
 import FinalCTA from "../components/about/FinalCTA";
+import HalftoneBanner from "../components/about/HalftoneBanner";
+
 
 // Main About page component.
 // Combines all sections in the order they appear on the page.
@@ -23,6 +25,7 @@ export default function About() {
       <HeroSection />
       {/* Company history and business milestones timeline. */}
       <JourneySection />
+      <HalftoneBanner />
 
       {/* Products, accessories, hardware, and services offered by DVC. */}
       <OfferingsSection />

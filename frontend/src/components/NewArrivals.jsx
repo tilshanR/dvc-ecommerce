@@ -1,14 +1,48 @@
-
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import ProductCard from "./ProductCard";
 
-const API_URL = "/api/products";
+import { getProducts } from "../services/productApi";
+
+const ArrowButton = ({ direction, onClick, disabled }) => {
+  const isLeft = direction === "left";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={isLeft ? "Previous products" : "Next products"}
+      className={`absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-900 shadow-md transition hover:border-dvcGreen hover:bg-dvcGreen hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dvcGreen disabled:pointer-events-none disabled:opacity-0 sm:h-11 sm:w-11 ${
+        isLeft ? "left-1 sm:-left-5" : "right-1 sm:-right-5"
+      }`}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-5 w-5"
+        aria-hidden="true"
+      >
+        <path d={isLeft ? "M15 18l-6-6 6-6" : "M9 6l6 6-6 6"} />
+      </svg>
+    </button>
+  );
+};
 
 const NewArrivals = ({ onAddToCart }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Carousel state
+  const trackRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -18,34 +52,21 @@ const NewArrivals = ({ onAddToCart }) => {
         setLoading(true);
         setError("");
 
-        const response = await fetch(
-          `${API_URL}?sort=newest&limit=8`,
-          { signal: controller.signal }
+        // Call  backend using the helper
+        const data = await getProducts(
+          {
+            sortBy: "createdAt", // Sorts by newest
+            sortOrder: "desc",
+            limit: 8, // Limits to 8 items
+          },
+          { signal: controller.signal },
         );
 
-        if (!response.ok) {
-        //   throw new Error("Unable to load new arrivals.");
-        //return dummy product array
-           
-        }
-
-        const data = await response.json();
-       
-        // Supports either an array or { products: [...] }.
-        const productList = Array.isArray(data)
-          ? data
-          : data.products;
-
-        if (!Array.isArray(productList)) {
-          throw new Error("The product data format is invalid.");
-        }
-
-        setProducts(productList);
+        setProducts(data.products || []);
       } catch (err) {
-        if (err.name !== "AbortError") {
-          setError(
-            "We couldn't load the latest products. Please try again."
-          );
+        // Ignore aborted requests caused by the component unmounting
+        if (err.name !== "AbortError" && err.name !== "CanceledError") {
+          setError("We couldn't load the latest products. Please try again.");
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -59,10 +80,45 @@ const NewArrivals = ({ onAddToCart }) => {
     return () => controller.abort();
   }, []);
 
+  // Work out whether each arrow should be enabled
+  const updateArrows = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < maxScroll - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+
+    updateArrows();
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    window.addEventListener("resize", updateArrows);
+
+    return () => {
+      el.removeEventListener("scroll", updateArrows);
+      window.removeEventListener("resize", updateArrows);
+    };
+  }, [products, loading, updateArrows]);
+
+  const scrollByPage = (direction) => {
+    const el = trackRef.current;
+    if (!el) return;
+
+    el.scrollBy({
+      left: direction * el.clientWidth,
+      behavior: "smooth",
+    });
+  };
+
   return (
     <section
+     id="new-arrivals"
       aria-labelledby="new-arrivals-heading"
-      className="bg-white px-5 py-16 sm:px-8 md:py-20"
+      className="bg-white px-5 py-16 sm:px-8 md:py-20 scroll-mt-20"
     >
       <div className="mx-auto max-w-7xl">
         {/* Section heading */}
@@ -87,13 +143,13 @@ const NewArrivals = ({ onAddToCart }) => {
               </h2>
 
               <p className="mt-4 max-w-2xl text-base leading-7 text-gray-600 sm:text-lg">
-                Explore the latest products added to DVC Store, from
-                electronics and computer hardware to everyday stationery.
+                Explore the latest products added to DVC Store, from electronics
+                and computer hardware to everyday stationery.
               </p>
             </div>
 
             <a
-              href="/shop?sort=newest"
+              href="/shop?sortBy=createdAt&sortOrder=desc"
               className="inline-flex w-fit items-center gap-2 font-semibold text-dvcGreen transition-colors hover:text-green-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-dvcGreen"
             >
               View All
@@ -152,17 +208,42 @@ const NewArrivals = ({ onAddToCart }) => {
           </p>
         )}
 
-        {/* Reusable product cards */}
+        {/* Carousel */}
         {!loading && !error && products.length > 0 && (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
-            {products.map((product, index) => (
-              <ProductCard
-                key={product._id ?? product.id}
-                product={product}
-                index={index}
-                onAddToCart={onAddToCart}
-              />
-            ))}
+          <div
+            className="relative"
+            role="region"
+            aria-roledescription="carousel"
+            aria-label="New arrivals"
+          >
+            <ArrowButton
+              direction="left"
+              onClick={() => scrollByPage(-1)}
+              disabled={!canScrollLeft}
+            />
+            <ArrowButton
+              direction="right"
+              onClick={() => scrollByPage(1)}
+              disabled={!canScrollRight}
+            />
+
+            <div
+              ref={trackRef}
+              className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth py-1 sm:gap-6 [scrollbar-none] [&::-webkit-scrollbar]:hidden"
+            >
+              {products.map((product, index) => (
+                <div
+                  key={product._id ?? product.id}
+                  className="w-[calc((100%-1rem)/2)] shrink-0 snap-start sm:w-[calc((100%-3rem)/3)] lg:w-[calc((100%-4.5rem)/4)]"
+                >
+                  <ProductCard
+                    product={product}
+                    index={index}
+                    onAddToCart={onAddToCart}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

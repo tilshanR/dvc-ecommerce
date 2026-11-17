@@ -159,7 +159,7 @@ const HeroHome = () => {
           className="mt-9 flex flex-col items-center justify-center gap-4 pointer-events-auto sm:flex-row"
         >
           <Link
-            to="/products?sort=newest"
+            to="/#new-arrivals"
             className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-dvcGreen px-8 py-3 font-semibold text-white transition-colors duration-200 hover:bg-green-800 sm:w-auto"
           >
             New Arrivals

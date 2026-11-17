@@ -1,5 +1,5 @@
-import { Routes, Route, Outlet } from "react-router-dom";
-
+import { Routes, Route, Outlet, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -21,6 +21,16 @@ import AdminProducts from "./admin/pages/AdminProducts";
 import AdminOrders from "./admin/pages/AdminOrders";
 import AdminOrderDetails from "./admin/pages/AdminOrderDetails";
 import OrderSuccess from "./pages/OrderSuccess";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 // Public storefront layout
 function PublicLayout() {
   return (
@@ -36,6 +46,7 @@ function App() {
   return (
     <ToastProvider>
       <CartProvider>
+        <ScrollToTop />
         <Routes>
           {/* Public storefront routes */}
           <Route element={<PublicLayout />}>
@@ -58,6 +69,7 @@ function App() {
             <Route path="orders/:orderId" element={<AdminOrderDetails />} />
           </Route>
         </Routes>
+        <ScrollToTop />
       </CartProvider>
     </ToastProvider>
   );

@@ -24,7 +24,7 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
+
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalOrders, setTotalOrders] = useState(0);
@@ -33,13 +33,13 @@ export default function AdminOrders() {
   const fetchOrders = async () => {
     setLoading(true);
     setError("");
-    
+
     try {
       const params = { page, limit: 10 };
       if (statusFilter !== "All") params.orderStatus = statusFilter;
 
       const response = await getAdminOrders(params);
-      
+
       // Strict array extraction to prevent .map() errors
       let extractedOrders = [];
       if (Array.isArray(response.data)) {
@@ -51,12 +51,12 @@ export default function AdminOrders() {
       }
 
       setOrders(extractedOrders);
-      
+
       // Strict pagination extraction
-      const paginationData = response.pagination || response.data?.pagination || {};
+      const paginationData =
+        response.pagination || response.data?.pagination || {};
       setTotalPages(paginationData.totalPages || 1);
       setTotalOrders(paginationData.total || extractedOrders.length);
-
     } catch (err) {
       setError(err.message || "Failed to load orders.");
     } finally {
@@ -83,16 +83,16 @@ export default function AdminOrders() {
       Paid: "bg-emerald-100 text-emerald-800 border-emerald-200",
       Failed: "bg-red-100 text-red-800 border-red-200",
     };
-    
+
     return `px-2.5 py-0.5 rounded-full text-xs font-semibold border ${styles[status] || "bg-gray-100 text-gray-800 border-gray-200"}`;
   };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <PageHeader 
-          title="Order Management" 
-          description={`View and manage ${totalOrders} customer orders.`} 
+        <PageHeader
+          title="Order Management"
+          description={`View and manage ${totalOrders} customer orders.`}
         />
         <div className="relative w-full sm:w-48">
           <select
@@ -122,22 +122,39 @@ export default function AdminOrders() {
           <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
             <thead className="bg-gray-50 text-gray-600">
               <tr>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Order ID</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Total</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Payment</th>
-                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider">Fulfillment</th>
-                <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider">Action</th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider">
+                  Order ID
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider">
+                  Customer
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider">
+                  Total
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider">
+                  Payment
+                </th>
+                <th className="px-6 py-4 text-xs font-semibold uppercase tracking-wider">
+                  Fulfillment
+                </th>
+                <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider">
+                  Action
+                </th>
               </tr>
             </thead>
-            
+
             <tbody className="divide-y divide-gray-200 bg-white">
               {loading ? (
                 <tr>
                   <td colSpan="7" className="py-12 text-center text-gray-500">
                     <div className="mb-2 flex justify-center">
-                      <Package className="animate-pulse text-gray-400" size={32} />
+                      <Package
+                        className="animate-pulse text-gray-400"
+                        size={32}
+                      />
                     </div>
                     Loading orders...
                   </td>
@@ -150,7 +167,10 @@ export default function AdminOrders() {
                 </tr>
               ) : (
                 orders.map((order) => (
-                  <tr key={order.id} className="transition-colors hover:bg-gray-50">
+                  <tr
+                    key={order.id}
+                    className="transition-colors hover:bg-gray-50"
+                  >
                     <td className="px-6 py-4 font-medium text-[#183D3D]">
                       {order.orderNumber}
                     </td>
@@ -169,17 +189,21 @@ export default function AdminOrders() {
                       {formatLKR(order.financials?.total)}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={getStatusBadge(order.status?.payment)}>
-                        {order.status?.payment || "Pending"}
+                      <span
+                        className={getStatusBadge(order.status?.paymentStatus)}
+                      >
+                        {order.status?.paymentStatus || "Pending"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={getStatusBadge(order.status?.order)}>
-                        {order.status?.order || "Pending"}
+                      <span
+                        className={getStatusBadge(order.status?.orderStatus)}
+                      >
+                        {order.status?.orderStatus || "Pending"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link 
+                      <Link
                         to={`/admin/orders/${order.id || order._id}`}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-200 hover:text-gray-900"
                       >

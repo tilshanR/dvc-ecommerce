@@ -5,11 +5,9 @@ import {
   Package,
   User,
   MapPin,
-  CreditCard,
-  Clock,
+  RefreshCw,
   CheckCircle,
   AlertCircle,
-  RefreshCw,
   Box,
 } from "lucide-react";
 import { getAdminOrderById, updateAdminOrder } from "../services/adminOrderApi";
@@ -52,7 +50,6 @@ export default function AdminOrderDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Status update state
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState("");
 
@@ -60,6 +57,7 @@ export default function AdminOrderDetails() {
     const fetchOrderDetails = async () => {
       try {
         const response = await getAdminOrderById(orderId);
+        // The API returns: { success: true, data: { id, orderNumber... } }
         setOrder(response.data);
       } catch (err) {
         setError(err.message || "Failed to load order details.");
@@ -76,17 +74,14 @@ export default function AdminOrderDetails() {
     setError("");
 
     try {
-      // type is either 'orderStatus' or 'paymentStatus'
       const payload = { [type]: newStatus };
       const response = await updateAdminOrder(orderId, payload);
 
-      // Update local state with the returned updated order
       setOrder(response.data);
       setUpdateMessage(
         `${type === "orderStatus" ? "Fulfillment" : "Payment"} status updated successfully.`,
       );
 
-      // Clear success message after 3 seconds
       setTimeout(() => setUpdateMessage(""), 3000);
     } catch (err) {
       setError(err.message || "Failed to update status.");
@@ -137,17 +132,17 @@ export default function AdminOrderDetails() {
             description={`Placed on ${formatDate(order.createdAt)}`}
           />
           <div className="mt-4 flex gap-3 sm:mt-0">
-            <span className={getStatusBadge(order.status.payment)}>
-              Payment: {order.status.payment}
+            {/* Updated mapping to status.paymentStatus and status.orderStatus */}
+            <span className={getStatusBadge(order.status.paymentStatus)}>
+              Payment: {order.status.paymentStatus}
             </span>
-            <span className={getStatusBadge(order.status.order)}>
-              Order: {order.status.order}
+            <span className={getStatusBadge(order.status.orderStatus)}>
+              Order: {order.status.orderStatus}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Notifications */}
       {updateMessage && (
         <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-700">
           <CheckCircle size={20} />
@@ -161,9 +156,7 @@ export default function AdminOrderDetails() {
         </div>
       )}
 
-      {/* Main Content Grid */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Column: Order Items & Financials */}
         <div className="space-y-6 lg:col-span-2">
           {/* Ordered Items */}
           <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -226,14 +219,11 @@ export default function AdminOrderDetails() {
           </div>
         </div>
 
-        {/* Right Column: Details & Controls */}
         <div className="space-y-6">
-          {/* Status Management */}
           <div className="rounded-xl border border-[#183D3D]/20 bg-[#F5F8F7] p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-bold text-[#183D3D]">
               Manage Order
             </h2>
-
             <div className="space-y-5">
               <div>
                 <label className="mb-1 block text-sm font-semibold text-gray-700">
@@ -241,7 +231,7 @@ export default function AdminOrderDetails() {
                 </label>
                 <select
                   disabled={isUpdating}
-                  value={order.status.order}
+                  value={order.status.orderStatus}
                   onChange={(e) =>
                     handleStatusUpdate("orderStatus", e.target.value)
                   }
@@ -260,22 +250,29 @@ export default function AdminOrderDetails() {
                   Payment Status
                 </label>
                 <select
-                  disabled={isUpdating}
-                  value={order.status.payment}
+                  disabled={
+                    isUpdating ||
+                    order.methods.paymentMethod === "Online Payment"
+                  }
+                  value={order.status.paymentStatus}
                   onChange={(e) =>
                     handleStatusUpdate("paymentStatus", e.target.value)
                   }
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#183D3D] focus:ring-1 focus:ring-[#183D3D] disabled:opacity-50"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#183D3D] focus:ring-1 focus:ring-[#183D3D] disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100"
                 >
                   <option value="Pending">Pending</option>
                   <option value="Paid">Paid</option>
                   <option value="Failed">Failed</option>
                 </select>
+                {order.methods.paymentMethod === "Online Payment" && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Automated by PayHere webhook.
+                  </p>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Customer Details */}
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
               <User size={20} className="text-gray-400" /> Customer
@@ -296,7 +293,6 @@ export default function AdminOrderDetails() {
             </div>
           </div>
 
-          {/* Checkout & Delivery info */}
           <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
               <Package size={20} className="text-gray-400" /> Delivery Method

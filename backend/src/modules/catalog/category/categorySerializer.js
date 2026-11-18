@@ -22,7 +22,9 @@ export const categoryDTO = (category) => {
     slug: data.slug,
     description: data.description,
     sortOrder: data.sortOrder,
-
+    // image: data.image,
+    image: category.image || null,
+    imagePublicId: data.imagePublicId,
     parent: parentId,
 
     attributes: data.attributes ?? [],
@@ -61,7 +63,8 @@ export const shopCategoryDTO = (category) => {
     slug: category.slug,
     description: category.description,
     sortOrder: category.sortOrder,
-
+    image: category.image || null,
+    imagePublicId: category.imagePublicId || null,
     allowCondition: category.allowCondition,
     warrantyPolicy: category.warrantyPolicy,
 

@@ -125,7 +125,7 @@ export const findActiveCategoryTree = async () => {
     status: "active",
   })
     .select(
-      "name slug description sortOrder parent attributes allowCondition status",
+      "name slug description sortOrder parent attributes allowCondition status image imagePublicId ",
     )
     .sort({
       sortOrder: 1,

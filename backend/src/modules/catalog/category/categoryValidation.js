@@ -103,7 +103,8 @@ const categorySchema = z
     sortOrder: z.number().int().min(0).default(0),
 
     parent: objectIdSchema.nullable().default(null),
-
+    image: z.string().nullable().optional(),
+    imagePublicId: z.string().nullable().optional(),
     attributes: attributesSchema,
 
     allowCondition: z.boolean().default(false),

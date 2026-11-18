@@ -11,11 +11,11 @@ import {
   restoreCategoryController,
   getShopCategoriesController,
 } from "./categoryController.js";
-
+import { upload } from "../../../middleware/uploadMiddleware.js";
 const router = express.Router();
 
 // Create a new category
-router.post("/", createCategoryController);
+// router.post("/", createCategoryController);
 
 // Get all categories (supports query filters)
 router.get("/", getAllCategoriesController);
@@ -33,7 +33,7 @@ router.get("/id/:id", getCategoryByIdController);
 router.get("/:parentId/subcategories", getSubcategoriesController);
 
 // Update an existing category
-router.patch("/:id", updateCategoryController);
+// router.patch("/:id", updateCategoryController);
 
 // Archive a category
 router.patch("/:id/archive", archiveCategoryController);
@@ -41,4 +41,9 @@ router.patch("/:id/archive", archiveCategoryController);
 // Restore a category
 router.patch("/:id/restore", restoreCategoryController);
 
+// Create a new category - ADD upload.single('image')
+router.post("/", upload.single('image'), createCategoryController);
+
+// Update an existing category - ADD upload.single('image')
+router.patch("/:id", upload.single('image'), updateCategoryController);
 export default router;

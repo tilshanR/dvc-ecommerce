@@ -229,8 +229,13 @@ const AdminCategories = () => {
   };
 
   const handleSaveCategory = async (categoryData) => {
-    const cleanName = categoryData.name.trim();
-    const cleanSlug = slugify(categoryData.slug);
+    // 1. Safely extract values from the FormData object for local validation
+    const rawName = categoryData.get("name") || "";
+    const rawSlug = categoryData.get("slug") || "";
+    const parentId = categoryData.get("parent");
+
+    const cleanName = rawName.trim();
+    const cleanSlug = slugify(rawSlug);
 
     if (!cleanName || !cleanSlug) {
       window.alert("Please provide a valid category name and slug.");
@@ -251,11 +256,8 @@ const AdminCategories = () => {
       }
 
       try {
-        await updateCategory(editingCategory.id, {
-          ...categoryData,
-          name: cleanName,
-          slug: cleanSlug,
-        });
+        // Pass the FormData payload directly to the API
+        await updateCategory(editingCategory.id, categoryData);
 
         const refreshedCategories = await getAdminCategories();
         setCategories(refreshedCategories);
@@ -315,13 +317,8 @@ const AdminCategories = () => {
     try {
       // CREATE MAIN CATEGORY AND INITIAL SUBCATEGORIES.
       if (creationMode === "main") {
-        const mainResponse = await createCategory({
-          ...categoryData,
-          name: cleanName,
-          slug: cleanSlug,
-          parent: null,
-          attributes: categoryData.attributes ?? [],
-        });
+        // Pass the FormData payload directly!
+        const mainResponse = await createCategory(categoryData);
 
         createdMainId = mainResponse.category?.id;
 
@@ -332,17 +329,20 @@ const AdminCategories = () => {
         }
 
         // Save each initial subcategory using the real MongoDB parent ID.
+        // We construct a fresh FormData for each subcategory so the backend accepts it correctly.
         for (let index = 0; index < childNames.length; index++) {
-          await createCategory({
-            name: childNames[index],
-            slug: childSlugs[index],
-            description: "",
-            parent: createdMainId,
-            sortOrder: index + 1,
-            attributes: [],
-            allowCondition: false,
-            status: "active",
-          });
+          const subData = new FormData();
+          subData.append("name", childNames[index]);
+          subData.append("slug", childSlugs[index]);
+          subData.append("description", "");
+          subData.append("parent", createdMainId);
+          subData.append("sortOrder", index + 1);
+          subData.append("attributes", JSON.stringify([]));
+          subData.append("allowCondition", false);
+          subData.append("warrantyPolicy", "optional");
+          subData.append("status", "active");
+
+          await createCategory(subData);
         }
 
         const refreshedCategories = await getAdminCategories();
@@ -360,7 +360,7 @@ const AdminCategories = () => {
       // CREATE INDIVIDUAL SUBCATEGORY.
       if (creationMode === "subcategory") {
         const parentCategory = categories.find(
-          (category) => category.id === categoryData.parent,
+          (category) => category.id === parentId,
         );
 
         if (
@@ -372,13 +372,8 @@ const AdminCategories = () => {
           return;
         }
 
-        await createCategory({
-          ...categoryData,
-          name: cleanName,
-          slug: cleanSlug,
-          parent: parentCategory.id,
-          attributes: categoryData.attributes ?? [],
-        });
+        // Pass the FormData payload directly!
+        await createCategory(categoryData);
 
         const refreshedCategories = await getAdminCategories();
         setCategories(refreshedCategories);

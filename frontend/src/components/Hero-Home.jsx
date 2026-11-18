@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom"; // Upgraded to React Router
-import { getProducts } from "../services/productApi"; // Adjust this path to wherever your API file is located
+import { Link } from "react-router-dom"; 
+import { getProducts } from "../services/productApi"; 
 
 const HeroHome = () => {
   const heading = ["Discover", "Your", "Next", "Favorite"];

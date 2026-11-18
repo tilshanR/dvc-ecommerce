@@ -9,6 +9,7 @@ import {
   restoreCategoryWithSubcategories,
   findActiveCategoryTree,
 } from "./categoryRepository.js";
+import {uploadImageStream, deleteImage} from "../../../config/cloudinary.js"
 
 // --------------------------------------------------
 // Helper: Create a consistent error with HTTP status
@@ -89,7 +90,7 @@ const validateParentCategory = async (parentId) => {
 // --------------------------------------------------
 // CREATE CATEGORY
 // --------------------------------------------------
-export const createCategoryService = async (categoryData) => {
+export const createCategoryService = async (categoryData,file) => {
   const { name, parent, ...otherData } = categoryData;
 
   // Validate parent if creating a subcategory
@@ -98,10 +99,21 @@ export const createCategoryService = async (categoryData) => {
   // Generate a unique slug
   const slug = await generateUniqueSlug(name);
 
+  let image = null;
+  let imagePublicId = null;
+
+  // Upload stream if file exists and it's a main category
+  if (file && !parent) {
+    const uploadResult = await uploadImageStream(file.buffer, "dvc-ecommerce/categories");
+    image = uploadResult.secure_url;
+    imagePublicId = uploadResult.public_id;
+  }
   const newCategory = await createCategory({
     name,
     parent: parent || null,
     slug,
+    image,
+    imagePublicId,
     ...otherData,
   });
 
@@ -194,7 +206,7 @@ export const getSubcategoriesService = async (parentId) => {
 // --------------------------------------------------
 // UPDATE CATEGORY
 // --------------------------------------------------
-export const updateCategoryService = async (categoryId, updateData) => {
+export const updateCategoryService = async (categoryId, updateData,file) => {
   const existingCategory = await findCategoryById(categoryId);
 
   if (!existingCategory) {
@@ -232,8 +244,26 @@ export const updateCategoryService = async (categoryId, updateData) => {
     finalSlug = await generateUniqueSlug(slug || finalName, categoryId);
   }
 
+  // --- CLOUDINARY IMAGE HANDLING ---
+  let image = existingCategory.image;
+  let imagePublicId = existingCategory.imagePublicId;
+  const isMainCategory = Object.hasOwn(updateData, "parent") 
+    ? !parent 
+    : !existingCategory.parent;
+
+    // Upload stream and delete old image if it's a main category
+  if (file && isMainCategory) {
+    if (existingCategory.imagePublicId) {
+      await deleteImage(existingCategory.imagePublicId);
+    }
+    const uploadResult = await uploadImageStream(file.buffer, "dvc-ecommerce/categories");
+    image = uploadResult.secure_url;
+    imagePublicId = uploadResult.public_id;
+  }
   const dataToUpdate = {
     ...otherData,
+    image,
+    imagePublicId,
     ...(name !== undefined && { name }),
     ...(Object.hasOwn(updateData, "parent") && {
       parent: parent || null,

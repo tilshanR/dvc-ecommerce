@@ -110,6 +110,15 @@ const categorySchema = new Schema(
       ref: "Category",
       default: null,
     },
+    image: {
+      type: String,
+      default: null, // Optional so subcategories can be saved without an image
+    },
+    imagePublicId: {
+      type: String,
+      default: null, // Used for deleting the image from Cloudinary later
+    },
+   
 
     // Dynamic attributes defined by the admin.
     attributes: {

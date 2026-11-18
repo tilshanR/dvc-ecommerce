@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Save, Plus, Trash2 } from "lucide-react";
+import { X, Save, Plus, Trash2, Image as ImageIcon } from "lucide-react";
 import AdminInput from "../../components/ui/AdminInput";
 import AdminSelect from "../../components/ui/AdminSelect";
 import AdminTextarea from "../../components/ui/AdminTextarea";
@@ -37,6 +37,11 @@ export default function CategoryForm({
     allowCondition: initialCategory?.allowCondition ?? false,
     warrantyPolicy: initialCategory?.warrantyPolicy ?? "optional",
   }));
+
+  //Image State ---
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(initialCategory?.image || null);
+  
   //attributes state
   const [attributes, setAttributes] = useState(
     (initialCategory?.attributes || []).map((attr) => ({
@@ -100,6 +105,20 @@ export default function CategoryForm({
     }));
   };
 
+  //Image Handler ---
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Image size must be less than 5MB");
+        return;
+      }
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+      setError("");
+    }
+  };
+
   const handleSubmit = (event) => {
     event.preventDefault();
     setError("");
@@ -133,18 +152,26 @@ export default function CategoryForm({
             .filter(Boolean)
         : [],
     }));
+    const submitData = new FormData();
+    submitData.append("name", formData.name.trim());
+    submitData.append("slug", formData.slug.trim());
+    submitData.append("description", formData.description.trim());
+    submitData.append("sortOrder", sortOrder);
+    submitData.append("allowCondition", formData.allowCondition);
+    submitData.append("warrantyPolicy", formData.warrantyPolicy);
 
-    const payload = {
-      ...formData,
-      name: formData.name.trim(),
-      slug: formData.slug.trim(),
-      description: formData.description.trim(),
-      parent: forceMainCategory ? null : formData.parent || null,
-      sortOrder,
-      attributes: formattedAttributes,
-    };
+    const finalParent = forceMainCategory ? null : formData.parent || null;
+    if (finalParent) {
+      submitData.append("parent", finalParent);
+    }
+    // Must stringify arrays for FormData
+    submitData.append("attributes", JSON.stringify(formattedAttributes));
+    // Append image if we have one and this is a main category
+    if (imageFile && !finalParent) {
+      submitData.append("image", imageFile);
+    }
+    onSubmit(submitData);
 
-    onSubmit(payload);
   };
 
   const availableParents = categories.filter((category) => {
@@ -158,6 +185,8 @@ export default function CategoryForm({
       category.status === "active" && isMainCategory && categoryId !== currentId
     );
   });
+  const isMainCategoryNow = forceMainCategory || !formData.parent;
+
 
   const inputClass = `mt-1.5 w-full rounded-lg border px-3 py-2.5 text-sm outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-700/10 ${
     isDark
@@ -224,6 +253,52 @@ export default function CategoryForm({
             }`}
           >
             {error}
+          </div>
+        )}
+        {/* --- NEW: Image Upload UI (Only show for Main Categories) --- */}
+        {isMainCategoryNow && (
+          <div className="mb-6">
+            <label className={labelClass}>Category Image (Optional)</label>
+            <p className={`text-xs mb-3 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+              Images are only supported for main categories to display on the shop homepage.
+            </p>
+            
+            <div className="flex items-center gap-6">
+              <div
+                className={`flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed ${
+                  isDark ? "border-gray-700 bg-gray-800" : "border-gray-300 bg-gray-50"
+                }`}
+              >
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Preview" className="h-full w-full object-cover" />
+                ) : (
+                  <ImageIcon className={`h-8 w-8 ${isDark ? "text-gray-600" : "text-gray-400"}`} />
+                )}
+              </div>
+              
+              <div className="flex-1">
+                <input
+                  type="file"
+                  id="categoryImage"
+                  accept="image/jpeg, image/png, image/webp"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="categoryImage"
+                  className={`inline-block cursor-pointer rounded-lg border px-4 py-2 text-sm font-medium transition ${
+                    isDark
+                      ? "border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  Choose Image
+                </label>
+                <p className={`mt-2 text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>
+                  Recommended size: 500x500px (Max 5MB). PNG, JPG or WEBP.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -410,9 +485,7 @@ export default function CategoryForm({
             warranty.
           </p>
         </div>
-        {/* ... [keep your existing Condition and Warranty policy divs] ... */}
 
-        {/* ADD THIS ENTIRE SECTION BELOW WARRANTY POLICY */}
         <div
           className={`mt-8 border-t pt-6 ${isDark ? "border-gray-700" : "border-gray-200"}`}
         >

@@ -23,5 +23,13 @@ export const uploadImageStream = (fileBuffer, folder = "dvc-ecommerce/products")
     uploadStream.end(fileBuffer);
   });
 };
+//Added deleteImage so  can remove images
+export const deleteImage = async (publicId) => {
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    console.error("Error deleting image from Cloudinary:", error);
+  }
+};
 
 export default cloudinary;

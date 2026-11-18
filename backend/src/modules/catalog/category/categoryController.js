@@ -22,9 +22,38 @@ import {
   shopCategoryDTOs,
 } from "./categorySerializer.js";
 
+
+// Helper to parse FormData strings back to their correct types before Zod validation
+const parseCategoryFormData = (body) => {
+  const parsed = { ...body };
+
+  if (typeof parsed.sortOrder === "string") {
+    parsed.sortOrder = parseInt(parsed.sortOrder, 10);
+  }
+
+  if (typeof parsed.allowCondition === "string") {
+    parsed.allowCondition = parsed.allowCondition === "true";
+  }
+
+  if (typeof parsed.attributes === "string") {
+    try {
+      parsed.attributes = JSON.parse(parsed.attributes);
+    } catch (e) {
+      parsed.attributes = [];
+    }
+  }
+
+  // Ensure empty or "null" parent strings are converted to actual null
+  if (parsed.parent === "null" || parsed.parent === "") {
+    parsed.parent = null;
+  }
+
+  return parsed;
+};
 // CREATE CATEGORY
 export const createCategoryController = async (req, res, next) => {
   try {
+    req.body = parseCategoryFormData(req.body);
     const validation = createCategorySchema.safeParse(req.body);
 
     if (!validation.success) {
@@ -35,7 +64,7 @@ export const createCategoryController = async (req, res, next) => {
       });
     }
 
-    const category = await createCategoryService(validation.data);
+    const category = await createCategoryService(validation.data, req.file);
 
     return res.status(201).json({
       success: true,
@@ -131,8 +160,8 @@ export const getSubcategoriesController = async (req, res, next) => {
 // UPDATE CATEGORY
 export const updateCategoryController = async (req, res, next) => {
   try {
+    req.body = parseCategoryFormData(req.body);
     const validation = updateCategorySchema.safeParse(req.body);
-
     if (!validation.success) {
       return res.status(400).json({
         success: false,
@@ -144,6 +173,7 @@ export const updateCategoryController = async (req, res, next) => {
     const category = await updateCategoryService(
       req.params.id,
       validation.data,
+      req.file,
     );
 
     return res.status(200).json({

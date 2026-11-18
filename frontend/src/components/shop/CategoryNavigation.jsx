@@ -20,7 +20,7 @@ export default function CategoryNavigation({
   return (
     <div className="mb-2">
       {/* Single clean row, hides scrollbar for native app feel */}
-      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] scrollbar-width:none">
         <CategoryButton
           active={activeParentSlug === "all"}
           onClick={() => changeCategory("all")}

@@ -1,4 +1,3 @@
-
 import CategoryButton from "./CategoryButton";
 
 export default function CategoryNavigation({
@@ -7,58 +6,41 @@ export default function CategoryNavigation({
   changeCategory,
   categoriesError,
 }) {
+  // Keeps the parent pill highlighted even if the user is deep inside a subcategory
+  const getActiveParentSlug = () => {
+    if (category === "all") return "all";
+    const parent = categories.find(
+      (c) => c.slug === category || c.subcategories?.some((s) => s.slug === category)
+    );
+    return parent ? parent.slug : "all";
+  };
+
+  const activeParentSlug = getActiveParentSlug();
+
   return (
-    <div className="mb-3 space-y-3">
-      <div className="flex flex-wrap gap-2">
+    <div className="mb-2">
+      {/* Single clean row, hides scrollbar for native app feel */}
+      <div className="flex flex-nowrap items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         <CategoryButton
-          active={category === "all"}
+          active={activeParentSlug === "all"}
           onClick={() => changeCategory("all")}
         >
           All
         </CategoryButton>
+
+        {categories.map((mainCategory) => (
+          <CategoryButton
+            key={mainCategory.id}
+            active={activeParentSlug === mainCategory.slug}
+            onClick={() => changeCategory(mainCategory.slug)}
+          >
+            {mainCategory.name}
+          </CategoryButton>
+        ))}
       </div>
 
-      {categories.map((mainCategory) => {
-        const hasSubs = mainCategory.subcategories?.length > 0;
-
-        const buttons = hasSubs
-          ? [
-              {
-                ...mainCategory,
-                buttonLabel: `All ${mainCategory.name}`,
-              },
-              ...mainCategory.subcategories.map((sub) => ({
-                ...sub,
-                buttonLabel: sub.name,
-              })),
-            ]
-          : [
-              {
-                ...mainCategory,
-                buttonLabel: mainCategory.name,
-              },
-            ];
-
-        return (
-          <div
-            key={mainCategory.id}
-            className="flex flex-wrap gap-2"
-          >
-            {buttons.map((item) => (
-              <CategoryButton
-                key={item.id}
-                active={category === item.slug}
-                onClick={() => changeCategory(item.slug)}
-              >
-                {item.buttonLabel}
-              </CategoryButton>
-            ))}
-          </div>
-        );
-      })}
-
       {categoriesError && (
-        <p className="text-sm text-red-600">
+        <p className="mt-2 text-sm text-red-600">
           {categoriesError}
         </p>
       )}

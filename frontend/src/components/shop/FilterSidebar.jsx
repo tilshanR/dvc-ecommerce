@@ -2,9 +2,11 @@ import { SlidersHorizontal } from "lucide-react";
 import FilterSection from "./FilterSection";
 
 export default function FilterSidebar({
+  categories,
   clearFilters,
   activeFilterCount,
   category,
+  changeCategory,
   sort,
   inStockOnly,
   updateQuery,
@@ -16,6 +18,12 @@ export default function FilterSidebar({
   attributeFilters,
   setAttribute,
 }) {
+
+  // Find if  currently inside a parent category that has subcategories
+  const activeParentCategory = categories?.find(
+    (c) => c.slug === category || c.subcategories?.some((s) => s.slug === category)
+  );
+
   return (
     <aside className="h-fit rounded-xl border border-gray-200 bg-white p-4 lg:sticky lg:top-64 lg:max-h-[calc(100vh-270px)] lg:overflow-y-auto">
       <div className="mb-4 flex items-center justify-between">
@@ -35,13 +43,50 @@ export default function FilterSidebar({
         </button>
       </div>
 
+      {/* Dynamic Subcategories Checkboxes */}
+      {activeParentCategory && activeParentCategory.subcategories?.length > 0 && (
+        <FilterSection title={`${activeParentCategory.name} Categories`} defaultOpen>
+          <div className="mt-3 flex flex-col gap-3">
+            <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
+              <input
+                type="checkbox"
+                checked={category === activeParentCategory.slug}
+                onChange={() => 
+                  category === activeParentCategory.slug 
+                    ? changeCategory('all') // Unchecking parent goes back to 'all'
+                    : changeCategory(activeParentCategory.slug)
+                }
+                className="h-4 w-4 rounded border-gray-300 accent-[#143630]"
+              />
+              All {activeParentCategory.name}
+            </label>
+            
+            {activeParentCategory.subcategories.map((sub) => (
+              <label key={sub.id} className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
+                <input
+                  type="checkbox"
+                  checked={category === sub.slug}
+                  onChange={() => 
+                    category === sub.slug 
+                      ? changeCategory(activeParentCategory.slug) // Unchecking subcategory goes back to parent
+                      : changeCategory(sub.slug)
+                  }
+                  className="h-4 w-4 rounded border-gray-300 accent-[#143630]"
+                />
+                {sub.name}
+              </label>
+            ))}
+          </div>
+        </FilterSection>
+      )}
+
       <FilterSection title="Availability" defaultOpen>
         <label className="mt-3 flex items-center gap-2 text-sm text-gray-600">
           <input
             type="checkbox"
             checked={inStockOnly}
             onChange={(e) => updateQuery({ availability: e.target.checked })}
-            className="accent-dvcGreen"
+            className="h-4 w-4 rounded border-gray-300 accent-[#143630]"
           />
           In stock only
         </label>
@@ -56,7 +101,7 @@ export default function FilterSidebar({
             placeholder="Min"
             value={minPrice}
             onChange={(e) => updateQuery({ minPrice: e.target.value })}
-            className="min-w-0 rounded-md border border-gray-300 px-2 py-2 text-sm"
+            className="min-w-0 rounded-md border border-gray-300 px-2 py-2 text-sm focus:border-[#143630] focus:outline-none focus:ring-1 focus:ring-[#143630]"
           />
 
           <input
@@ -66,7 +111,7 @@ export default function FilterSidebar({
             placeholder="Max"
             value={maxPrice}
             onChange={(e) => updateQuery({ maxPrice: e.target.value })}
-            className="min-w-0 rounded-md border border-gray-300 px-2 py-2 text-sm"
+            className="min-w-0 rounded-md border border-gray-300 px-2 py-2 text-sm focus:border-[#143630] focus:outline-none focus:ring-1 focus:ring-[#143630]"
           />
         </div>
       </FilterSection>
@@ -75,10 +120,10 @@ export default function FilterSidebar({
         <select
           value={brand}
           onChange={(e) => updateQuery({ brand: e.target.value })}
-          className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
+          className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm focus:border-[#143630] focus:outline-none focus:ring-1 focus:ring-[#143630]"
         >
           <option value="">All brands</option>
-          {categoryBrands.map((b) => (
+          {categoryBrands?.map((b) => (
             <option key={b} value={b}>
               {b}
             </option>
@@ -86,7 +131,6 @@ export default function FilterSidebar({
         </select>
       </FilterSection>
 
-      {/* Dynamic Category Attributes */}
       {/* Dynamic Category Attributes */}
       {selectedCategoryAttributes?.map((attribute) => {
         if (!attribute.options || attribute.options.length === 0) return null;
@@ -101,11 +145,9 @@ export default function FilterSidebar({
               aria-label={attribute.label}
               value={attributeFilters[attribute.key] || ""}
               onChange={(e) => setAttribute(attribute.key, e.target.value)}
-              className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm"
+              className="mt-3 w-full rounded-md border border-gray-300 bg-white px-2 py-2 text-sm focus:border-[#143630] focus:outline-none focus:ring-1 focus:ring-[#143630]"
             >
               <option value="">All</option>
-
-              {/* Change this map back to using .value and .label */}
               {attribute.options.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}

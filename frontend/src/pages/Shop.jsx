@@ -6,20 +6,18 @@ import ProductCard from "../components/ProductCard";
 import { useCart } from "../context/CartContext";
 import useShopFilters from "../hooks/useShopFilters";
 import useShopProducts from "../hooks/useShopProducts";
-import ShopSearch from "../components/shop/ShopSearch";
 import ShopHeader from "../components/shop/ShopHeader";
 import CategoryNavigation from "../components/shop/CategoryNavigation";
-import FilterSection from "../components/shop/FilterSection";
 import FilterSidebar from "../components/shop/FilterSidebar";
 import ShopToolbar from "../components/shop/ShopToolbar";
 
-/* ---------- page ---------- */
 export default function Shop() {
   const { addToCart } = useCart();
   const productsSectionRef = useRef(null);
+  
   // Data
-  const { products, categories, loading, error, categoriesError } =
-    useShopData();
+  const { products, categories, loading, error, categoriesError } = useShopData();
+  
   // Filters:
   const {
     search,
@@ -60,6 +58,7 @@ export default function Shop() {
   useEffect(() => {
     requestAnimationFrame(scrollToProducts);
   }, [category]);
+  
   //derived data
   const {
     selectedCategory,
@@ -79,13 +78,18 @@ export default function Shop() {
     brand,
     attributeFilters,
   });
-  /* ---------- render ---------- */
+
+
   return (
     <main className="min-h-screen bg-gray-50">
-      <ShopHeader selectedCategory={selectedCategory} />
+      <ShopHeader 
+        selectedCategory={selectedCategory} 
+        search={search}
+        handleSearchChange={handleSearchChange}
+      />
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Sticky category + search controls */}
+        {/* Sticky category controls  */}
         <div
           data-shop-sticky-controls="true"
           className="sticky top-20 z-30 mb-6 border-b border-gray-200 bg-gray-50 py-3 lg:top-30"
@@ -96,16 +100,16 @@ export default function Shop() {
             changeCategory={changeCategory}
             categoriesError={categoriesError}
           />
-
-          <ShopSearch search={search} handleSearchChange={handleSearchChange} />
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[245px_minmax(0,1fr)]">
           {/* Filters sidebar */}
           <FilterSidebar
+            categories={categories}
             clearFilters={clearFilters}
             activeFilterCount={activeFilterCount}
             category={category}
+            changeCategory={changeCategory}
             sort={sort}
             inStockOnly={inStockOnly}
             updateQuery={updateQuery}

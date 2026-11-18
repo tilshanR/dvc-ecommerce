@@ -32,7 +32,9 @@ app.use(express.json());
 // Limit repeated requests to API endpoints
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 100, // Maximum 100 requests per window
+  // Allow 3,000 requests in development so you can code freely, 
+  // but strictly enforce the 100 limit in production.
+  limit: process.env.NODE_ENV === "development" ? 3000 : 100, 
   standardHeaders: "draft-8",
   legacyHeaders: false,
 });

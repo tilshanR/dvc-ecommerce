@@ -46,9 +46,6 @@ const optimizeCloudinaryUrl = (url, isHero) => {
       `/upload/f_auto,q_auto,${width}/`,
     );
 
-    //  Now you can safely log it
-    console.log("Original:", url, "Optimized:", optimizedUrl);
-
     //  Return the saved variable
     return optimizedUrl;
   }

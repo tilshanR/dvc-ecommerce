@@ -38,12 +38,23 @@ function ScrollToTop() {
 // Public storefront layout
 function PublicLayout() {
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="flex min-h-screen flex-col bg-white text-gray-900">
       <NavBar />
-      <Outlet />
+      {/* The main content area grows to fill space, and Suspense only replaces this section */}
+      <main className="flex-1">
+        <Suspense 
+          fallback={
+            <div className="flex h-[60vh] w-full items-center justify-center">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#143630]"></div>
+            </div>
+          }
+        >
+          <Outlet />
+        </Suspense>
+      </main>
       <Footer />
     </div>
-  );
+  ); 
 }
 
 function App() {

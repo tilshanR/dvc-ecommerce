@@ -8,11 +8,10 @@ import {
 
 import { productQuerySchema } from "./productValidation.js";
 
-import {
-  serializeProducts,
-} from "./productSerializer.js";
+import { serializeProducts } from "./productSerializer.js";
 
 import serializeProduct from "./productSerializer.js";
+import { getShopProducts as getShopProductsService } from "./productService.js";
 
 // GET /api/products
 export const getShopProducts = async (req, res, next) => {
@@ -32,13 +31,11 @@ export const getShopProducts = async (req, res, next) => {
       });
     }
 
-    const filters = {
+    // const result = await findAllProducts(filters);
+    const result = await getShopProductsService({
       ...validation.data,
-      status: "active",
       limit: Math.min(validation.data.limit, 100),
-    };
-
-    const result = await findAllProducts(filters);
+    });
 
     return res.status(200).json({
       success: true,

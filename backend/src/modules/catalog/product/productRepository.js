@@ -65,6 +65,9 @@ export const findAllProducts = async (filters = {}) => {
   if (status) {
     query.status = status;
   }
+  if (category) {
+    query.category = Array.isArray(category) ? { $in: category } : category;
+  }
 
   // Calculate pagination.
   const skip = (page - 1) * limit;

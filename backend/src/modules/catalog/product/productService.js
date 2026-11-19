@@ -77,6 +77,38 @@ const createServiceError = (message, statusCode = 400) => {
   return error;
 };
 
+// Ensure products are only assigned to leaf categories (no active subcategories).
+const assertLeafCategory = async (categoryId) => {
+  const hasActiveSubcategories = await Category.exists({
+    parent: categoryId,
+    status: "active",
+  });
+
+  if (hasActiveSubcategories) {
+    throw createServiceError(
+      "Products cannot be assigned directly to a parent category that has subcategories. Please select a specific subcategory.",
+      400,
+    );
+  }
+};
+
+// If the filtered category is a parent, include all of its active subcategories.
+const resolveCategoryFilterIds = async (categoryId) => {
+  if (!categoryId) return undefined;
+
+  const subcategories = await Category.find({
+    parent: categoryId,
+    status: "active",
+  })
+    .select("_id")
+    .lean();
+
+  if (subcategories.length === 0) {
+    return categoryId;
+  }
+
+  return [categoryId, ...subcategories.map((sub) => sub._id)];
+};
 /* --------------------------------
    CATEGORY ATTRIBUTE VALIDATION
 --------------------------------- */
@@ -187,6 +219,7 @@ export const createProductService = async (input) => {
   if (!category) {
     throw createServiceError("Active category not found.", 404);
   }
+  await assertLeafCategory(category._id);
 
   // Validate category-specific conditions
   if (!category.allowCondition) {
@@ -266,11 +299,12 @@ export const getShopProducts = async (filters = {}) => {
     : "createdAt";
 
   const normalizedSortOrder = sortOrder === "asc" ? "asc" : "desc";
+  const resolvedCategory = await resolveCategoryFilterIds(category);
 
   // Force public Shop queries to retrieve active products only.
   const productFilters = {
     search,
-    category,
+    category: resolvedCategory,
     brand,
     condition,
     page: normalizedPage,
@@ -311,14 +345,30 @@ export const getShopProduct = async (identifier) => {
  * @throws {ServiceError} Throws a 400 error if the provided filters fail validation.
  * @returns {Promise<Array>} A promise that resolves to the list of matching products.
  */
+// export const getAdminProducts = async (filters = {}) => {
+//   const validation = productQuerySchema.safeParse(filters);
+
+//   if (!validation.success) {
+//     throw createServiceError("Invalid product filters.", 400);
+//   }
+//   return await findAllProducts(validation.data);
+// };
 export const getAdminProducts = async (filters = {}) => {
   const validation = productQuerySchema.safeParse(filters);
 
   if (!validation.success) {
     throw createServiceError("Invalid product filters.", 400);
   }
-  return await findAllProducts(validation.data);
-};
+
+  const resolvedCategory = await resolveCategoryFilterIds(
+    validation.data.category,
+  );
+
+  return await findAllProducts({
+    ...validation.data,
+    category: resolvedCategory,
+  });
+}
 /**
  * Retrieves a single product by its unique identifier for admin users.
  *

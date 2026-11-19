@@ -10,6 +10,7 @@ import {
   findActiveCategoryTree,
 } from "./categoryRepository.js";
 import {uploadImageStream, deleteImage} from "../../../config/cloudinary.js"
+import Product from "../product/productModel.js";
 
 // --------------------------------------------------
 // Helper: Create a consistent error with HTTP status
@@ -83,6 +84,17 @@ const validateParentCategory = async (parentId) => {
   if (parentCategory.parent) {
     throw createError("Subcategories cannot have their own subcategories.");
   }
+  const hasDirectProducts = await Product.exists({
+  category: parentId,
+  status: { $ne: "archived" },
+});
+
+if (hasDirectProducts) {
+  throw createServiceError(
+    "Cannot add a subcategory to a category that already has active or draft products. Move those products first.",
+    400,
+  );
+}
 
   return parentCategory;
 };

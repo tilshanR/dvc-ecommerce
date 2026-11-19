@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { getProduct } from "../services/productApi";
-import { addProductToCart } from "../services/cartApi";
+import { useCart } from "../context/CartContext";
 import { normalizeProduct } from "../utils/productUtils";
 import ProductBreadcrumbs from "../components/ProductBreadcrumbs";
 import ProductGallery from "../components/ProductGallery";
@@ -15,6 +15,7 @@ import {
 
 export default function ProductDetails() {
   const { productId } = useParams();
+  const { cartItems, addToCart, updateQuantity } = useCart();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -48,9 +49,6 @@ export default function ProductDetails() {
     },
     [productId],
   );
-  console.log("========== PRODUCT DETAILS RESPONSE ==========");
-  console.log("Raw product received:", product);
-  console.table(product);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -72,35 +70,58 @@ export default function ProductDetails() {
     );
   };
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = () => {
     if (!product || cartLoading) return;
+
+    const resolvedProductId = String(product._id ?? product.id ?? "");
+
     if (!product.availableStock) {
       setCartError("This product is currently out of stock.");
       return;
     }
-    if (quantity > product.availableStock) {
-      setCartError("The requested quantity exceeds available stock.");
+    if (!resolvedProductId) {
+      setCartError("This product is missing its product ID.");
       return;
     }
-    if (!product.id) {
-      setCartError("This product is missing its product ID.");
+
+    const existingItem = cartItems.find(
+      (item) => item.id === resolvedProductId,
+    );
+    const existingQty = existingItem?.quantity ?? 0;
+
+    if (existingQty + quantity > product.availableStock) {
+      setCartError(
+        existingQty > 0
+          ? `You already have ${existingQty} in your cart. Only ${product.availableStock} available in stock.`
+          : "The requested quantity exceeds available stock.",
+      );
       return;
     }
 
     setCartLoading(true);
     setCartMessage("");
     setCartError("");
-    try {
-      await addProductToCart(product.id, quantity);
+
+    const firstImage =
+      typeof images[0] === "string" ? images[0] : images[0]?.url;
+
+    const added = addToCart({
+      ...product,
+      image: product.image || firstImage,
+    });
+
+    if (added) {
+      if (quantity > 1) {
+        updateQuantity(resolvedProductId, quantity - 1);
+      }
       setCartMessage("Product added to your cart successfully.");
-    } catch (err) {
+    } else {
       setCartError(
-        err.message ||
-          "Could not add this product to your cart. Please try again.",
+        "Could not add this product to your cart. Please try again.",
       );
-    } finally {
-      setCartLoading(false);
     }
+
+    setCartLoading(false);
   };
 
   if (loading) return <ProductLoading />;

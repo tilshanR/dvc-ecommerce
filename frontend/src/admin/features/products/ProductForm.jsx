@@ -10,6 +10,7 @@ const initialFormData = {
   brand: null,
   price: "",
   originalPrice: "",
+  costPrice: "",
   inventory: {
     onHand: "",
     reserved: "",
@@ -37,6 +38,7 @@ export default function ProductForm({
     ...product,
     category: product?.category?._id || "",
     brand: product?.brand?._id || null,
+    costPrice: product?.costPrice ?? "",
     inventory: {
       ...initialFormData.inventory,
       ...product?.inventory,
@@ -80,6 +82,14 @@ export default function ProductForm({
           Number(formData.originalPrice) < 0))
     ) {
       return "Please enter a valid original price.";
+    }
+    if (
+      formData.costPrice !== "" &&
+      formData.costPrice != null &&
+      (!Number.isFinite(Number(formData.costPrice)) ||
+        Number(formData.costPrice) < 0)
+    ) {
+      return "Please enter a valid cost price.";
     }
 
     const quantity = Number(formData.inventory.onHand);
@@ -186,7 +196,6 @@ export default function ProductForm({
     }
 
     // Validate images
-    // Validate images
     const images = formData.images || [];
 
     if (images.length === 0) {
@@ -254,8 +263,14 @@ export default function ProductForm({
     if (formData.brand) payload.append("brand", formData.brand);
 
     payload.append("price", Number(formData.price));
-    if (formData.originalPrice !== "") {
+    if (formData.originalPrice !== "" && formData.originalPrice != null) {
       payload.append("originalPrice", Number(formData.originalPrice));
+    }
+    if (formData.costPrice !== "" && formData.costPrice != null) {
+      payload.append("costPrice", Number(formData.costPrice));
+    } else {
+      // Sends "" so parseProductData converts it to null when clearing an existing costPrice
+      payload.append("costPrice", "");
     }
 
     if (selectedCategory?.allowCondition && formData.condition) {

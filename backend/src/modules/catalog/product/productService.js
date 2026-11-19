@@ -345,15 +345,8 @@ export const getShopProduct = async (identifier) => {
  * @throws {ServiceError} Throws a 400 error if the provided filters fail validation.
  * @returns {Promise<Array>} A promise that resolves to the list of matching products.
  */
-// export const getAdminProducts = async (filters = {}) => {
-//   const validation = productQuerySchema.safeParse(filters);
 
-//   if (!validation.success) {
-//     throw createServiceError("Invalid product filters.", 400);
-//   }
-//   return await findAllProducts(validation.data);
-// };
-export const getAdminProducts = async (filters = {}) => {
+export const getAdminProducts = async (filters = {}, options = {}) => {
   const validation = productQuerySchema.safeParse(filters);
 
   if (!validation.success) {
@@ -364,11 +357,14 @@ export const getAdminProducts = async (filters = {}) => {
     validation.data.category,
   );
 
-  return await findAllProducts({
-    ...validation.data,
-    category: resolvedCategory,
-  });
-}
+  return await findAllProducts(
+    {
+      ...validation.data,
+      category: resolvedCategory,
+    },
+    options,
+  );
+};
 /**
  * Retrieves a single product by its unique identifier for admin users.
  *
@@ -376,12 +372,11 @@ export const getAdminProducts = async (filters = {}) => {
  * @throws {ServiceError} Throws a 400 error if the productId is invalid, or a 404 error if the product does not exist.
  * @returns {Promise<Object>} A promise that resolves to the product object.
  */
-export const getAdminProduct = async (productId) => {
+export const getAdminProduct = async (productId, options = {}) => {
   if (!mongoose.isValidObjectId(productId)) {
     throw createServiceError("Invalid product ID.", 400);
   }
-  const product = await findProductById(productId);
-
+  const product = await findProductById(productId, options);
   if (!product) {
     throw createServiceError("Product not found.", 404);
   }
@@ -396,7 +391,7 @@ export const getAdminProduct = async (productId) => {
  * @throws {ServiceError} Throws errors for invalid IDs (400), non-existent products/categories (404), invalid schema data or logic conflicts (400), or duplicate SKUs (409).
  * @returns {Promise<Object>} A promise that resolves to the updated product object.
  */
-export const updateProductService = async (productId, input) => {
+export const updateProductService = async (productId, input, options = {}) => {
   // 1. Validate product ID
   if (!mongoose.isValidObjectId(productId)) {
     throw createServiceError("Invalid product ID.", 400);
@@ -454,7 +449,6 @@ export const updateProductService = async (productId, input) => {
     updates.inventory = nextInventory;
   }
 
-  // 6. Determine the resulting category
   const existingCategoryId =
     existingProduct.category?._id || existingProduct.category;
 
@@ -468,7 +462,6 @@ export const updateProductService = async (productId, input) => {
   const conditionSubmitted = Object.hasOwn(updates, "condition");
   const warrantySubmitted = Object.hasOwn(updates, "warranty");
 
-  // 7. Validate category attributes and condition when relevant
   {
     const category = await Category.findById(nextCategoryId);
 
@@ -528,7 +521,7 @@ export const updateProductService = async (productId, input) => {
     }
   }
   // 8. Save the updated product
-  const updatedProduct = await updateProductById(productId, updates);
+  const updatedProduct = await updateProductById(productId, updates, options);
 
   if (!updatedProduct) {
     throw createServiceError("Product not found.", 404);
@@ -539,13 +532,12 @@ export const updateProductService = async (productId, input) => {
 /**
  * Archives a product.
  */
-export const archiveProductService = async (productId) => {
+export const archiveProductService = async (productId, options = {}) => {
   if (!mongoose.isValidObjectId(productId)) {
     throw createServiceError("Invalid product ID.", 400);
   }
 
-  const product = await archiveProductById(productId);
-
+  const product = await archiveProductById(productId, options);
   if (!product) {
     throw createServiceError("Product not found.", 404);
   }
@@ -555,13 +547,12 @@ export const archiveProductService = async (productId) => {
 /**
  * Restores an archived product to draft status.
  */
-export const restoreProductService = async (productId) => {
+export const restoreProductService = async (productId, options = {}) => {
   if (!mongoose.isValidObjectId(productId)) {
     throw createServiceError("Invalid product ID.", 400);
   }
 
-  const product = await restoreProductById(productId);
-
+  const product = await restoreProductById(productId, options);
   if (!product) {
     throw createServiceError("Product not found.", 404);
   }

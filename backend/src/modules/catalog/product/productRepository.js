@@ -1,10 +1,12 @@
 import Product from "./productModel.js";
 
-/**
- * Populate reusable category and brand information.
- * Cost price remains excluded by default.
- */
-const populateProductReferences = (query) => {
+// Populate reusable category and brand information.
+
+const populateProductReferences = (query, { includeCostPrice = false } = {}) => {
+  if (includeCostPrice) {
+    query.select("+costPrice");
+  }
+
   return query.populate("category", "name slug status");
   // .populate("brand", "name slug");
 };
@@ -30,7 +32,7 @@ export const createProduct = async (productData) => {
  * - sortBy
  * - sortOrder
  */
-export const findAllProducts = async (filters = {}) => {
+export const findAllProducts = async (filters = {}, options = {}) => {
   const {
     search,
     category,
@@ -80,7 +82,7 @@ export const findAllProducts = async (filters = {}) => {
   // Execute product query and count query.
   const [products, total] = await Promise.all([
     populateProductReferences(
-      Product.find(query).sort(sort).skip(skip).limit(limit),
+      Product.find(query).sort(sort).skip(skip).limit(limit),options,
     ),
     Product.countDocuments(query),
   ]);
@@ -99,8 +101,8 @@ export const findAllProducts = async (filters = {}) => {
 /**
  * Find a product by MongoDB ObjectId.
  */
-export const findProductById = async (productId) => {
-  return await populateProductReferences(Product.findById(productId));
+export const findProductById = async (productId, options = {}) => {
+return await populateProductReferences(Product.findById(productId), options);
 };
 //Check whether a product slug already exists.
 export const productSlugExists = async (slug) => {
@@ -157,7 +159,7 @@ export const findProductBySku = async (sku) => {
  * Document-based updates ensure that Mongoose document validation
  * and save middleware are executed.
  */
-export const updateProductById = async (productId, updateData) => {
+export const updateProductById = async (productId, updateData, options = {}) => {
   const product = await Product.findById(productId);
 
   if (!product) {
@@ -175,13 +177,13 @@ export const updateProductById = async (productId, updateData) => {
   await product.save();
 
   // Return the updated product with populated references.
-  return await populateProductReferences(Product.findById(product._id));
+return await populateProductReferences(Product.findById(product._id), options);
 };
 
 /**
  * Archive a product.
  */
-export const archiveProductById = async (productId) => {
+export const archiveProductById = async (productId, options = {}) => {
   const product = await Product.findById(productId);
 
   if (!product) {
@@ -192,13 +194,13 @@ export const archiveProductById = async (productId) => {
 
   await product.save();
 
-  return await populateProductReferences(Product.findById(product._id));
+return await populateProductReferences(Product.findById(product._id), options);
 };
 
 /**
  * Restore an archived product as a draft.
  */
-export const restoreProductById = async (productId) => {
+export const restoreProductById = async (productId, options = {}) => {
   const product = await Product.findById(productId);
 
   if (!product) {
@@ -209,5 +211,5 @@ export const restoreProductById = async (productId) => {
 
   await product.save();
 
-  return await populateProductReferences(Product.findById(product._id));
+return await populateProductReferences(Product.findById(product._id), options);
 };

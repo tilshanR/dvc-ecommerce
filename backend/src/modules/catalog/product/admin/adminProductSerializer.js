@@ -1,4 +1,4 @@
-const serializeAdminProduct = (product) => {
+const serializeAdminProduct = (product, { includeCostPrice = false } = {}) => {
   if (!product) return null;
 
   const item =
@@ -32,8 +32,8 @@ const serializeAdminProduct = (product) => {
         : null,
 
     price: item.price,
-    originalPrice: item.originalPrice,
-
+originalPrice: item.originalPrice,
+    ...(includeCostPrice && { costPrice: item.costPrice ?? null }),
     images: item.images || [],
     mainImage: item.mainImage || item.image || "",
 
@@ -65,8 +65,8 @@ const serializeAdminProduct = (product) => {
   };
 };
 
-export const serializeAdminProducts = (products) => {
-  return products.map(serializeAdminProduct);
+export const serializeAdminProducts = (products, options = {}) => {
+  return products.map((product) => serializeAdminProduct(product, options));
 };
 
 export default serializeAdminProduct;

@@ -141,6 +141,7 @@ export const createProductSchema = z
     brand: objectIdSchema.nullable().optional().default(null),
 
     price: priceSchema,
+    costPrice: priceSchema.nullable().optional().default(null),
 
     originalPrice: priceSchema,
 
@@ -185,6 +186,7 @@ export const updateProductSchema = z.preprocess(
       brand: objectIdSchema.nullable().optional(),
       price: priceSchema.optional(),
       originalPrice: priceSchema.nullable().optional(),
+      costPrice: priceSchema.nullable().optional(),
       images: productImagesSchema.optional(),
       imageFile: z.any().optional(),
       inventory: updateInventorySchema.optional(),

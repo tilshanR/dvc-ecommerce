@@ -12,8 +12,10 @@ import serializeAdminProduct, {
 } from "./adminProductSerializer.js";
 import { uploadImageStream } from "../../../../config/cloudinary.js";
 
-
 // Helper function to parse stringified JSON from FormData
+// Helper controller (flip to `req.user?.role === "super_admin"` once role is ready)
+const canAccessCostPrice = (req) => true; // e.g. req.user?.role === "super_admin"
+
 const parseProductData = (body) => {
   const data = { ...body };
 
@@ -40,7 +42,11 @@ const parseProductData = (body) => {
     // If originalPrice was left blank on the frontend, remove it so Zod doesn't trip on an empty string
     delete data.originalPrice;
   }
-
+  if (data.costPrice === "" || data.costPrice === "null") {
+    data.costPrice = null;
+  } else if (data.costPrice !== undefined) {
+    data.costPrice = Number(data.costPrice);
+  }
 
   //  The Final Safety Check: Catch FormData stringified nulls and empty strings
   // FormData turns a primitive null into the word "null" or "".
@@ -61,11 +67,12 @@ const parseProductData = (body) => {
 // GET /api/admin/products
 export const getAdminProductsHandler = async (req, res, next) => {
   try {
-    const result = await getAdminProducts(req.query);
-
+    const includeCostPrice = canAccessCostPrice(req);
+    // const result = await getAdminProducts(req.query);
+    const result = await getAdminProducts(req.query, { includeCostPrice });
     return res.status(200).json({
       success: true,
-      products: serializeAdminProducts(result.products),
+      products: serializeAdminProducts(result.products, { includeCostPrice }),
       pagination: result.pagination,
     });
   } catch (error) {
@@ -76,11 +83,13 @@ export const getAdminProductsHandler = async (req, res, next) => {
 // GET /api/admin/products/:productId
 export const getAdminProductHandler = async (req, res, next) => {
   try {
-    const product = await getAdminProduct(req.params.productId);
-
+    const includeCostPrice = canAccessCostPrice(req);
+    const product = await getAdminProduct(req.params.productId, {
+      includeCostPrice,
+    });
     return res.status(200).json({
       success: true,
-      product: serializeAdminProduct(product),
+      product: serializeAdminProduct(product, { includeCostPrice }),
     });
   } catch (error) {
     next(error);
@@ -90,7 +99,9 @@ export const getAdminProductHandler = async (req, res, next) => {
 // POST /api/admin/products
 export const createAdminProductHandler = async (req, res, next) => {
   try {
+    const includeCostPrice = canAccessCostPrice(req);
     const productData = parseProductData(req.body);
+    if (!includeCostPrice) delete productData.costPrice;
 
     // If a file was attached, upload to Cloudinary and assign the URL
     if (req.file) {
@@ -103,13 +114,16 @@ export const createAdminProductHandler = async (req, res, next) => {
         },
       ];
     }
+    if (!includeCostPrice) {
+      delete productData.costPrice; // prevents regular admins from modifying or wiping it
+    }
 
     const product = await createProductService(productData);
 
     return res.status(201).json({
       success: true,
       message: "Product created successfully.",
-      product: serializeAdminProduct(product),
+      product: serializeAdminProduct(product, { includeCostPrice }),
     });
   } catch (error) {
     next(error);
@@ -119,6 +133,7 @@ export const createAdminProductHandler = async (req, res, next) => {
 // PATCH /api/admin/products/:productId
 export const updateAdminProductHandler = async (req, res, next) => {
   try {
+    const includeCostPrice = canAccessCostPrice(req);
     console.log("Incoming Content-Type:", req.headers["content-type"]);
     console.log("Incoming req.body:", req.body);
     const productData = parseProductData(req.body);
@@ -135,15 +150,20 @@ export const updateAdminProductHandler = async (req, res, next) => {
       ];
     }
 
+    if (!includeCostPrice) {
+      delete productData.costPrice; // prevents regular admins from modifying or wiping it
+    }
+
     const product = await updateProductService(
       req.params.productId,
       productData,
+      { includeCostPrice },
     );
 
     return res.status(200).json({
       success: true,
       message: "Product updated successfully.",
-      product: serializeAdminProduct(product),
+      product: serializeAdminProduct(product, { includeCostPrice }),
     });
   } catch (error) {
     next(error);
@@ -153,12 +173,14 @@ export const updateAdminProductHandler = async (req, res, next) => {
 // PATCH /api/admin/products/:productId/archive
 export const archiveAdminProductHandler = async (req, res, next) => {
   try {
-    const product = await archiveProductService(req.params.productId);
-
+    const includeCostPrice = canAccessCostPrice(req);
+    const product = await archiveProductService(req.params.productId, {
+      includeCostPrice,
+    });
     return res.status(200).json({
       success: true,
       message: "Product archived successfully.",
-      product: serializeAdminProduct(product),
+      product: serializeAdminProduct(product, { includeCostPrice }),
     });
   } catch (error) {
     next(error);
@@ -168,12 +190,15 @@ export const archiveAdminProductHandler = async (req, res, next) => {
 // PATCH /api/admin/products/:productId/restore
 export const restoreAdminProductHandler = async (req, res, next) => {
   try {
-    const product = await restoreProductService(req.params.productId);
+    const includeCostPrice = canAccessCostPrice(req);
 
+    const product = await archiveProductService(req.params.productId, {
+      includeCostPrice,
+    });
     return res.status(200).json({
       success: true,
       message: "Product restored successfully.",
-      product: serializeAdminProduct(product),
+      product: serializeAdminProduct(product, { includeCostPrice }),
     });
   } catch (error) {
     next(error);

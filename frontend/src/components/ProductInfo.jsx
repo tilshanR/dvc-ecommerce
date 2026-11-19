@@ -103,7 +103,7 @@ export default function ProductInfo({
         Uses line-clamp-3 to keep the initial view compact. 
       */}
       <div className="mt-5">
-        <p className="line-clamp-3 break-words text-sm leading-7 text-gray-600">
+        <p className="line-clamp-3 wrap=break-word text-sm leading-7 text-gray-600">
           {product.description}
         </p>
         {/* Smooth scroll to full specifications if a description exists */}

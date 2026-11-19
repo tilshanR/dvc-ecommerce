@@ -4,6 +4,37 @@ import ProductCard from "./ProductCard";
 
 import { getProducts } from "../services/productApi";
 
+const resolveProductImage = (product) => {
+  if (typeof product?.image === "string" && product.image) {
+    return product.image;
+  }
+  if (typeof product?.image?.url === "string" && product.image.url) {
+    return product.image.url;
+  }
+  if (
+    typeof product?.image?.secure_url === "string" &&
+    product.image.secure_url
+  ) {
+    return product.image.secure_url;
+  }
+  if (typeof product?.imageUrl === "string" && product.imageUrl) {
+    return product.imageUrl;
+  }
+
+  const firstImage = Array.isArray(product?.images) ? product.images[0] : null;
+  if (typeof firstImage === "string" && firstImage) {
+    return firstImage;
+  }
+  if (typeof firstImage?.url === "string" && firstImage.url) {
+    return firstImage.url;
+  }
+  if (typeof firstImage?.secure_url === "string" && firstImage.secure_url) {
+    return firstImage.secure_url;
+  }
+
+  return "";
+};
+
 const ArrowButton = ({ direction, onClick, disabled }) => {
   const isLeft = direction === "left";
 
@@ -52,7 +83,7 @@ const NewArrivals = ({ onAddToCart }) => {
         setLoading(true);
         setError("");
 
-        // Call  backend using the helper
+        // Call backend using the helper
         const data = await getProducts(
           {
             sortBy: "createdAt", // Sorts by newest
@@ -62,7 +93,13 @@ const NewArrivals = ({ onAddToCart }) => {
           { signal: controller.signal },
         );
 
-        setProducts(data.products || []);
+        const rawProducts = Array.isArray(data) ? data : data?.products || [];
+        const normalizedProducts = rawProducts.map((product) => ({
+          ...product,
+          image: resolveProductImage(product),
+        }));
+
+        setProducts(normalizedProducts);
       } catch (err) {
         // Ignore aborted requests caused by the component unmounting
         if (err.name !== "AbortError" && err.name !== "CanceledError") {
@@ -116,7 +153,7 @@ const NewArrivals = ({ onAddToCart }) => {
 
   return (
     <section
-     id="new-arrivals"
+      id="new-arrivals"
       aria-labelledby="new-arrivals-heading"
       className="bg-white px-5 py-16 sm:px-8 md:py-20 scroll-mt-20"
     >

@@ -7,6 +7,7 @@ const API_BASE_URL = (
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
+  withCredentials: true, // Required for HTTP-only admin auth cookies
   headers: {
     Accept: "application/json",
   },
@@ -29,7 +30,17 @@ api.interceptors.response.use(
         ),
       );
     }
+    // Notify AdminAuthContext when a protected admin API returns 401 (expired/invalid session)
+const requestUrl = error.config?.url || "";
+    const isAuthEndpoint =
+      requestUrl.includes("/admin/login") ||
+      requestUrl.includes("/admin/signup") ||
+      requestUrl.includes("/admin/forgot-password") ||
+      requestUrl.includes("/admin/reset-password");
 
+    if (error.response.status === 401 && !isAuthEndpoint) {
+      window.dispatchEvent(new CustomEvent("dvc:admin-unauthorized"));
+    }
     const message =
       error.response.data?.message ||
       error.response.data?.error ||

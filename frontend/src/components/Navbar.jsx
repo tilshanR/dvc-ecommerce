@@ -281,7 +281,7 @@ export const NavBar = ({ cartCount = 0 }) => {
 
                 {categoriesOpen && (
                   /* Invisible pt-2 hover bridge prevents flicker between trigger and floating menu */
-                  <div className="absolute left-0 top-full z-50 w-[21.5rem] pt-2">
+                  <div className="absolute left-0 top-full z-50 w-86 pt-2">
                     <div
                       id="categories-menu"
                       className="rounded-2xl border border-slate-200/90 bg-white p-2 text-slate-900 shadow-2xl shadow-black/20 ring-1 ring-black/5"
@@ -420,7 +420,7 @@ export const NavBar = ({ cartCount = 0 }) => {
               aria-expanded={searchOpen}
               title="Search (press /)"
               onClick={openSearch}
-              className="inline-flex h-10 w-10 items-center justify-center gap-2 rounded-lg text-sm font-medium text-white/90 transition-colors duration-150 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd6bf] sm:w-auto sm:border sm:border-white/15 sm:bg-white/[0.06] sm:px-3.5 sm:hover:border-white/25 sm:hover:bg-white/15"
+              className="inline-flex h-10 w-10 items-center justify-center gap-2 rounded-lg text-sm font-medium text-white/90 transition-colors duration-150 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8fd6bf] sm:w-auto sm:border sm:border-white/15 sm:bg-white/6 sm:px-3.5 sm:hover:border-white/25 sm:hover:bg-white/15"
             >
               <Search size={18} className="shrink-0 text-[#8fd6bf]" />
               <span className="hidden sm:inline">Search</span>
@@ -438,7 +438,7 @@ export const NavBar = ({ cartCount = 0 }) => {
             <span className="relative inline-flex items-center justify-center">
               <ShoppingCart size={20} />
               {cartCount > 0 && (
-                <span className="absolute -right-2.5 -top-2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#8fd6bf] px-1 text-[10px] font-bold leading-none text-[#183d3d] ring-2 ring-[#183d3d]">
+                <span className="absolute -right-2.5 -top-2 flex h-18px min-w-4.5 items-center justify-center rounded-full bg-[#8fd6bf] px-1 text-[10px] font-bold leading-none text-[#183d3d] ring-2 ring-[#183d3d]">
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
               )}
@@ -510,7 +510,7 @@ export const NavBar = ({ cartCount = 0 }) => {
                       if (category.children) {
                         return (
                           <li key={category.label} className="py-1">
-                            <div className="flex min-h-[40px] items-center gap-3 px-3 text-sm font-semibold text-white">
+                            <div className="flex min-h-10 items-center gap-3 px-3 text-sm font-semibold text-white">
                               <Icon size={17} className="shrink-0 text-[#8fd6bf]" />
                               <span>{category.label}</span>
                             </div>
@@ -521,7 +521,7 @@ export const NavBar = ({ cartCount = 0 }) => {
                                   <li key={child.label}>
                                     <Link
                                       to={child.href}
-                                      className={`flex min-h-[44px] items-center rounded-lg px-3 text-sm transition-colors duration-150 ${
+                                      className={`flex min-h-11 items-center rounded-lg px-3 text-sm transition-colors duration-150 ${
                                         isChildActive
                                           ? "bg-white/15 font-semibold text-white"
                                           : "text-white/75 hover:bg-white/10 hover:text-white"
@@ -541,7 +541,7 @@ export const NavBar = ({ cartCount = 0 }) => {
                         <li key={category.label}>
                           <Link
                             to={category.href}
-                            className={`flex min-h-[44px] items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-150 ${
+                            className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors duration-150 ${
                               isDirectActive
                                 ? "bg-white/15 font-semibold text-white"
                                 : "text-white/90 hover:bg-white/10 hover:text-white"

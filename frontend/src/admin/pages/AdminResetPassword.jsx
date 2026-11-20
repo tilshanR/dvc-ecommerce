@@ -5,7 +5,7 @@ import api from "../../api";
 export default function AdminResetPassword() {
   const { token } = useParams();
   const navigate = useNavigate();
-
+const basePath = window.location.hostname.startsWith("admin.") ? "" : "/admin";
   const [form, setForm] = useState({ password: "", confirmPassword: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -29,8 +29,9 @@ export default function AdminResetPassword() {
     try {
       const { data } = await api.post(`/admin/reset-password/${token}`, form);
       setSuccess(data.message || "Password reset successful.");
-      setTimeout(() => navigate("/admin/login", { replace: true }), 1800);
-    } catch (err) {
+    //   setTimeout(() => navigate("/admin/login", { replace: true }), 1800);
+setTimeout(() => navigate(`${basePath}/login`, { replace: true }), 1800);
+} catch (err) {
       setError(err.message || "Reset link is invalid or expired.");
     } finally {
       setSubmitting(false);
@@ -118,8 +119,14 @@ export default function AdminResetPassword() {
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500">
-          <Link
+          {/* <Link
             to="/admin/login"
+            className="font-medium text-[#143630] hover:underline"
+          >
+            Back to Sign In
+          </Link> */}
+          <Link
+            to={`${basePath}/login`}
             className="font-medium text-[#143630] hover:underline"
           >
             Back to Sign In

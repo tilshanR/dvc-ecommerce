@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect } from "react";
-import { Routes, Route, Outlet, useLocation } from "react-router-dom";
+import { Routes, Route, Outlet, useLocation, Navigate } from "react-router-dom";
 
-//Eagerly load global providers, layouts, and the Home page (crucial for initial speed)
+// Eagerly load global providers, layouts, and the Home page (crucial for initial speed)
 import Home from "./pages/Home";
 import NavBar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -19,6 +19,7 @@ const Cart = lazy(() => import("./pages/Cart"));
 const Shop = lazy(() => import("./pages/Shop"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const OrderSuccess = lazy(() => import("./pages/OrderSuccess"));
+
 // Lazy load Admin auth pages
 const AdminLogin = lazy(() => import("./admin/pages/AdminLogin"));
 const AdminSignup = lazy(() => import("./admin/pages/AdminSignup"));
@@ -70,6 +71,9 @@ function PublicLayout() {
 }
 
 function App() {
+  // Check if accessed via admin subdomain (e.g., admin.localhost:5173 or admin.dvcstore.lk)
+  const isAdminSubdomain = window.location.hostname.startsWith("admin.");
+
   return (
     <ToastProvider>
       <CartProvider>
@@ -85,49 +89,86 @@ function App() {
             }
           >
             <Routes>
-              {/* Public storefront routes */}
-              <Route element={<PublicLayout />}>
-                {/* Home remains eager-loaded so it renders instantly */}
-                <Route path="/" element={<Home />} />
-                <Route path="/aboutus" element={<About />} />
-                <Route path="/contact-us" element={<Contact />} />
-                <Route
-                  path="/products/:productId"
-                  element={<ProductDetails />}
-                />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/shop" element={<Shop />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route
-                  path="/order-success/:orderId"
-                  element={<OrderSuccess />}
-                />
-              </Route>
-              {/* Public Admin Auth routes */}
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin/signup" element={<AdminSignup />} />
-              <Route
-                path="/admin/forgot-password"
-                element={<AdminForgotPassword />}
-              />
-              <Route
-                path="/admin/reset-password/:token"
-                element={<AdminResetPassword />}
-              />
-
-              {/* Admin routes */}
-              <Route element={<ProtectedAdminRoute />}>
-                <Route path="/admin" element={<AdminLayout />}>
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="categories" element={<AdminCategories />} />
-                  <Route path="products" element={<AdminProducts />} />
-                  <Route path="orders" element={<AdminOrders />} />
+              {isAdminSubdomain ? (
+                /* ================= ADMIN SUBDOMAIN ROUTES (http://admin.localhost:5173) ================= */
+                <>
+                  {/* Public Admin Auth routes on subdomain */}
+                  <Route path="/login" element={<AdminLogin />} />
+                  <Route path="/signup" element={<AdminSignup />} />
                   <Route
-                    path="orders/:orderId"
-                    element={<AdminOrderDetails />}
+                    path="/forgot-password"
+                    element={<AdminForgotPassword />}
                   />
-                </Route>
-              </Route>
+                  <Route
+                    path="/reset-password/:token"
+                    element={<AdminResetPassword />}
+                  />
+
+                  {/* Protected Admin Dashboard directly at root "/" */}
+                  <Route element={<ProtectedAdminRoute />}>
+                    <Route path="/" element={<AdminLayout />}>
+                      <Route index element={<AdminDashboard />} />
+                      <Route path="categories" element={<AdminCategories />} />
+                      <Route path="products" element={<AdminProducts />} />
+                      <Route path="orders" element={<AdminOrders />} />
+                      <Route
+                        path="orders/:orderId"
+                        element={<AdminOrderDetails />}
+                      />
+                    </Route>
+                  </Route>
+
+                  {/* Catch-all on admin subdomain redirects to root */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </>
+              ) : (
+                /* ================= MAIN STOREFRONT ROUTES (http://localhost:5173) ================= */
+                <>
+                  {/* Public storefront routes */}
+                  <Route element={<PublicLayout />}>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/aboutus" element={<About />} />
+                    <Route path="/contact-us" element={<Contact />} />
+                    <Route
+                      path="/products/:productId"
+                      element={<ProductDetails />}
+                    />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/shop" element={<Shop />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route
+                      path="/order-success/:orderId"
+                      element={<OrderSuccess />}
+                    />
+                  </Route>
+
+                  {/* Fallback /admin Auth routes on main domain */}
+                  <Route path="/admin/login" element={<AdminLogin />} />
+                  <Route path="/admin/signup" element={<AdminSignup />} />
+                  <Route
+                    path="/admin/forgot-password"
+                    element={<AdminForgotPassword />}
+                  />
+                  <Route
+                    path="/admin/reset-password/:token"
+                    element={<AdminResetPassword />}
+                  />
+
+                  {/* Fallback Protected Admin routes on main domain */}
+                  <Route element={<ProtectedAdminRoute />}>
+                    <Route path="/admin" element={<AdminLayout />}>
+                      <Route index element={<AdminDashboard />} />
+                      <Route path="categories" element={<AdminCategories />} />
+                      <Route path="products" element={<AdminProducts />} />
+                      <Route path="orders" element={<AdminOrders />} />
+                      <Route
+                        path="orders/:orderId"
+                        element={<AdminOrderDetails />}
+                      />
+                    </Route>
+                  </Route>
+                </>
+              )}
             </Routes>
           </Suspense>
         </AdminAuthProvider>

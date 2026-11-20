@@ -3,9 +3,10 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../context/AdminAuthContext";
 
 export default function AdminSignup() {
-  const { signup, isAuthenticated, loading } = useAdminAuth();
-  const navigate = useNavigate();
-
+//   const { signup, isAuthenticated, loading } = useAdminAuth();
+const { signup, isAuthenticated, loading } = useAdminAuth();
+const navigate = useNavigate();
+const basePath = window.location.hostname.startsWith("admin.") ? "" : "/admin";
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -17,7 +18,8 @@ export default function AdminSignup() {
   const [error, setError] = useState("");
 
   if (!loading && isAuthenticated) {
-    return <Navigate to="/admin" replace />;
+    // return <Navigate to="/admin" replace />;
+    return <Navigate to={basePath || "/"} replace />;
   }
 
   const handleChange = (e) => {
@@ -45,7 +47,8 @@ export default function AdminSignup() {
           : {}),
       };
       await signup(payload);
-      navigate("/admin", { replace: true });
+    //   navigate("/admin", { replace: true });
+    navigate(basePath || "/", { replace: true });
     } catch (err) {
       setError(err.message || "Unable to create admin account.");
     } finally {
@@ -189,8 +192,14 @@ export default function AdminSignup() {
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Already have an account?{" "}
-          <Link
+          {/* <Link
             to="/admin/login"
+            className="font-medium text-[#143630] hover:underline"
+          >
+            Sign in
+          </Link> */}
+          <Link
+            to={`${basePath}/login`}
             className="font-medium text-[#143630] hover:underline"
           >
             Sign in

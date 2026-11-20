@@ -13,15 +13,28 @@ export default function ProtectedAdminRoute({ children }) {
     );
   }
 
-  if (!isAuthenticated) {
+//   if (!isAuthenticated) {
+//     return (
+//       <Navigate
+//         to="/admin/login"
+//         replace
+//         state={{ from: location.pathname }}
+//       />
+//     );
+//   }
+
+if (!isAuthenticated) {
+    const loginPath = window.location.hostname.startsWith("admin.")
+      ? "/login"
+      : "/admin/login";
+
     return (
       <Navigate
-        to="/admin/login"
+        to={loginPath}
         replace
         state={{ from: location.pathname }}
       />
     );
   }
-
   return children || <Outlet />;
 }

@@ -11,7 +11,10 @@ export default function AdminLogin() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const redirectTo = location.state?.from || "/admin";
+//   const redirectTo = location.state?.from || "/admin";
+const basePath = window.location.hostname.startsWith("admin.") ? "" : "/admin";
+  const redirectTo = location.state?.from || (basePath || "/");
+
 
   if (!loading && isAuthenticated) {
     return <Navigate to={redirectTo} replace />;
@@ -86,8 +89,14 @@ export default function AdminLogin() {
               >
                 Password
               </label>
-              <Link
+              {/* <Link
                 to="/admin/forgot-password"
+                className="text-xs font-medium text-[#143630] hover:underline"
+              >
+                Forgot password?
+              </Link> */}
+              <Link
+                to={`${basePath}/forgot-password`}
                 className="text-xs font-medium text-[#143630] hover:underline"
               >
                 Forgot password?
@@ -117,8 +126,14 @@ export default function AdminLogin() {
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Need to register an admin?{" "}
-          <Link
+          {/* <Link
             to="/admin/signup"
+            className="font-medium text-[#143630] hover:underline"
+          >
+            Create admin account
+          </Link> */}
+          <Link
+            to={`${basePath}/signup`}
             className="font-medium text-[#143630] hover:underline"
           >
             Create admin account

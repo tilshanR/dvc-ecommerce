@@ -17,17 +17,34 @@ export default function AdminLayout() {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const isSubdomain = window.location.hostname.startsWith("admin.");
+  const basePath = isSubdomain ? "" : "/admin";
 
-  const activePage =
-    location.pathname === "/admin"
+  // const activePage =
+  //   location.pathname === "/admin"
+  //     ? "dashboard"
+  //     : location.pathname.split("/")[2] || "dashboard";
+
+  const activePage = isSubdomain
+    ? location.pathname.split("/")[1] || "dashboard"
+    : location.pathname === "/admin"
       ? "dashboard"
       : location.pathname.split("/")[2] || "dashboard";
 
+  // const handleNavigation = (section) => {
+  //   if (section === "dashboard") {
+  //     navigate("/admin");
+  //   } else {
+  //     navigate(`/admin/${section}`);
+  //   }
+
+  //   setSidebarOpen(false);
+  // };
   const handleNavigation = (section) => {
     if (section === "dashboard") {
-      navigate("/admin");
+      navigate(basePath || "/");
     } else {
-      navigate(`/admin/${section}`);
+      navigate(`${basePath}/${section}`);
     }
 
     setSidebarOpen(false);

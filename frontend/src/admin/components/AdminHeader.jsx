@@ -1,5 +1,4 @@
-import { Bell, Menu, UserCircle, Sun, Moon } from "lucide-react";
-
+import { Bell, Menu, UserCircle, Sun, Moon, LogOut } from "lucide-react";
 const pageDetails = {
   dashboard: {
     title: "Dashboard",
@@ -20,6 +19,9 @@ export default function AdminHeader({
   onMenuClick = () => {},
   isDark = false,
   onToggleTheme = () => {},
+  admin = null,
+  onLogout = () => {},
+  loggingOut = false,
 }) {
   const currentPage = pageDetails[activePage] || pageDetails.dashboard;
 
@@ -125,16 +127,35 @@ export default function AdminHeader({
                   isDark ? "text-gray-100" : "text-gray-800"
                 }`}
               >
-                Administrator
+                {admin?.name || "Administrator"}
               </p>
               <p
-                className={`text-xs ${
+                className={`text-xs capitalize ${
                   isDark ? "text-gray-400" : "text-gray-500"
                 }`}
               >
-                Store Manager
+                {admin?.role ? admin.role.replace("_", " ") : "Store Manager"}
               </p>
             </div>
+
+            {/* Logout */}
+            <button
+              type="button"
+              onClick={onLogout}
+              disabled={loggingOut}
+              aria-label="Log out"
+              title="Log out"
+              className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                isDark
+                  ? "text-red-400 hover:bg-red-950/50 hover:text-red-300"
+                  : "text-red-600 hover:bg-red-50 hover:text-red-700"
+              }`}
+            >
+              <LogOut size={18} />
+              <span className="hidden md:inline">
+                {loggingOut ? "Signing out..." : "Logout"}
+              </span>
+            </button>
           </div>
         </div>
       </div>

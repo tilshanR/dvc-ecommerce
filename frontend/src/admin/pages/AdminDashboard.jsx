@@ -108,7 +108,6 @@ export default function AdminDashboard() {
       {/* Recent activity and quick actions */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Recent activity */}
-        {/* <section className="rounded-xl border border-gray-200 bg-white p-5 xl:col-span-2"> */}
         <AdminCard className="xl:col-span-2">
           <div className="mb-5 flex items-center justify-between">
             <div>
@@ -154,11 +153,9 @@ export default function AdminDashboard() {
               );
             })}
           </div>
-          {/* </section> */}
         </AdminCard>
 
         {/* Quick actions */}
-        {/* <section className="rounded-xl border border-gray-200 bg-white p-5"> */}
         <AdminCard>
           <div className="mb-5">
             <h2 className="text-lg font-semibold text-gray-900">
@@ -172,7 +169,7 @@ export default function AdminDashboard() {
           <div className="space-y-3">
             <button
               type="button"
-              onClick={() => navigate("/admin/products")}
+              onClick={() => navigate("/products")}
               className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-4 text-left transition hover:border-teal-300 hover:bg-teal-50"
             >
               <div className="flex items-center gap-3">
@@ -194,7 +191,7 @@ export default function AdminDashboard() {
 
             <button
               type="button"
-              onClick={() => navigate("/admin/categories")}
+              onClick={() => navigate("/categories")}
               className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-4 text-left transition hover:border-teal-300 hover:bg-teal-50"
             >
               <div className="flex items-center gap-3">
@@ -214,7 +211,6 @@ export default function AdminDashboard() {
               <ArrowRight className="h-4 w-4 text-gray-400" />
             </button>
           </div>
-          {/* </section> */}
         </AdminCard>
       </div>
 

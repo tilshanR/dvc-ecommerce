@@ -20,31 +20,16 @@ export default function AdminLayout() {
   const isSubdomain = window.location.hostname.startsWith("admin.");
   const basePath = isSubdomain ? "" : "/admin";
 
-  // const activePage =
-  //   location.pathname === "/admin"
-  //     ? "dashboard"
-  //     : location.pathname.split("/")[2] || "dashboard";
+ 
+  const activePage = location.pathname.split("/")[1] || "dashboard";
 
-  const activePage = isSubdomain
-    ? location.pathname.split("/")[1] || "dashboard"
-    : location.pathname === "/admin"
-      ? "dashboard"
-      : location.pathname.split("/")[2] || "dashboard";
 
-  // const handleNavigation = (section) => {
-  //   if (section === "dashboard") {
-  //     navigate("/admin");
-  //   } else {
-  //     navigate(`/admin/${section}`);
-  //   }
 
-  //   setSidebarOpen(false);
-  // };
   const handleNavigation = (section) => {
     if (section === "dashboard") {
-      navigate(basePath || "/");
+      navigate("/");
     } else {
-      navigate(`${basePath}/${section}`);
+      navigate(`/${section}`);
     }
 
     setSidebarOpen(false);

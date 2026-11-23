@@ -57,7 +57,7 @@ export default function AdminOrderDetails() {
     const fetchOrderDetails = async () => {
       try {
         const response = await getAdminOrderById(orderId);
-        // The API returns: { success: true, data: { id, orderNumber... } }
+        // The API returns
         setOrder(response.data);
       } catch (err) {
         setError(err.message || "Failed to load order details.");
@@ -107,7 +107,7 @@ export default function AdminOrderDetails() {
         <AlertCircle className="mx-auto mb-2 h-8 w-8" />
         <p className="font-semibold">{error}</p>
         <button
-          onClick={() => navigate("/admin/orders")}
+          onClick={() => navigate("/orders")}
           className="mt-4 rounded-lg bg-red-100 px-4 py-2 font-medium text-red-800 hover:bg-red-200"
         >
           Back to Orders
@@ -121,7 +121,7 @@ export default function AdminOrderDetails() {
       {/* Header & Back Navigation */}
       <div className="flex flex-col gap-4">
         <Link
-          to="/admin/orders"
+          to="/orders"
           className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-[#183D3D]"
         >
           <ArrowLeft size={16} /> Back to Orders
@@ -132,7 +132,6 @@ export default function AdminOrderDetails() {
             description={`Placed on ${formatDate(order.createdAt)}`}
           />
           <div className="mt-4 flex gap-3 sm:mt-0">
-            {/* Updated mapping to status.paymentStatus and status.orderStatus */}
             <span className={getStatusBadge(order.status.paymentStatus)}>
               Payment: {order.status.paymentStatus}
             </span>

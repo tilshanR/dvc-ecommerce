@@ -33,7 +33,10 @@ export const adminSignupHandler = async (req, res, next) => {
     const existing = await Admin.findOne({ email });
     if (existing) {
       return next(
-        createHttpError(409, "An admin account with this email already exists."),
+        createHttpError(
+          409,
+          "An admin account with this email already exists.",
+        ),
       );
     }
 
@@ -60,38 +63,6 @@ export const adminSignupHandler = async (req, res, next) => {
     return next(error);
   }
 };
-
-// POST /api/admin/login
-// export const adminLoginHandler = async (req, res, next) => {
-//   try {
-//     const { email, password } = req.body;
-
-//     const admin = await Admin.findOne({ email }).select("+password");
-
-//     if (!admin || !(await admin.comparePassword(password))) {
-//       return next(createHttpError(401, "Invalid email or password."));
-//     }
-
-//     if (!admin.isActive) {
-//       return next(
-//         createHttpError(403, "This admin account has been deactivated."),
-//       );
-//     }
-
-//     admin.lastLoginAt = new Date();
-//     await admin.save({ validateBeforeSave: false });
-
-//     setAdminAuthCookie(res, admin);
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "Login successful.",
-//       admin: serializeAdmin(admin),
-//     });
-//   } catch (error) {
-//     return next(error);
-//   }
-// };
 
 // POST /api/admin/login
 export const adminLoginHandler = async (req, res, next) => {
@@ -198,11 +169,10 @@ export const adminForgotPasswordHandler = async (req, res, next) => {
     const rawToken = admin.createPasswordResetToken();
     await admin.save({ validateBeforeSave: false });
 
-    const clientOrigin = (
-      process.env.CLIENT_ORIGIN || "http://localhost:5173"
+    const adminOrigin = (
+      process.env.ADMIN_ORIGIN || "http://admin.localhost:5173"
     ).replace(/\/+$/, "");
-    const resetUrl = `${clientOrigin}/admin/reset-password/${rawToken}`;
-
+    const resetUrl = `${adminOrigin}/reset-password/${rawToken}`;
     await sendAdminPasswordResetEmail({
       to: admin.email,
       name: admin.name,
@@ -225,13 +195,12 @@ export const adminResetPasswordHandler = async (req, res, next) => {
     const { password } = req.body;
 
     if (!token || token.length < 32) {
-      return next(createHttpError(400, "Invalid or expired password reset link."));
+      return next(
+        createHttpError(400, "Invalid or expired password reset link."),
+      );
     }
 
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
     const admin = await Admin.findOne({
       passwordResetToken: hashedToken,
@@ -252,7 +221,7 @@ export const adminResetPasswordHandler = async (req, res, next) => {
     admin.passwordResetToken = null;
     admin.passwordResetExpires = null;
     admin.failedLoginAttempts = 0; // Clear failed strikes on verified reset
-    admin.lockUntil = null;        // Unlock account immediately
+    admin.lockUntil = null; // Unlock account immediately
     await admin.save();
 
     // Clear any stale cookie so the admin logs in fresh with the new password
@@ -260,7 +229,8 @@ export const adminResetPasswordHandler = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: "Password reset successful. You can now sign in with your new password.",
+      message:
+        "Password reset successful. You can now sign in with your new password.",
     });
   } catch (error) {
     return next(error);

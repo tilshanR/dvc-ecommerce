@@ -1,7 +1,13 @@
 import axios from "axios";
 
+const isAdminSubdomain = window.location.hostname.startsWith("admin.");
+
 const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api"
+  (isAdminSubdomain
+    ? import.meta.env.VITE_ADMIN_API_BASE_URL ||
+      import.meta.env.VITE_API_BASE_URL
+    : import.meta.env.VITE_API_BASE_URL) ||
+  `http://${window.location.hostname}:8000/api`
 ).replace(/\/+$/, "");
 
 const api = axios.create({
@@ -31,8 +37,9 @@ api.interceptors.response.use(
       );
     }
     // Notify AdminAuthContext when a protected admin API returns 401 (expired/invalid session)
-const requestUrl = error.config?.url || "";
+    const requestUrl = error.config?.url || "";
     const isAuthEndpoint =
+      requestUrl.includes("/admin/me") ||
       requestUrl.includes("/admin/login") ||
       requestUrl.includes("/admin/signup") ||
       requestUrl.includes("/admin/forgot-password") ||

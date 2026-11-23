@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../../api";
-
+import api from "../../services/api";
 export default function AdminForgotPassword() {
-  const basePath = window.location.hostname.startsWith("admin.") ? "" : "/admin";
-const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -87,14 +85,8 @@ const [email, setEmail] = useState("");
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Remembered your password?{" "}
-          {/* <Link
-            to="/admin/login"
-            className="font-medium text-[#143630] hover:underline"
-          >
-            Back to Sign In
-          </Link> */}
           <Link
-            to={`${basePath}/login`}
+            to="/login"
             className="font-medium text-[#143630] hover:underline"
           >
             Back to Sign In

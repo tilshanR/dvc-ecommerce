@@ -24,9 +24,19 @@ export function AdminAuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    const isAdminSubdomain = window.location.hostname.startsWith("admin.");
+    const publicAuthPaths = ["/login", "/signup", "/forgot-password"];
+    const isPublicAuthPage =
+      publicAuthPaths.includes(window.location.pathname) ||
+      window.location.pathname.startsWith("/reset-password/");
+
+    if (!isAdminSubdomain || isPublicAuthPage) {
+      setLoading(false);
+      return;
+    }
+
     checkSession();
   }, [checkSession]);
-
   // Listen for 401 session expiration events from Axios
   useEffect(() => {
     const handleUnauthorized = () => {

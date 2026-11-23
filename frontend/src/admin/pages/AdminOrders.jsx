@@ -204,7 +204,7 @@ export default function AdminOrders() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link
-                        to={`/admin/orders/${order.id || order._id}`}
+                        to={`/orders/${order.id || order._id}`}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-200 hover:text-gray-900"
                       >
                         <Eye size={14} /> View

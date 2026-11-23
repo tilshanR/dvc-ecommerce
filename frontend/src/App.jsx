@@ -123,51 +123,22 @@ function App() {
                 </>
               ) : (
                 /* ================= MAIN STOREFRONT ROUTES (http://localhost:5173) ================= */
-                <>
-                  {/* Public storefront routes */}
-                  <Route element={<PublicLayout />}>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/aboutus" element={<About />} />
-                    <Route path="/contact-us" element={<Contact />} />
-                    <Route
-                      path="/products/:productId"
-                      element={<ProductDetails />}
-                    />
-                    <Route path="/cart" element={<Cart />} />
-                    <Route path="/shop" element={<Shop />} />
-                    <Route path="/checkout" element={<Checkout />} />
-                    <Route
-                      path="/order-success/:orderId"
-                      element={<OrderSuccess />}
-                    />
-                  </Route>
-
-                  {/* Fallback /admin Auth routes on main domain */}
-                  <Route path="/admin/login" element={<AdminLogin />} />
-                  <Route path="/admin/signup" element={<AdminSignup />} />
+                <Route element={<PublicLayout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/aboutus" element={<About />} />
+                  <Route path="/contact-us" element={<Contact />} />
                   <Route
-                    path="/admin/forgot-password"
-                    element={<AdminForgotPassword />}
+                    path="/products/:productId"
+                    element={<ProductDetails />}
                   />
+                  <Route path="/cart" element={<Cart />} />
+                  <Route path="/shop" element={<Shop />} />
+                  <Route path="/checkout" element={<Checkout />} />
                   <Route
-                    path="/admin/reset-password/:token"
-                    element={<AdminResetPassword />}
+                    path="/order-success/:orderId"
+                    element={<OrderSuccess />}
                   />
-
-                  {/* Fallback Protected Admin routes on main domain */}
-                  <Route element={<ProtectedAdminRoute />}>
-                    <Route path="/admin" element={<AdminLayout />}>
-                      <Route index element={<AdminDashboard />} />
-                      <Route path="categories" element={<AdminCategories />} />
-                      <Route path="products" element={<AdminProducts />} />
-                      <Route path="orders" element={<AdminOrders />} />
-                      <Route
-                        path="orders/:orderId"
-                        element={<AdminOrderDetails />}
-                      />
-                    </Route>
-                  </Route>
-                </>
+                </Route>
               )}
             </Routes>
           </Suspense>

@@ -21,29 +21,29 @@ export const serializeAdminOrder = (order) => {
   return {
     id: order._id.toString(),
     orderNumber: order.orderNumber,
-    
+
     customer: {
       firstName: order.customer.firstName,
       lastName: order.customer.lastName,
       email: order.customer.email,
       phone: order.customer.phone,
     },
-    
+
     shippingAddress: order.shippingAddress || null,
-    
+
     items: order.items.map(serializeAdminOrderItem),
-    
+
     financials: {
       subtotal: order.subtotal,
       shippingCost: order.shippingCost,
       total: order.total,
     },
-    
+
     methods: {
       checkoutMethod: order.checkoutMethod,
       paymentMethod: order.paymentMethod,
     },
-    
+
     status: {
       paymentStatus: order.paymentStatus,
       orderStatus: order.orderStatus,
@@ -59,7 +59,7 @@ export const serializeAdminOrder = (order) => {
     inventoryState: order.inventoryState || "reserved",
     expiresAt: order.expiresAt || null,
     notes: order.notes || "",
-    
+
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
   };

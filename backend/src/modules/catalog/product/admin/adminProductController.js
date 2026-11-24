@@ -192,7 +192,8 @@ export const restoreAdminProductHandler = async (req, res, next) => {
   try {
     const includeCostPrice = canAccessCostPrice(req);
 
-    const product = await archiveProductService(req.params.productId, {
+    // const product = await archiveProductService(req.params.productId, {
+     const product = await restoreProductService(req.params.productId, {
       includeCostPrice,
     });
     return res.status(200).json({

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus, Package, Archive, FileText } from "lucide-react";
 import ProductFilters from "../features/products/ProductFilters";
 import ProductTable from "../features/products/ProductTable";
@@ -14,6 +15,7 @@ import AdminCard from "../components/ui/AdminCard";
 import { getAdminCategories } from "../services/adminCategoryApi";
 
 export default function AdminProducts() {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -166,17 +168,11 @@ export default function AdminProducts() {
   return (
     <div className="space-y-6">
       {/* Page heading */}
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#183D3D]">Products</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Manage your store products.
-          </p>
-        </div>
-
+      <div className="flex items-center justify-end">
         <button
+          type="button"
           onClick={handleAdd}
-          className="flex items-center justify-center gap-2 rounded-lg bg-[#183D3D] px-4 py-2.5 text-sm text-white hover:bg-[#245454]"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--admin-brand) px-4 py-2.5 text-sm font-medium text-white shadow-xs transition hover:bg-(--admin-brand-hover)"
         >
           <Plus size={18} />
           Add Product
@@ -205,11 +201,12 @@ export default function AdminProducts() {
       </div>
 
       {notice && (
-        <div className="flex items-center justify-between rounded-lg border border-teal-200 bg-teal-50 p-3 text-sm text-teal-900">
+        <div className="flex items-center justify-between rounded-xl border border-(--admin-status-success-border) bg-(--admin-status-success-bg) p-3.5 text-sm text-(--admin-status-success-text)">
           <span>{notice}</span>
           <button
+            type="button"
             onClick={() => setNotice("")}
-            className="font-medium hover:underline"
+            className="text-xs font-semibold hover:underline"
           >
             Dismiss
           </button>
@@ -227,16 +224,20 @@ export default function AdminProducts() {
 
       {/* Product table */}
       {isLoading ? (
-        <div className="rounded-lg border bg-white p-8 text-center text-gray-500">
+        <div className="rounded-xl border border-(--admin-border) bg-(--admin-surface) p-8 text-center text-sm text-(--admin-muted)">
           Loading products...
         </div>
       ) : error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+        <div
+          role="alert"
+          className="rounded-xl border border-(--admin-status-danger-border) bg-(--admin-status-danger-bg) p-4 text-sm text-(--admin-status-danger-text)"
+        >
           {error}
         </div>
       ) : (
         <ProductTable
           products={filteredProducts}
+          onView={(product) => navigate(`/products/${product._id}`)}
           onEdit={handleEdit}
           onArchive={handleArchive}
           onRestore={handleRestore}
@@ -264,13 +265,13 @@ function SummaryCard({ title, count, icon }) {
   return (
     <AdminCard className="flex items-center justify-between">
       <div>
-        <p className="admin-muted text-sm">{title}</p>
-        <p className="mt-2 text-2xl font-semibold text-[var(--admin-text)">
+        <p className="text-sm text-(--admin-muted)">{title}</p>
+        <p className="mt-2 text-2xl font-semibold text-(--admin-text)">
           {count}
         </p>
       </div>
 
-      <div className="rounded-lg bg-(--admin-hover) p-3 text-(--admin-text)">
+      <div className="rounded-lg bg-(--admin-brand-soft) p-3 text-(--admin-brand-text)">
         {icon}
       </div>
     </AdminCard>

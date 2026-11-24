@@ -35,44 +35,28 @@ export default function AdminSidebar({
           type="button"
           aria-label="Close sidebar"
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          className="fixed inset-0 z-40 bg-(--admin-overlay) lg:hidden"
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`
-          fixed inset-y-0 left-0 z-50 flex w-64 flex-col
-          border-r transition-colors duration-300
-          lg:static lg:z-auto lg:translate-x-0
-          ${isDark ? "border-gray-700 bg-gray-900" : "border-gray-200 bg-white"}
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-        `}
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-(--admin-border) bg-(--admin-surface) transition-transform duration-200 lg:static lg:z-auto lg:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
       >
         {/* Brand */}
-        <div
-          className={`flex h-20 items-center justify-between border-b px-5 ${
-            isDark ? "border-gray-700" : "border-gray-200"
-          }`}
-        >
+        <div className="flex h-20 items-center justify-between border-b border-(--admin-border) px-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#183D3D] text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-(--admin-brand) text-white">
               <Store size={21} />
             </div>
 
             <div>
-              <h1
-                className={`text-lg font-bold tracking-wide ${
-                  isDark ? "text-white" : "text-[#183D3D]"
-                }`}
-              >
+              <h1 className="text-lg font-bold tracking-wide text-(--admin-brand-text)">
                 DVC Store
               </h1>
-              <p
-                className={`text-xs font-medium tracking-wider ${
-                  isDark ? "text-gray-400" : "text-gray-500"
-                }`}
-              >
+              <p className="text-xs font-medium tracking-wider text-(--admin-muted)">
                 ADMIN PANEL
               </p>
             </div>
@@ -83,11 +67,7 @@ export default function AdminSidebar({
             type="button"
             onClick={onClose}
             aria-label="Close sidebar"
-            className={`rounded-lg p-2 transition lg:hidden ${
-              isDark
-                ? "text-gray-400 hover:bg-gray-800"
-                : "text-gray-500 hover:bg-gray-100"
-            }`}
+            className="rounded-lg p-2 text-(--admin-muted) transition hover:bg-(--admin-hover) hover:text-(--admin-text) lg:hidden"
           >
             <X size={20} />
           </button>
@@ -96,12 +76,8 @@ export default function AdminSidebar({
         {/* Navigation */}
         <nav className="flex-1 space-y-6 overflow-y-auto px-4 py-6">
           <div>
-            <p
-              className={`mb-3 px-3 text-xs font-semibold uppercase tracking-wider ${
-                isDark ? "text-gray-500" : "text-gray-400"
-              }`}
-            >
-              General
+            <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-(--admin-muted)">
+              Operations
             </p>
 
             <div className="space-y-1">
@@ -115,30 +91,15 @@ export default function AdminSidebar({
                     type="button"
                     onClick={() => handleNavigation(item.id)}
                     aria-current={isActive ? "page" : undefined}
-                    className={`
-                      flex w-full items-center gap-3 rounded-lg
-                      px-3 py-3 text-left text-sm font-medium
-                      transition-colors duration-200
-                      ${
-                        isActive
-                          ? isDark
-                            ? "bg-[#183D3D] text-white"
-                            : "bg-[#E8F0EF] text-[#183D3D]"
-                          : isDark
-                            ? "text-gray-300 hover:bg-gray-800 hover:text-white"
-                            : "text-gray-600 hover:bg-gray-100 hover:text-[#183D3D]"
-                      }
-                    `}
+                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-colors duration-200 ${
+                      isActive
+                        ? "bg-(--admin-brand) text-white shadow-xs"
+                        : "text-(--admin-muted) hover:bg-(--admin-hover) hover:text-(--admin-text)"
+                    }`}
                   >
                     <Icon
                       size={19}
-                      className={
-                        isActive
-                          ? "text-current"
-                          : isDark
-                            ? "text-gray-400"
-                            : "text-gray-500"
-                      }
+                      className={isActive ? "text-white" : "text-current"}
                     />
 
                     <span className="flex-1">{item.label}</span>
@@ -152,29 +113,13 @@ export default function AdminSidebar({
         </nav>
 
         {/* Sidebar footer */}
-        <div
-          className={`border-t p-4 ${
-            isDark ? "border-gray-700" : "border-gray-200"
-          }`}
-        >
-          <div
-            className={`rounded-lg p-3 ${
-              isDark ? "bg-gray-800" : "bg-[#F5F8F7]"
-            }`}
-          >
-            <p
-              className={`text-sm font-semibold ${
-                isDark ? "text-white" : "text-[#183D3D]"
-              }`}
-            >
+        <div className="border-t border-(--admin-border) p-4">
+          <div className="rounded-lg bg-(--admin-brand-soft) p-3">
+            <p className="text-sm font-semibold text-(--admin-brand-text)">
               DVC Store Admin
             </p>
-            <p
-              className={`mt-1 text-xs ${
-                isDark ? "text-gray-400" : "text-gray-500"
-              }`}
-            >
-              Product and category management
+            <p className="mt-1 text-xs text-(--admin-muted)">
+              Orders, catalog, and store operations
             </p>
           </div>
         </div>

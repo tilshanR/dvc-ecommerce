@@ -11,31 +11,86 @@
 :root {
   color-scheme: light;
 
-  --admin-bg: #f8fafc;
+  /* Admin Brand (#143630 anchor) */
+  --admin-brand: #143630;
+  --admin-brand-hover: #0e2723;
+  --admin-brand-soft: #e9f1ef;
+  --admin-brand-text: #143630;
+
+  /* Admin Neutrals */
+  --admin-bg: #f6f8f7;
   --admin-surface: #ffffff;
   --admin-text: #111827;
-  --admin-muted: #6b7280;
-  --admin-border: #e5e7eb;
-  --admin-hover: #f3f4f6;
+  --admin-muted: #64748b;
+  --admin-border: #e2e8e6;
+  --admin-hover: #f1f5f4;
   --admin-input-bg: #ffffff;
   --admin-overlay: rgb(0 0 0 / 0.5);
-}
 
+  /* Admin Semantic Status Tokens */
+  --admin-status-success-bg: #ecfdf5;
+  --admin-status-success-text: #065f46;
+  --admin-status-success-border: #a7f3d0;
+
+  --admin-status-warning-bg: #fffbeb;
+  --admin-status-warning-text: #92400e;
+  --admin-status-warning-border: #fde68a;
+
+  --admin-status-danger-bg: #fef2f2;
+  --admin-status-danger-text: #991b1b;
+  --admin-status-danger-border: #fecaca;
+
+  --admin-status-info-bg: #eff6ff;
+  --admin-status-info-text: #1e40af;
+  --admin-status-info-border: #bfdbfe;
+
+  --admin-status-neutral-bg: #f3f4f6;
+  --admin-status-neutral-text: #374151;
+  --admin-status-neutral-border: #e5e7eb;
+}
 /*  ADMIN DARK THEME*/
+
 
 [data-admin-theme="dark"] {
   color-scheme: dark;
 
-  --admin-bg: #111827;
-  --admin-surface: #1f2937;
-  --admin-text: #f9fafb;
-  --admin-muted: #9ca3af;
-  --admin-border: #374151;
-  --admin-hover: #374151;
-  --admin-input-bg: #1f2937;
-  --admin-overlay: rgb(0 0 0 / 0.7);
-}
+  /* Admin Brand (#143630 anchor) */
+  --admin-brand: #143630;
+  --admin-brand-hover: #1c4a42;
+  --admin-brand-soft: #1a3a34;
+  --admin-brand-text: #a7d7cc;
 
+  /* Admin Neutrals */
+  --admin-bg: #0f1716;
+  --admin-surface: #182220;
+  --admin-text: #f3f6f5;
+  --admin-muted: #9ca9a6;
+  --admin-border: #2a3936;
+  --admin-hover: #22302d;
+  --admin-input-bg: #182220;
+  --admin-overlay: rgb(0 0 0 / 0.7);
+
+  /* Admin Semantic Status Tokens */
+  --admin-status-success-bg: rgb(6 95 70 / 0.25);
+  --admin-status-success-text: #6ee7b7;
+  --admin-status-success-border: rgb(16 185 129 / 0.35);
+
+  --admin-status-warning-bg: rgb(146 64 14 / 0.25);
+  --admin-status-warning-text: #fcd34d;
+  --admin-status-warning-border: rgb(245 158 11 / 0.35);
+
+  --admin-status-danger-bg: rgb(153 27 27 / 0.25);
+  --admin-status-danger-text: #fca5a5;
+  --admin-status-danger-border: rgb(239 68 68 / 0.35);
+
+  --admin-status-info-bg: rgb(30 64 175 / 0.25);
+  --admin-status-info-text: #93c5fd;
+  --admin-status-info-border: rgb(59 130 246 / 0.35);
+
+  --admin-status-neutral-bg: rgb(55 65 81 / 0.45);
+  --admin-status-neutral-text: #d1d5db;
+  --admin-status-neutral-border: rgb(107 114 128 / 0.35);
+}
 
  /*  REUSABLE ADMIN THEME CLASSES*/
 

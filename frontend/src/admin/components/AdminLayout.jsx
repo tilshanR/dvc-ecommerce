@@ -56,7 +56,7 @@ export default function AdminLayout() {
         isDark={isDark}
       />
 
-      <div className="min-w-0 flex-1">
+      <div className="admin-page flex min-h-screen min-w-0 flex-1 flex-col transition-colors duration-300">
         <AdminHeader
           activePage={activePage}
           onMenuClick={() => setSidebarOpen(true)}
@@ -67,7 +67,7 @@ export default function AdminLayout() {
           loggingOut={loggingOut}
         />
 
-        <main className="admin-page mx-auto min-h-[calc(100vh-64px)] max-w-7xl px-4 py-6 transition-colors duration-300 sm:px-6 lg:px-8 lg:py-8">
+        <main className="w-full flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           <Outlet context={{ isDark }} />
         </main>
       </div>

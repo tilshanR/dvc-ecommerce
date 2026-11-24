@@ -20,25 +20,33 @@ export async function getAdminProducts(params = {}) {
     pagination: data.pagination,
   };
 }
+// GET /api/admin/products/:id
+export async function getAdminProductById(id) {
+  const { data } = await api.get(`/admin/products/${id}`);
 
+  if (!data?.success || !data.product) {
+    throw new Error("Invalid product response from server.");
+  }
 
-
+  return data.product;
+}
 
 // POST /api/admin/products
 export async function createProduct(productData) {
   const { data } = await api.post("/admin/products", productData, {
-    transformRequest: [(data, headers) => {
-      // Safely strips the global JSON header so Axios can auto-build the boundary
-      delete headers["Content-Type"];
-      return data;
-    }],
+    transformRequest: [
+      (data, headers) => {
+        // Safely strips the global JSON header so Axios can auto-build the boundary
+        delete headers["Content-Type"];
+        return data;
+      },
+    ],
   });
   return data;
 }
 
-
 export async function updateProduct(id, productData) {
-  // No custom headers or transformers needed. 
+  // No custom headers or transformers needed.
   const { data } = await api.patch(`/admin/products/${id}`, productData);
   return data;
 }

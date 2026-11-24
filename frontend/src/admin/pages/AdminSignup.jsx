@@ -64,10 +64,7 @@ export default function AdminSignup() {
           <h1 className="mt-3 text-2xl font-bold text-gray-900">
             Create Admin Account
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Passwords require 8+ characters with uppercase, lowercase, and a
-            number.
-          </p>
+
         </div>
 
         {error && (

@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { createOrderService } from "./orderService.js";
 import { serializeOrder } from "./orderSerializer.js";
 import catchAsync from "../../middleware/catchAsync.js";
@@ -20,17 +21,25 @@ export const createOrder = catchAsync(async (req, res) => {
 });
 
 
-export const getOrderById = async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-    
-    res.status(200).json(order);
-  } catch (error) {
-    console.error("Error fetching order:", error);
-    res.status(500).json({ message: "Server error fetching order details" });
+export const getOrderById = catchAsync(async (req, res) => {
+  const { id } = req.params;
+
+  if (!mongoose.isValidObjectId(id)) {
+    const error = new Error("Invalid order ID.");
+    error.statusCode = 400;
+    throw error;
   }
-};
+
+  const order = await Order.findById(id);
+
+  if (!order) {
+    const error = new Error("Order not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  res.status(200).json({
+    success: true,
+    data: serializeOrder(order),
+  });
+});

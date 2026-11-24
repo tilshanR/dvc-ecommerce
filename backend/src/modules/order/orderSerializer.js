@@ -52,7 +52,7 @@ export const serializeOrder = (order) => {
       payment: order.paymentStatus,
       order: order.orderStatus,
     },
-    
+    expiresAt: order.expiresAt || null,
     createdAt: order.createdAt,
   };
 };

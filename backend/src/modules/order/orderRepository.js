@@ -32,7 +32,6 @@ export const findOrderByOrderNumber = async (orderNumber) => {
  * Update an order by its MongoDB ObjectId.
  */
 
-
 export const updateOrderById = async (orderId, updateData, session = null) => {
   const { fulfillment, ...rest } = updateData;
   const setFields = { ...rest };
@@ -66,7 +65,10 @@ export const findAllOrders = async (filters = {}) => {
   const { search, orderStatus, paymentStatus, page = 1, limit = 10 } = filters;
 
   const safePage = Math.max(1, Number.parseInt(page, 10) || 1);
-  const safeLimit = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 10));
+  const safeLimit = Math.min(
+    100,
+    Math.max(1, Number.parseInt(limit, 10) || 10),
+  );
 
   const query = {};
 

@@ -56,6 +56,8 @@ export const serializeAdminOrder = (order) => {
       deliveredAt: order.fulfillment?.deliveredAt || null,
     },
 
+    inventoryState: order.inventoryState || "reserved",
+    expiresAt: order.expiresAt || null,
     notes: order.notes || "",
     
     createdAt: order.createdAt,

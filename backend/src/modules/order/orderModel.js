@@ -145,6 +145,21 @@ const orderSchema = new Schema(
       deliveredAt: { type: Date, default: null },
     },
 
+    // Tracks atomic stock lifecycle to prevent double-deduction or double-restock
+    inventoryState: {
+      type: String,
+      enum: ["reserved", "committed", "released"],
+      default: "reserved",
+      index: true,
+    },
+
+    // Snapshot deadline for automatic expiry (null = manual cancellation only)
+    expiresAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+
     // Optional admin notes for internal staff communication
     notes: {
       type: String,
@@ -164,6 +179,7 @@ const orderSchema = new Schema(
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ "customer.email": 1 });
 orderSchema.index({ "customer.phone": 1 });
+orderSchema.index({orderStatus: 1, paymentStatus: 1, expiresAt: 1})
 
 /* --------------------------------
    EXPORT MODEL

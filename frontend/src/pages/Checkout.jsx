@@ -42,6 +42,7 @@ export default function Checkout() {
   const [errors, setErrors] = useState({});
   const [submitMessage, setSubmitMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingOrder, setPendingOrder] = useState(null);
 
   // Security check: bounce users back if they bypass the cart
   if (!cartItems.length || !selectedOption) {
@@ -71,130 +72,58 @@ export default function Checkout() {
     setSubmitMessage("");
   };
 
-  // --- NEW: PayHere Integration Function ---
-  //   const initiatePayHerePayment = async (order) => {
-  //     try {
-  //       const orderIdString = order._id || order.id;
-  //       console.log("1. Fetching hash for order ID:", order._id);
-  //       // 1. Fetch the secure hash from your backend
-  //       const { merchantId, hash, amount, currency } = await getPaymentHash(order._id);
-  // console.log("2. Hash received successfully:", { merchantId, hash, amount, currency });
-  //       // 2. Define PayHere SDK event callbacks
-  //       window.payhere.onCompleted = function onCompleted(orderId) {
-  //         console.log("Payment completed. OrderID:" + orderId);
-  //         // Backend handles the DB update via webhook. Redirect user to success.
-  //         navigate(`/order-success/${order._id}`);
-  //       };
-
-  //       window.payhere.onDismissed = function onDismissed() {
-  //         console.log("Payment dismissed by user");
-  //         setErrors((prev) => ({
-  //           ...prev,
-  //           submit: "Payment was cancelled. You can complete it later from your orders.",
-  //         }));
-  //         setIsSubmitting(false);
-  //       };
-
-  //       window.payhere.onError = function onError(error) {
-  //         console.error("PayHere Error:", error);
-  //         setErrors((prev) => ({
-  //           ...prev,
-  //           submit: "Payment gateway error. Please try again or contact support.",
-  //         }));
-  //         setIsSubmitting(false);
-  //       };
-
-  //       // 3. Construct the payment variables object
-  //       const payment = {
-  //         sandbox: true, // IMPORTANT: Set to false in production
-  //         merchant_id: merchantId,
-  //         return_url: `${window.location.origin}/order-success/${order._id}`,
-  //         cancel_url: `${window.location.origin}/checkout`,
-  //         notify_url: import.meta.env.VITE_PAYHERE_NOTIFY_URL,// REPLACE THIS for local webhook testing
-  //         order_id: order._id,
-  //         items: "Order #" + order.orderNumber,
-  //         amount: amount,
-  //         currency: currency,
-  //         hash: hash,
-
-  //         // Customer Details
-  //         first_name: order.customer.firstName,
-  //         last_name: order.customer.lastName,
-  //         email: order.customer.email,
-  //         phone: order.customer.phone,
-  //         address: order.shippingAddress?.streetAddress || "N/A",
-  //         city: order.shippingAddress?.city || "N/A",
-  //         country: "Sri Lanka",
-  //       };
-
-  //       // 4. Trigger the popup
-  //       window.payhere.startPayment(payment);
-
-  //     } catch (error) {
-  //       console.error("Failed to initiate PayHere:", error);
-  //       setErrors((prev) => ({
-  //         ...prev,
-  //         submit: "Could not connect to the payment gateway.",
-  //       }));
-  //       setIsSubmitting(false);
-  //     }
-  //   };
   const initiatePayHerePayment = async (order) => {
+    const orderIdString = order._id || order.id;
+
     try {
-      // Safely grab the ID whether it was serialized as _id or id
-      const orderIdString = order._id || order.id;
+      if (!window.payhere) {
+        throw new Error(
+          "Payment gateway failed to load. Please refresh and try again.",
+        );
+      }
 
-      console.log("1. Fetching hash for order ID:", orderIdString);
-
-      // 1. Fetch the secure hash from your backend
+      //  Fetch the secure hash from backend (also enforces expiry/status guards)
       const { merchantId, hash, amount, currency } =
         await getPaymentHash(orderIdString);
 
-      console.log("2. Hash received successfully:", {
-        merchantId,
-        hash,
-        amount,
-        currency,
-      });
-
-      // 2. Define PayHere SDK event callbacks
-      window.payhere.onCompleted = function onCompleted(orderId) {
-        console.log("Payment completed. OrderID:" + orderId);
-        // Backend handles the DB update via webhook. Redirect user to success.
-        navigate(`/order-success/${orderIdString}`);
+      //  Define PayHere SDK event callbacks
+      window.payhere.onCompleted = function onCompleted() {
+        if (clearCart) clearCart();
+        navigate(`/order-success/${orderIdString}`, { replace: true });
       };
 
       window.payhere.onDismissed = function onDismissed() {
-        console.log("Payment dismissed by user");
+        setSubmitMessage("");
         setErrors((prev) => ({
           ...prev,
           submit:
-            "Payment was cancelled. You can complete it later from your orders.",
+            'Payment window closed. Your items are still reserved — click "Retry Payment" below to complete your order.',
         }));
         setIsSubmitting(false);
       };
 
       window.payhere.onError = function onError(error) {
         console.error("PayHere Error:", error);
+        setSubmitMessage("");
         setErrors((prev) => ({
           ...prev,
-          submit: "Payment gateway error. Please try again or contact support.",
+          submit: 'Payment gateway error. Click "Retry Payment" to try again.',
         }));
         setIsSubmitting(false);
       };
 
-      // 3. Construct the payment variables object
+      //  Construct the payment variables object
       const payment = {
-        sandbox: true, // IMPORTANT: Set to false in production
+        sandbox: import.meta.env.VITE_PAYHERE_SANDBOX !== "false",
         merchant_id: merchantId,
         return_url: `${window.location.origin}/order-success/${orderIdString}`,
-        cancel_url: `${window.location.origin}/checkout`,
+        cancel_url: `${window.location.origin}/cart`,
         notify_url: import.meta.env.VITE_PAYHERE_NOTIFY_URL,
         order_id: orderIdString,
         items: "Order #" + order.orderNumber,
-        amount: amount,
-        currency: currency,
-        hash: hash,
+        amount,
+        currency,
+        hash,
 
         // Customer Details
         first_name: order.customer.firstName,
@@ -206,13 +135,31 @@ export default function Checkout() {
         country: "Sri Lanka",
       };
 
-      // 4. Trigger the popup
+      //  Trigger the popup
       window.payhere.startPayment(payment);
     } catch (error) {
+      const errorCode = error?.code || error?.response?.data?.code;
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Could not connect to the payment gateway.";
+
+      if (errorCode === "ORDER_ALREADY_PAID") {
+        if (clearCart) clearCart();
+        navigate(`/order-success/${orderIdString}`, { replace: true });
+        return;
+      }
+
+      // If the reserved order expired or was cancelled, clear it so the next submit creates a fresh order
+      if (errorCode === "ORDER_EXPIRED" || errorCode === "ORDER_CANCELLED") {
+        setPendingOrder(null);
+      }
+
       console.error("Failed to initiate PayHere:", error);
+      setSubmitMessage("");
       setErrors((prev) => ({
         ...prev,
-        submit: "Could not connect to the payment gateway.",
+        submit: errorMessage,
       }));
       setIsSubmitting(false);
     }
@@ -222,6 +169,24 @@ export default function Checkout() {
     event.preventDefault();
     setIsSubmitting(true);
     setSubmitMessage("");
+    setErrors((prev) => ({ ...prev, submit: "" }));
+
+    const isOnlineCheckout =
+      checkoutMethod === "delivery-online" ||
+      checkoutMethod === "pickup-online";
+
+    // Reuse existing reserved order on retry so not create duplicate orders or double-reserve stock
+    if (isOnlineCheckout && pendingOrder) {
+      const isLocallyExpired =
+        pendingOrder.expiresAt &&
+        new Date(pendingOrder.expiresAt) <= new Date();
+
+      if (!isLocallyExpired) {
+        await initiatePayHerePayment(pendingOrder);
+        return;
+      }
+      setPendingOrder(null);
+    }
 
     // Zod Validation (conditionally checking address)
     const schema = checkoutSchema.superRefine((data, context) => {
@@ -288,27 +253,29 @@ export default function Checkout() {
     };
 
     try {
-      // Use the new centralized API service instead of direct axios
       const response = await createOrder(orderPayload);
       const newOrder = response.data;
-      console.log("Order saved to DB:", newOrder); // Let's log it just to be sure!
-      setSubmitMessage(`Order ${newOrder.orderNumber} placed successfully!`);
 
-      // Clear the global cart context so the user doesn't double-order
-      if (clearCart) clearCart();
-
-      if (checkoutMethod === "delivery-online" || checkoutMethod === "pickup-online") {
-        console.log("Triggering Online Payment Flow...");
+      if (isOnlineCheckout) {
+        setPendingOrder(newOrder);
+        setSubmitMessage(
+          `Order ${newOrder.orderNumber} reserved. Complete payment to confirm your order.`,
+        );
         await initiatePayHerePayment(newOrder);
       } else {
-        console.log("Store Pickup selected. Redirecting to success...");
-        navigate(`/order-success/${newOrder._id || newOrder.id}`);
+        if (clearCart) clearCart();
+        navigate(`/order-success/${newOrder._id || newOrder.id}`, {
+          replace: true,
+        });
       }
     } catch (error) {
       console.error("Checkout error:", error);
       setErrors((prev) => ({
         ...prev,
-        submit: error.message || "Failed to place order. Please try again.",
+        submit:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to place order. Please try again.",
       }));
       setIsSubmitting(false);
     }
@@ -344,102 +311,106 @@ export default function Checkout() {
             noValidate
             className="space-y-7 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8"
           >
-            <section>
-              <div className="mb-5 flex items-center gap-3">
-                <div className="rounded-lg bg-[#183d3d]/10 p-2.5 text-[#183d3d]">
-                  <Package size={22} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    Contact Information
-                  </h2>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Your order updates will use these details.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-5 sm:grid-cols-2">
-                <CheckoutInput
-                  name="firstName"
-                  label="First Name"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  error={errors.firstName}
-                  autoComplete="given-name"
-                />
-                <CheckoutInput
-                  name="lastName"
-                  label="Last Name"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  error={errors.lastName}
-                  autoComplete="family-name"
-                />
-                <div className="sm:col-span-2">
-                  <CheckoutInput
-                    name="email"
-                    type="email"
-                    label="Email Address"
-                    value={formData.email}
-                    onChange={handleChange}
-                    error={errors.email}
-                    autoComplete="email"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <CheckoutInput
-                    name="phone"
-                    type="tel"
-                    label="Phone Number"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    error={errors.phone}
-                    autoComplete="tel"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {isDelivery && (
-              <section className="border-t border-gray-100 pt-7">
+            <fieldset
+              disabled={Boolean(pendingOrder)}
+              className="space-y-7 disabled:opacity-75"
+            >
+              <section>
                 <div className="mb-5 flex items-center gap-3">
                   <div className="rounded-lg bg-[#183d3d]/10 p-2.5 text-[#183d3d]">
-                    <MapPin size={22} />
+                    <Package size={22} />
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">
-                    Delivery Address
-                  </h2>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      Contact Information
+                    </h2>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Your order updates will use these details.
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-5">
+
+                <div className="grid gap-5 sm:grid-cols-2">
                   <CheckoutInput
-                    name="streetAddress"
-                    label="Street Address"
-                    value={formData.streetAddress}
+                    name="firstName"
+                    label="First Name"
+                    value={formData.firstName}
                     onChange={handleChange}
-                    error={errors.streetAddress}
-                    autoComplete="street-address"
+                    error={errors.firstName}
+                    autoComplete="given-name"
                   />
                   <CheckoutInput
-                    name="city"
-                    label="Town / City"
-                    value={formData.city}
+                    name="lastName"
+                    label="Last Name"
+                    value={formData.lastName}
                     onChange={handleChange}
-                    error={errors.city}
-                    autoComplete="address-level2"
+                    error={errors.lastName}
+                    autoComplete="family-name"
                   />
-                  <CheckoutInput
-                    name="postcode"
-                    label="Postcode / ZIP"
-                    value={formData.postcode}
-                    onChange={handleChange}
-                    error={errors.postcode}
-                    autoComplete="postal-code"
-                  />
+                  <div className="sm:col-span-2">
+                    <CheckoutInput
+                      name="email"
+                      type="email"
+                      label="Email Address"
+                      value={formData.email}
+                      onChange={handleChange}
+                      error={errors.email}
+                      autoComplete="email"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <CheckoutInput
+                      name="phone"
+                      type="tel"
+                      label="Phone Number"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      error={errors.phone}
+                      autoComplete="tel"
+                    />
+                  </div>
                 </div>
               </section>
-            )}
 
+              {isDelivery && (
+                <section className="border-t border-gray-100 pt-7">
+                  <div className="mb-5 flex items-center gap-3">
+                    <div className="rounded-lg bg-[#183d3d]/10 p-2.5 text-[#183d3d]">
+                      <MapPin size={22} />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900">
+                      Delivery Address
+                    </h2>
+                  </div>
+                  <div className="space-y-5">
+                    <CheckoutInput
+                      name="streetAddress"
+                      label="Street Address"
+                      value={formData.streetAddress}
+                      onChange={handleChange}
+                      error={errors.streetAddress}
+                      autoComplete="street-address"
+                    />
+                    <CheckoutInput
+                      name="city"
+                      label="Town / City"
+                      value={formData.city}
+                      onChange={handleChange}
+                      error={errors.city}
+                      autoComplete="address-level2"
+                    />
+                    <CheckoutInput
+                      name="postcode"
+                      label="Postcode / ZIP"
+                      value={formData.postcode}
+                      onChange={handleChange}
+                      error={errors.postcode}
+                      autoComplete="postal-code"
+                    />
+                  </div>
+                </section>
+              )}
+            </fieldset>
             {errors.submit && (
               <div className="rounded-lg bg-red-50 p-4 text-sm text-red-600">
                 {errors.submit}
@@ -467,9 +438,11 @@ export default function Checkout() {
             >
               {isSubmitting
                 ? "Processing..."
-                : checkoutMethod === "pickup-store"
-                  ? "Reserve Order"
-                  : "Continue to Payment"}
+                : pendingOrder
+                  ? `Retry Payment (${pendingOrder.orderNumber})`
+                  : checkoutMethod === "pickup-store"
+                    ? "Reserve Order"
+                    : "Continue to Payment"}
             </button>
           </form>
 

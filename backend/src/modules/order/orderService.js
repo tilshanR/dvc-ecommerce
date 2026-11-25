@@ -71,6 +71,31 @@ const reserveStockForItems = async (items, session) => {
   return reservedProducts;
 };
 
+// const releaseReservedStock = async (items, session) => {
+//   for (const item of items) {
+//     await Product.updateOne(
+//       { _id: item.product },
+//       [
+//         {
+//           $set: {
+//             "inventory.reserved": {
+//               $max: [
+//                 0,
+//                 {
+//                   $subtract: [
+//                     { $ifNull: ["$inventory.reserved", 0] },
+//                     item.quantity,
+//                   ],
+//                 },
+//               ],
+//             },
+//           },
+//         },
+//       ],
+//       { session },
+//     );
+//   }
+// };
 const releaseReservedStock = async (items, session) => {
   for (const item of items) {
     await Product.updateOne(
@@ -92,11 +117,47 @@ const releaseReservedStock = async (items, session) => {
           },
         },
       ],
-      { session },
+      { session, updatePipeline: true },
     );
   }
 };
 
+// const commitReservedStock = async (items, session) => {
+//   for (const item of items) {
+//     await Product.updateOne(
+//       { _id: item.product },
+//       [
+//         {
+//           $set: {
+//             "inventory.reserved": {
+//               $max: [
+//                 0,
+//                 {
+//                   $subtract: [
+//                     { $ifNull: ["$inventory.reserved", 0] },
+//                     item.quantity,
+//                   ],
+//                 },
+//               ],
+//             },
+//             "inventory.onHand": {
+//               $max: [
+//                 0,
+//                 {
+//                   $subtract: [
+//                     { $ifNull: ["$inventory.onHand", 0] },
+//                     item.quantity,
+//                   ],
+//                 },
+//               ],
+//             },
+//           },
+//         },
+//       ],
+//       { session },
+//     );
+//   }
+// };
 const commitReservedStock = async (items, session) => {
   for (const item of items) {
     await Product.updateOne(
@@ -129,11 +190,10 @@ const commitReservedStock = async (items, session) => {
           },
         },
       ],
-      { session },
+      { session, updatePipeline: true },
     );
   }
 };
-
 const restockCommittedItems = async (items, session) => {
   for (const item of items) {
     await Product.updateOne(

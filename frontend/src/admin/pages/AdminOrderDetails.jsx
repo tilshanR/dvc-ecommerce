@@ -1,31 +1,34 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
-  User,
-  MapPin,
-  RefreshCw,
-  CheckCircle,
-  AlertCircle,
-  Box,
-  Truck,
-  Store,
-  FileText,
-  Clock,
-  Save,
-  CreditCard,
-  Banknote,
-  Receipt,
-  Copy,
-  Check,
-  ArrowRight,
-  XCircle,
+  ArrowLeft,User,MapPin,RefreshCw,CheckCircle,AlertCircle,Box,Truck,Store,FileText,Clock,Save,CreditCard,Banknote,Receipt,Copy,Check, ArrowRight,  XCircle, Lock, Layers,
 } from "lucide-react";
 import { getAdminOrderById, updateAdminOrder } from "../services/adminOrderApi";
 import PageHeader from "../components/ui/PageHeader";
 import StatusBadge from "../components/ui/StatusBadge";
 
 const PAYMENT_STATUS_OPTIONS = ["Pending", "Paid", "Failed", "Refunded"];
+
+const INVENTORY_STATE_META = {
+  reserved: {
+    label: "Stock Reserved",
+    detail: "Held in inventory.reserved",
+    className:
+      "border-(--admin-status-warning-border) bg-(--admin-status-warning-bg) text-(--admin-status-warning-text)",
+  },
+  committed: {
+    label: "Stock Deducted",
+    detail: "Deducted from inventory.onHand",
+    className:
+      "border-(--admin-status-success-border) bg-(--admin-status-success-bg) text-(--admin-status-success-text)",
+  },
+  released: {
+    label: "Stock Restocked",
+    detail: "Returned to available stock",
+    className:
+      "border-(--admin-status-neutral-border) bg-(--admin-status-neutral-bg) text-(--admin-status-neutral-text)",
+  },
+};
 
 const formatLKR = (amount) =>
   `LKR ${Number(amount || 0).toLocaleString("en-LK", {
@@ -47,6 +50,25 @@ const formatDate = (dateString) => {
   }).format(date);
 };
 
+const formatTimeRemaining = (expiresAt, nowMs) => {
+  if (!expiresAt) return null;
+  const diffMs = new Date(expiresAt).getTime() - nowMs;
+  if (Number.isNaN(diffMs)) return null;
+  if (diffMs <= 0) return { expired: true, text: "Window expired — pending auto-cancel" };
+
+  const totalMinutes = Math.ceil(diffMs / 60000);
+  if (totalMinutes < 60) {
+    return { expired: false, text: `Expires in ${totalMinutes}m` };
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const mins = totalMinutes % 60;
+  return {
+    expired: false,
+    text: mins > 0 ? `Expires in ${hours}h ${mins}m` : `Expires in ${hours}h`,
+  };
+};
+
 export default function AdminOrderDetails() {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -61,11 +83,14 @@ export default function AdminOrderDetails() {
   const [courierProvider, setCourierProvider] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
 
-  // Guardrail state for destructive transitions (Cancelled / Refunded)
+  // Inline confirmation guardrail ({ title, description, payload, successMessage, tone })
   const [pendingConfirmation, setPendingConfirmation] = useState(null);
 
   // Clipboard feedback state
   const [copiedKey, setCopiedKey] = useState("");
+
+  // Live clock tick for pending expiry countdown
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
     let isMounted = true;
@@ -84,7 +109,11 @@ export default function AdminOrderDetails() {
         setTrackingNumber(fetchedOrder?.fulfillment?.trackingNumber || "");
       } catch (err) {
         if (isMounted) {
-          setError(err.message || "Failed to load order details.");
+          setError(
+            err?.response?.data?.message ||
+              err.message ||
+              "Failed to load order details.",
+          );
         }
       } finally {
         if (isMounted) {
@@ -98,6 +127,19 @@ export default function AdminOrderDetails() {
       isMounted = false;
     };
   }, [orderId]);
+
+  useEffect(() => {
+    if (
+      order?.status?.orderStatus !== "Pending" ||
+      order?.status?.paymentStatus !== "Pending" ||
+      !order?.expiresAt
+    ) {
+      return undefined;
+    }
+
+    const intervalId = setInterval(() => setNowMs(Date.now()), 30000);
+    return () => clearInterval(intervalId);
+  }, [order?.status?.orderStatus, order?.status?.paymentStatus, order?.expiresAt]);
 
   const showSuccessFeedback = (msg) => {
     setUpdateMessage(msg);
@@ -131,41 +173,14 @@ export default function AdminOrderDetails() {
 
       showSuccessFeedback(successText);
     } catch (err) {
-      setError(err.message || "Failed to update order.");
+      setError(
+        err?.response?.data?.message ||
+          err.message ||
+          "Failed to update order.",
+      );
     } finally {
       setIsUpdating(false);
     }
-  };
-
-  const handleStatusSelectChange = (type, newStatus) => {
-    const currentStatus =
-      type === "orderStatus"
-        ? order?.status?.orderStatus
-        : order?.status?.paymentStatus;
-
-    if (newStatus === currentStatus) return;
-
-    // Require inline confirmation for destructive/irreversible transitions
-    if (newStatus === "Cancelled" || newStatus === "Refunded") {
-      setPendingConfirmation({ type, value: newStatus });
-      return;
-    }
-
-    executeOrderPatch(
-      { [type]: newStatus },
-      `${type === "orderStatus" ? "Fulfillment" : "Payment"} status updated to "${newStatus}".`,
-    );
-  };
-
-  const handleFulfillmentSave = (e) => {
-    e.preventDefault();
-    executeOrderPatch(
-      {
-        courierProvider: courierProvider.trim(),
-        trackingNumber: trackingNumber.trim(),
-      },
-      "Courier tracking details saved.",
-    );
   };
 
   if (loading) {
@@ -205,6 +220,13 @@ export default function AdminOrderDetails() {
 
   const currentPaymentStatus = order.status?.paymentStatus || "Pending";
   const currentOrderStatus = order.status?.orderStatus || "Pending";
+  const inventoryState = order.inventoryState || "reserved";
+  const inventoryMeta =
+    INVENTORY_STATE_META[inventoryState] || INVENTORY_STATE_META.reserved;
+
+  const isTerminalOrder =
+    currentOrderStatus === "Cancelled" || currentOrderStatus === "Delivered";
+  const isUnpaidOnline = isOnlinePayment && currentPaymentStatus !== "Paid";
 
   const lifecycleStages = isPickup
     ? ["Pending", "Processing", "Ready for Pickup", "Delivered"]
@@ -212,21 +234,115 @@ export default function AdminOrderDetails() {
 
   const activeStageIndex = lifecycleStages.indexOf(currentOrderStatus);
 
-  const orderStatusOptions = lifecycleStages.includes(currentOrderStatus)
-    ? [...lifecycleStages, "Cancelled"]
-    : [...lifecycleStages, currentOrderStatus, "Cancelled"];
+  // Align dropdown options strictly with backend guardrails
+  const orderStatusOptions = (() => {
+    if (isUnpaidOnline && currentOrderStatus === "Pending") {
+      return ["Pending", "Cancelled"];
+    }
+    return lifecycleStages.includes(currentOrderStatus)
+      ? [...lifecycleStages, "Cancelled"]
+      : [...lifecycleStages, currentOrderStatus, "Cancelled"];
+  })();
 
-  // Lock Online Payment mutations unless transitioning a Paid order to Refunded
-  const isPaymentSelectDisabled =
-    isUpdating || (isOnlinePayment && currentPaymentStatus !== "Paid");
+  const isOrderSelectDisabled = isUpdating || isTerminalOrder;
 
-  const availablePaymentOptions =
-    isOnlinePayment && currentPaymentStatus === "Paid"
-      ? ["Paid", "Refunded"]
-      : PAYMENT_STATUS_OPTIONS;
+  // Payment dropdown rules aligned with backend Guard 3 & terminal checks
+  const isPaymentSelectDisabled = (() => {
+    if (isUpdating) return true;
+    if (isOnlinePayment) return currentPaymentStatus !== "Paid";
+    if (currentOrderStatus === "Cancelled" && currentPaymentStatus !== "Paid") {
+      return true;
+    }
+    return false;
+  })();
 
-  // Contextual one-click forward progression
+  const availablePaymentOptions = (() => {
+    if (isOnlinePayment && currentPaymentStatus === "Paid") {
+      return ["Paid", "Refunded"];
+    }
+    if (
+      isPayAtStore &&
+      isTerminalOrder &&
+      currentPaymentStatus === "Paid"
+    ) {
+      return ["Paid", "Refunded"];
+    }
+    return PAYMENT_STATUS_OPTIONS;
+  })();
+
+  const handleStatusSelectChange = (type, newStatus) => {
+    const currentStatus =
+      type === "orderStatus" ? currentOrderStatus : currentPaymentStatus;
+
+    if (newStatus === currentStatus) return;
+
+    if (type === "orderStatus" && newStatus === "Cancelled") {
+      setPendingConfirmation({
+        tone: "danger",
+        title: 'Confirm cancelling this order?',
+        description:
+          isOnlinePayment && currentPaymentStatus === "Pending"
+            ? "This halts fulfillment, marks payment as Failed, and releases reserved stock. Cancelled orders cannot be reopened."
+            : "This halts fulfillment and returns order stock to available inventory. Cancelled orders cannot be reopened.",
+        payload: { orderStatus: "Cancelled" },
+        successMessage: "Order cancelled and stock released.",
+      });
+      return;
+    }
+
+    if (type === "paymentStatus" && newStatus === "Refunded") {
+      setPendingConfirmation({
+        tone: "danger",
+        title: 'Confirm marking payment as "Refunded"?',
+        description:
+          "This records that the customer payment has been refunded.",
+        payload: { paymentStatus: "Refunded" },
+        successMessage: 'Payment status updated to "Refunded".',
+      });
+      return;
+    }
+
+    // Pay-at-Store Guard 5: prompt to collect payment + complete pickup atomically
+    if (
+      type === "orderStatus" &&
+      newStatus === "Delivered" &&
+      isPayAtStore &&
+      currentPaymentStatus !== "Paid"
+    ) {
+      setPendingConfirmation({
+        tone: "warning",
+        title: "Collect counter payment & complete pickup?",
+        description: `Confirm ${formatLKR(order.financials?.total)} has been collected at the store counter. This marks Payment as "Paid", completes pickup, and deducts stock.`,
+        payload: { paymentStatus: "Paid", orderStatus: "Delivered" },
+        successMessage: "Payment recorded and store pickup completed.",
+      });
+      return;
+    }
+
+    executeOrderPatch(
+      { [type]: newStatus },
+      `${type === "orderStatus" ? "Fulfillment" : "Payment"} status updated to "${newStatus}".`,
+    );
+  };
+
+  const handleFulfillmentSave = (e) => {
+    e.preventDefault();
+    executeOrderPatch(
+      {
+        fulfillment: {
+          courierProvider: courierProvider.trim() || null,
+          trackingNumber: trackingNumber.trim() || null,
+        },
+      },
+      "Courier tracking details saved.",
+    );
+  };
+
+  // Contextual one-click forward progression (respects unpaid online & counter payment guards)
   const nextStepConfig = (() => {
+    if (isTerminalOrder) return null;
+    if (isUnpaidOnline && currentOrderStatus === "Pending") return null;
+
     if (currentOrderStatus === "Pending") {
       return {
         label: "Accept & Start Processing",
@@ -243,6 +359,13 @@ export default function AdminOrderDetails() {
           };
     }
     if (currentOrderStatus === "Ready for Pickup") {
+      if (isPayAtStore && currentPaymentStatus !== "Paid") {
+        return {
+          label: "Collect Payment & Complete Pickup",
+          nextStatus: "Delivered",
+          requiresCounterPaymentConfirm: true,
+        };
+      }
       return { label: "Complete Store Pickup", nextStatus: "Delivered" };
     }
     if (currentOrderStatus === "Shipped") {
@@ -250,6 +373,38 @@ export default function AdminOrderDetails() {
     }
     return null;
   })();
+
+  const handleNextStepClick = () => {
+    if (!nextStepConfig) return;
+
+    if (nextStepConfig.requiresCounterPaymentConfirm) {
+      setPendingConfirmation({
+        tone: "warning",
+        title: "Collect counter payment & complete pickup?",
+        description: `Confirm ${formatLKR(order.financials?.total)} has been collected at the store counter. This marks Payment as "Paid", completes pickup, and deducts stock.`,
+        payload: { paymentStatus: "Paid", orderStatus: "Delivered" },
+        successMessage: "Payment recorded and store pickup completed.",
+      });
+      return;
+    }
+
+    const payload = { orderStatus: nextStepConfig.nextStatus };
+    if (nextStepConfig.includeTracking) {
+      const trimmedCourier = courierProvider.trim();
+      const trimmedTracking = trackingNumber.trim();
+      if (trimmedCourier || trimmedTracking) {
+        payload.fulfillment = {
+          ...(trimmedCourier ? { courierProvider: trimmedCourier } : {}),
+          ...(trimmedTracking ? { trackingNumber: trimmedTracking } : {}),
+        };
+      }
+    }
+
+    executeOrderPatch(
+      payload,
+      `Order moved to "${nextStepConfig.nextStatus}".`,
+    );
+  };
 
   const totalUnits = (order.items || []).reduce(
     (sum, item) => sum + (Number(item.quantity) || 1),
@@ -276,6 +431,15 @@ export default function AdminOrderDetails() {
     isPayAtStore &&
     currentPaymentStatus === "Pending" &&
     currentOrderStatus !== "Cancelled";
+
+  const expiryStatus =
+    currentOrderStatus === "Pending" && currentPaymentStatus === "Pending"
+      ? formatTimeRemaining(order.expiresAt, nowMs)
+      : null;
+
+  const hasUrgentSystemNote = Boolean(
+    order.notes && order.notes.includes("[ACTION REQUIRED]"),
+  );
 
   return (
     <div className="w-full space-y-6">
@@ -318,6 +482,13 @@ export default function AdminOrderDetails() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            <span
+              title={inventoryMeta.detail}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap ${inventoryMeta.className}`}
+            >
+              <Layers size={12} />
+              {inventoryMeta.label}
+            </span>
             <StatusBadge type="payment" status={currentPaymentStatus} />
             <StatusBadge type="order" status={currentOrderStatus} />
           </div>
@@ -363,7 +534,7 @@ export default function AdminOrderDetails() {
           </p>
         </div>
 
-        {/* Card 2: Payment Method & Collection State */}
+        {/* Card 2: Payment Method & Collection / Expiry State */}
         <div className="rounded-xl border border-(--admin-border) bg-(--admin-surface) p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-wider text-(--admin-muted)">
@@ -381,16 +552,22 @@ export default function AdminOrderDetails() {
           </div>
           <p
             className={`mt-1 text-xs font-medium ${
-              needsCounterCollection
-                ? "text-(--admin-status-warning-text)"
-                : "text-(--admin-muted)"
+              expiryStatus?.expired
+                ? "text-(--admin-status-danger-text)"
+                : needsCounterCollection || isUnpaidOnline
+                  ? "text-(--admin-status-warning-text)"
+                  : "text-(--admin-muted)"
             }`}
           >
-            {needsCounterCollection
-              ? `Collect ${formatLKR(order.financials?.total)} at counter`
-              : isOnlinePayment
-                ? "Processed via PayHere"
-                : "In-store payment settled"}
+            {expiryStatus
+              ? expiryStatus.text
+              : needsCounterCollection
+                ? `Collect ${formatLKR(order.financials?.total)} at counter`
+                : isOnlinePayment
+                  ? "Processed via PayHere"
+                  : currentOrderStatus === "Cancelled"
+                    ? "Order cancelled"
+                    : "In-store payment settled"}
           </p>
         </div>
 
@@ -455,10 +632,18 @@ export default function AdminOrderDetails() {
 
       {/* Visual Fulfillment Lifecycle Stepper */}
       {currentOrderStatus === "Cancelled" ? (
-        <div className="flex items-center gap-3 rounded-xl border border-(--admin-status-danger-border) bg-(--admin-status-danger-bg) px-5 py-3.5 text-sm text-(--admin-status-danger-text)">
-          <XCircle size={18} className="shrink-0" />
-          <span className="font-semibold">
-            This order has been cancelled.
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-(--admin-status-danger-border) bg-(--admin-status-danger-bg) px-5 py-3.5 text-sm text-(--admin-status-danger-text)">
+          <div className="flex items-center gap-3">
+            <XCircle size={18} className="shrink-0" />
+            <span className="font-semibold">
+              This order has been cancelled.{" "}
+              {inventoryState === "released"
+                ? "Reserved stock has been returned to inventory."
+                : ""}
+            </span>
+          </div>
+          <span className="inline-flex items-center gap-1 text-xs font-medium opacity-90">
+            <Lock size={13} /> Terminal state
           </span>
         </div>
       ) : (
@@ -503,12 +688,26 @@ export default function AdminOrderDetails() {
       <div className="grid gap-6 lg:grid-cols-12">
         {/* Left Column (8 Cols): Order Notes, Line Items & Financial Breakdown */}
         <div className="space-y-6 lg:col-span-8">
-          {/* Promoted Customer / Order Notes */}
+          {/* Promoted Customer / System Notes */}
           {order.notes && (
-            <div className="flex items-start gap-3 rounded-xl border border-(--admin-status-warning-border) bg-(--admin-status-warning-bg) p-4 text-sm text-(--admin-status-warning-text)">
-              <FileText size={18} className="mt-0.5 shrink-0" />
+            <div
+              className={`flex items-start gap-3 rounded-xl border p-4 text-sm ${
+                hasUrgentSystemNote
+                  ? "border-(--admin-status-danger-border) bg-(--admin-status-danger-bg) text-(--admin-status-danger-text)"
+                  : "border-(--admin-status-warning-border) bg-(--admin-status-warning-bg) text-(--admin-status-warning-text)"
+              }`}
+            >
+              {hasUrgentSystemNote ? (
+                <AlertCircle size={18} className="mt-0.5 shrink-0" />
+              ) : (
+                <FileText size={18} className="mt-0.5 shrink-0" />
+              )}
               <div>
-                <p className="font-bold">Customer / Order Notes</p>
+                <p className="font-bold">
+                  {hasUrgentSystemNote
+                    ? "Action Required — Order & System Notes"
+                    : "Order & System Notes"}
+                </p>
                 <p className="mt-1 whitespace-pre-line opacity-90">
                   {order.notes}
                 </p>
@@ -607,26 +806,28 @@ export default function AdminOrderDetails() {
             </h2>
 
             <div className="space-y-4">
+              {/* Unpaid Online Order Hold Notice */}
+              {isUnpaidOnline && currentOrderStatus === "Pending" && (
+                <div className="rounded-lg border border-(--admin-status-warning-border) bg-(--admin-status-warning-bg) p-3.5 text-xs text-(--admin-status-warning-text)">
+                  <p className="flex items-center gap-1.5 font-semibold">
+                    <Clock size={14} className="shrink-0" />
+                    Awaiting PayHere Payment
+                  </p>
+                  <p className="mt-1 opacity-90">
+                    Fulfillment is locked until PayHere confirms payment.
+                    {order.expiresAt
+                      ? ` Auto-cancels after ${formatDate(order.expiresAt)}.`
+                      : ""}
+                  </p>
+                </div>
+              )}
+
               {/* Contextual One-Click Forward Action */}
               {nextStepConfig && (
                 <button
                   type="button"
                   disabled={isUpdating}
-                  onClick={() => {
-                    const payload = { orderStatus: nextStepConfig.nextStatus };
-                    if (nextStepConfig.includeTracking) {
-                      if (courierProvider.trim()) {
-                        payload.courierProvider = courierProvider.trim();
-                      }
-                      if (trackingNumber.trim()) {
-                        payload.trackingNumber = trackingNumber.trim();
-                      }
-                    }
-                    executeOrderPatch(
-                      payload,
-                      `Order moved to "${nextStepConfig.nextStatus}".`,
-                    );
-                  }}
+                  onClick={handleNextStepClick}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-(--admin-brand) px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-(--admin-brand-hover) disabled:cursor-not-allowed disabled:opacity-55"
                 >
                   <span>{nextStepConfig.label}</span>
@@ -634,16 +835,18 @@ export default function AdminOrderDetails() {
                 </button>
               )}
 
-              {/* Destructive Status Confirmation Guardrail */}
+              {/* Inline Confirmation Guardrail */}
               {pendingConfirmation && (
-                <div className="rounded-lg border border-(--admin-status-danger-border) bg-(--admin-status-danger-bg) p-3.5 text-xs text-(--admin-status-danger-text)">
-                  <p className="font-semibold">
-                    Confirm marking order as "{pendingConfirmation.value}"?
-                  </p>
+                <div
+                  className={`rounded-lg border p-3.5 text-xs ${
+                    pendingConfirmation.tone === "warning"
+                      ? "border-(--admin-status-warning-border) bg-(--admin-status-warning-bg) text-(--admin-status-warning-text)"
+                      : "border-(--admin-status-danger-border) bg-(--admin-status-danger-bg) text-(--admin-status-danger-text)"
+                  }`}
+                >
+                  <p className="font-semibold">{pendingConfirmation.title}</p>
                   <p className="mt-1 opacity-90">
-                    {pendingConfirmation.value === "Cancelled"
-                      ? "This will halt fulfillment for this order."
-                      : "This records that the customer payment has been refunded."}
+                    {pendingConfirmation.description}
                   </p>
                   <div className="mt-3 flex items-center gap-2">
                     <button
@@ -651,14 +854,15 @@ export default function AdminOrderDetails() {
                       disabled={isUpdating}
                       onClick={() =>
                         executeOrderPatch(
-                          {
-                            [pendingConfirmation.type]:
-                              pendingConfirmation.value,
-                          },
-                          `Status updated to "${pendingConfirmation.value}".`,
+                          pendingConfirmation.payload,
+                          pendingConfirmation.successMessage,
                         )
                       }
-                      className="rounded-md bg-(--admin-status-danger-text) px-3 py-1.5 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                      className={`rounded-md px-3 py-1.5 font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 ${
+                        pendingConfirmation.tone === "warning"
+                          ? "bg-(--admin-brand)"
+                          : "bg-(--admin-status-danger-text)"
+                      }`}
                     >
                       Confirm
                     </button>
@@ -683,7 +887,7 @@ export default function AdminOrderDetails() {
                 </label>
                 <select
                   id="order-status-select"
-                  disabled={isUpdating}
+                  disabled={isOrderSelectDisabled}
                   value={currentOrderStatus}
                   onChange={(e) =>
                     handleStatusSelectChange("orderStatus", e.target.value)
@@ -696,6 +900,14 @@ export default function AdminOrderDetails() {
                     </option>
                   ))}
                 </select>
+                {isTerminalOrder && (
+                  <p className="mt-1.5 flex items-center gap-1 text-xs text-(--admin-muted)">
+                    <Lock size={12} className="shrink-0" />
+                    {currentOrderStatus === "Cancelled"
+                      ? "Cancelled orders cannot be reopened after stock release."
+                      : "Delivered orders are finalized."}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -752,8 +964,8 @@ export default function AdminOrderDetails() {
                       value={courierProvider}
                       onChange={(e) => setCourierProvider(e.target.value)}
                       placeholder="e.g., Domex, Pronto, Grasshoppers"
-                      disabled={isUpdating}
-                      className="w-full rounded-lg border border-(--admin-border) bg-(--admin-input-bg) px-3 py-2 text-sm text-(--admin-text) placeholder:text-(--admin-muted) focus:border-(--admin-brand) focus:outline-none focus:ring-1 focus:ring-(--admin-brand) disabled:opacity-55"
+                      disabled={isUpdating || isTerminalOrder}
+                      className="w-full rounded-lg border border-(--admin-border) bg-(--admin-input-bg) px-3 py-2 text-sm text-(--admin-text) placeholder:text-(--admin-muted) focus:border-(--admin-brand) focus:outline-none focus:ring-1 focus:ring-(--admin-brand) disabled:cursor-not-allowed disabled:opacity-55"
                     />
                   </div>
 
@@ -770,14 +982,14 @@ export default function AdminOrderDetails() {
                       value={trackingNumber}
                       onChange={(e) => setTrackingNumber(e.target.value)}
                       placeholder="Enter waybill / tracking ID"
-                      disabled={isUpdating}
-                      className="w-full rounded-lg border border-(--admin-border) bg-(--admin-input-bg) px-3 py-2 text-sm text-(--admin-text) placeholder:text-(--admin-muted) focus:border-(--admin-brand) focus:outline-none focus:ring-1 focus:ring-(--admin-brand) disabled:opacity-55"
+                      disabled={isUpdating || isTerminalOrder}
+                      className="w-full rounded-lg border border-(--admin-border) bg-(--admin-input-bg) px-3 py-2 text-sm text-(--admin-text) placeholder:text-(--admin-muted) focus:border-(--admin-brand) focus:outline-none focus:ring-1 focus:ring-(--admin-brand) disabled:cursor-not-allowed disabled:opacity-55"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    disabled={isUpdating}
+                    disabled={isUpdating || isTerminalOrder}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-(--admin-brand) bg-(--admin-surface) px-4 py-2 text-sm font-semibold text-(--admin-brand-text) transition-colors hover:bg-(--admin-brand) hover:text-white disabled:cursor-not-allowed disabled:opacity-55"
                   >
                     <Save size={15} />
@@ -786,10 +998,19 @@ export default function AdminOrderDetails() {
                 </form>
               )}
 
-              {/* Fulfillment Timestamps */}
+              {/* Fulfillment & Expiry Timestamps */}
               {(order.fulfillment?.dispatchedAt ||
-                order.fulfillment?.deliveredAt) && (
+                order.fulfillment?.deliveredAt ||
+                (order.expiresAt && currentOrderStatus === "Pending")) && (
                 <div className="space-y-1.5 border-t border-(--admin-border) pt-3 text-xs text-(--admin-muted)">
+                  {order.expiresAt &&
+                    currentOrderStatus === "Pending" &&
+                    currentPaymentStatus === "Pending" && (
+                      <p className="flex items-center gap-1.5">
+                        <Clock size={13} />
+                        Hold expires: {formatDate(order.expiresAt)}
+                      </p>
+                    )}
                   {order.fulfillment?.dispatchedAt && (
                     <p className="flex items-center gap-1.5">
                       <Clock size={13} />

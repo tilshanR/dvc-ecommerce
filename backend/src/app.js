@@ -14,6 +14,11 @@ import orderRoutes from "./modules/order/orderRoutes.js";
 import adminOrderRoutes from "./modules/order/admin/adminOrderRoutes.js";
 import adminAuthRoutes from "./modules/adminAuth/adminAuthRoutes.js";
 import paymentRoutes from "./modules/payment/paymentRoutes.js";
+
+import storeSettingsRoutes from "./modules/settings/storeSettingsRoutes.js";
+import adminStoreSettingsRoutes from "./modules/settings/admin/adminStoreSettingsRoutes.js";
+import shippingRoutes from "./modules/shipping/shippingRoutes.js";
+
 const app = express();
 
 //  Security middleware
@@ -62,6 +67,9 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 
+app.use("/api/settings", storeSettingsRoutes);
+app.use("/api/shipping", shippingRoutes);
+
 // Admin Auth routes (/signup, /login, /logout, /me, /forgot-password, /reset-password/:token)
 app.use("/api/admin", adminAuthRoutes);
 
@@ -71,6 +79,7 @@ app.use("/api/admin", protectAdmin);
 //  Protected Admin resource routes
 app.use("/api/admin/products", adminProductRoutes);
 app.use("/api/admin/orders", adminOrderRoutes);
+app.use("/api/admin/settings", adminStoreSettingsRoutes);
 
 //  Health-check endpoint
 // GET /api/health checks whether the API is responding

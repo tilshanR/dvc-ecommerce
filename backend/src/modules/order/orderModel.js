@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import { SRI_LANKA_DISTRICTS } from "../shipping/sriLankaDistricts.js";
 const { Schema } = mongoose;
 
 /* --------------------------------
@@ -69,11 +69,27 @@ const orderSchema = new Schema(
       phone: { type: String, required: true, trim: true },
     },
 
-    // Nullable for "pickup-store" or "pickup-online"
     shippingAddress: {
       streetAddress: { type: String, trim: true },
       city: { type: String, trim: true },
+      district: {
+        type: String,
+        enum: [...SRI_LANKA_DISTRICTS, null],
+        default: null,
+      },
       postcode: { type: String, trim: true },
+    },
+    // Historical shipping calculation snapshot (nullable for legacy orders)
+    shippingMeta: {
+      totalWeightGrams: { type: Number, min: 0, default: null },
+      chargeableExtraKg: { type: Number, min: 0, default: 0 },
+      tier: {
+        type: String,
+        enum: ["local", "islandwide", "free", "pickup", null],
+        default: null,
+      },
+      freeShippingApplied: { type: Boolean, default: false },
+      shopDistrict: { type: String, default: null },
     },
 
     items: {

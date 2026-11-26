@@ -19,6 +19,7 @@ const Cart = lazy(() => import("./pages/Cart"));
 const Shop = lazy(() => import("./pages/Shop"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const OrderSuccess = lazy(() => import("./pages/OrderSuccess"));
+const TermsAndConditions = lazy(() => import("./pages/TermsAndConditions"));
 
 // Lazy load Admin auth pages
 const AdminLogin = lazy(() => import("./admin/pages/AdminLogin"));
@@ -144,7 +145,9 @@ function App() {
                   <Route
                     path="/order-success/:orderId"
                     element={<OrderSuccess />}
+                    
                   />
+                  <Route path="/terms" element={<TermsAndConditions />} />
                 </Route>
               )}
             </Routes>

@@ -1,9 +1,13 @@
-import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Package, MapPin } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft, CheckCircle2, Package, MapPin, Clock } from "lucide-react";
 import { createOrder } from "../services/orderApi";
+import { getPublicStoreSettings } from "../services/storeSettingsApi";
+import { getShippingQuote } from "../services/shippingApi";
 // Utilities & Context
-import { checkoutSchema, checkoutOptions } from "../utils/checkoutUtils";
+import { checkoutSchema, checkoutOptions, DEFAULT_PUBLIC_SETTINGS,
+  SRI_LANKA_DISTRICTS,
+  formatHoldHours, } from "../utils/checkoutUtils";
 import { useCart } from "../context/CartContext";
 import { getPaymentHash } from "../services/paymentApi";
 
@@ -24,6 +28,7 @@ export default function Checkout() {
     shippingCost = 0,
     total = 0,
     checkoutMethod = "",
+    selectedDistrict = "",
   } = location.state || {};
 
   const isDelivery = checkoutMethod === "delivery-online";
@@ -36,6 +41,7 @@ export default function Checkout() {
     phone: "",
     streetAddress: "",
     city: "",
+    district: selectedDistrict || "",
     postcode: "",
   });
 
@@ -43,6 +49,62 @@ export default function Checkout() {
   const [submitMessage, setSubmitMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingOrder, setPendingOrder] = useState(null);
+
+  const [settings, setSettings] = useState(DEFAULT_PUBLIC_SETTINGS);
+  const [shippingQuote, setShippingQuote] = useState(null);
+  const [isQuoting, setIsQuoting] = useState(false);
+
+  const districts = settings?.districts?.length
+    ? settings.districts
+    : SRI_LANKA_DISTRICTS;
+  const orderPolicies =
+    settings?.orderPolicies || DEFAULT_PUBLIC_SETTINGS.orderPolicies;
+  const shippingSettings =
+    settings?.shipping || DEFAULT_PUBLIC_SETTINGS.shipping;
+    
+    useEffect(() => {
+    let isMounted = true;
+    getPublicStoreSettings()
+      .then((res) => {
+        if (isMounted && res?.data) setSettings(res.data);
+      })
+      .catch((err) => console.error("Failed to load store settings:", err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!cartItems.length || !checkoutMethod) return undefined;
+
+    let isMounted = true;
+    const fetchQuote = async () => {
+      setIsQuoting(true);
+      try {
+        const res = await getShippingQuote({
+          items: cartItems.map((item) => ({
+            productId: item.id,
+            quantity: item.quantity,
+          })),
+          checkoutMethod,
+          district: isDelivery && formData.district ? formData.district : null,
+        });
+        if (isMounted && res?.data) {
+          setShippingQuote(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to quote shipping:", err);
+      } finally {
+        if (isMounted) setIsQuoting(false);
+      }
+    };
+
+    fetchQuote();
+    return () => {
+      isMounted = false;
+    };
+  }, [cartItems, checkoutMethod, isDelivery, formData.district]);
 
   // Security check: bounce users back if they bypass the cart
   if (!cartItems.length || !selectedOption) {
@@ -198,11 +260,25 @@ export default function Checkout() {
             message: "Enter your street address.",
           });
         }
+        // if (!data.city?.trim()) {
+        //   context.addIssue({
+        //     code: "custom",
+        //     path: ["city"],
+        //     message: "Enter your town or city.",
+        //   });
+        // }
         if (!data.city?.trim()) {
           context.addIssue({
             code: "custom",
             path: ["city"],
             message: "Enter your town or city.",
+          });
+        }
+        if (!data.district || !districts.includes(data.district)) {
+          context.addIssue({
+            code: "custom",
+            path: ["district"],
+            message: "Select your delivery district.",
           });
         }
         if (!data.postcode?.trim()) {
@@ -242,6 +318,7 @@ export default function Checkout() {
         ? {
             streetAddress: result.data.streetAddress,
             city: result.data.city,
+            district: result.data.district,
             postcode: result.data.postcode,
           }
         : undefined,
@@ -391,14 +468,65 @@ export default function Checkout() {
                       error={errors.streetAddress}
                       autoComplete="street-address"
                     />
-                    <CheckoutInput
+                    {/* <CheckoutInput
                       name="city"
                       label="Town / City"
                       value={formData.city}
                       onChange={handleChange}
                       error={errors.city}
                       autoComplete="address-level2"
-                    />
+                    /> */}
+                    <CheckoutInput
+                    name="city"
+                    label="Town / City"
+                    value={formData.city}
+                    onChange={handleChange}
+                    error={errors.city}
+                    autoComplete="address-level2"
+                  />
+
+                  <div>
+                    <label
+                      htmlFor="district"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      District
+                      <span className="ml-1 text-red-500">*</span>
+                    </label>
+                    <select
+                      id="district"
+                      name="district"
+                      value={formData.district}
+                      onChange={handleChange}
+                      aria-invalid={Boolean(errors.district)}
+                      aria-describedby={
+                        errors.district ? "district-error" : undefined
+                      }
+                      className={`mt-2 w-full rounded-lg border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#183D3D] focus:ring-2 focus:ring-[#183D3D]/10 ${
+                        errors.district
+                          ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                          : "border-gray-300"
+                      }`}
+                    >
+                      <option value="">Select your district</option>
+                      {districts.map((district) => (
+                        <option key={district} value={district}>
+                          {district}
+                          {district === shippingSettings.shopDistrict
+                            ? " (Local Rate)"
+                            : ""}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.district && (
+                      <p
+                        id="district-error"
+                        className="mt-1 text-sm text-red-600"
+                      >
+                        {errors.district}
+                      </p>
+                    )}
+                  </div>
                     <CheckoutInput
                       name="postcode"
                       label="Postcode / ZIP"
@@ -427,12 +555,40 @@ export default function Checkout() {
               </div>
             )}
 
-            <button
+            <div className="flex items-start gap-2.5 rounded-xl border border-gray-200 bg-gray-50 p-3.5 text-xs leading-5 text-gray-600">
+              <Clock size={16} className="mt-0.5 shrink-0 text-[#183d3d]" />
+              <p>
+                {checkoutMethod === "pickup-store"
+                  ? orderPolicies.autoCancelStorePickup
+                    ? `Store pickup orders are reserved for ${formatHoldHours(orderPolicies.storePickupHoldHours)}. `
+                    : "Store pickup orders are reserved until counter collection. "
+                  : `Online orders hold stock for ${orderPolicies.onlinePaymentTimeoutMinutes} minutes while awaiting PayHere confirmation. `}
+                By continuing, you agree to our{" "}
+                <Link
+                  to="/terms"
+                  className="font-semibold text-[#183d3d] underline underline-offset-2 hover:text-[#245454]"
+                >
+                  Terms & Conditions
+                </Link>
+                .
+              </p>
+            </div>
+
+            {/* <button
               type="submit"
               disabled={isSubmitting}
               className={`w-full rounded-xl px-6 py-4 font-semibold text-white transition focus:outline-none focus:ring-2 focus:ring-[#183d3d] focus:ring-offset-2 ${
                 isSubmitting
                   ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#183d3d] hover:bg-[#245454]"
+              }`}
+            > */}
+            <button
+              type="submit"
+              disabled={isSubmitting || isQuoting}
+              className={`w-full rounded-xl px-6 py-4 font-semibold text-white transition focus:outline-none focus:ring-2 focus:ring-[#183d3d] focus:ring-offset-2 ${
+                isSubmitting || isQuoting
+                  ? "cursor-not-allowed bg-gray-400"
                   : "bg-[#183d3d] hover:bg-[#245454]"
               }`}
             >
@@ -446,6 +602,15 @@ export default function Checkout() {
             </button>
           </form>
 
+          {/* <OrderSummary
+            cartItems={cartItems}
+            subtotal={subtotal}
+            shippingCost={shippingCost}
+            total={total}
+            isDelivery={isDelivery}
+            selectedOption={selectedOption}
+          /> */}
+
           <OrderSummary
             cartItems={cartItems}
             subtotal={subtotal}
@@ -453,6 +618,9 @@ export default function Checkout() {
             total={total}
             isDelivery={isDelivery}
             selectedOption={selectedOption}
+            quote={shippingQuote}
+            isQuoting={isQuoting}
+            shippingSettings={shippingSettings}
           />
         </div>
       </div>

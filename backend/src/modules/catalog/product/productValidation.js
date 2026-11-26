@@ -29,6 +29,9 @@ const descriptionSchema = z
 // Prices must be non-negative numbers.
 const priceSchema = z.number().finite().min(0);
 
+// Product weight in grams (optional/null falls back to store default).
+const weightGramsSchema = z.number().int().min(1).max(500000).nullable();
+
 // Product condition.
 const conditionSchema = z.enum(["new", "used"]).nullable();
 
@@ -152,6 +155,8 @@ export const createProductSchema = z
       reserved: 0,
     }),
 
+    weightGrams: weightGramsSchema.optional().default(null),
+
     condition: conditionSchema.optional().default(null),
 
     attributes: attributesSchema.optional().default({}),
@@ -190,6 +195,7 @@ export const updateProductSchema = z.preprocess(
       images: productImagesSchema.optional(),
       imageFile: z.any().optional(),
       inventory: updateInventorySchema.optional(),
+      weightGrams: weightGramsSchema.optional(),
       condition: conditionSchema.optional(),
       attributes: attributesSchema.optional(),
       warranty: warrantySchema.nullable().optional(),

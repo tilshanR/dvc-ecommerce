@@ -44,6 +44,7 @@ originalPrice: item.originalPrice,
 
     availableStock: item.availableStock ?? item.stock ?? 0,
     stock: item.availableStock ?? item.stock ?? 0,
+    weightGrams: item.weightGrams ?? null,
 
     condition: item.condition,
     attributes: item.attributes || {},

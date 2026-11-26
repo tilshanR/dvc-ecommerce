@@ -99,11 +99,11 @@ export default function TermsAndConditions() {
       <div className="mx-auto max-w-4xl space-y-8">
         <div>
           <Link
-            to="/shop"
+            to="/cart"
             className="inline-flex items-center gap-2 text-sm font-medium text-[#183d3d] hover:underline"
           >
             <ArrowLeft size={16} />
-            Back to Shop
+            Back to Cart
           </Link>
 
           <div className="mt-4 flex items-center gap-3">

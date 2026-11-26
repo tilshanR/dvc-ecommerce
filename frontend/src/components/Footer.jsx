@@ -1,4 +1,10 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { getPublicStoreSettings } from "../services/storeSettingsApi";
+import {
+  DEFAULT_PUBLIC_SETTINGS,
+  formatHoldHours,
+} from "../utils/checkoutUtils";
 import {
   MapPin,
   Phone,
@@ -44,10 +50,27 @@ const productCategories = [
   },
 ];
 
-const fulfillmentOptions = [
+// const fulfillmentOptions = [
+//   {
+//     label: "Home Delivery",
+//     detail: "Online payment",
+//     icon: Truck,
+//   },
+//   {
+//     label: "Prepaid In-Store Pickup",
+//     detail: "Pay online, collect in-store",
+//     icon: ShoppingBag,
+//   },
+//   {
+//     label: "Reserve & Pay In-Store",
+//     detail: "Held for 2 business days",
+//     icon: Clock,
+//   },
+// ];
+const buildFulfillmentOptions = (orderPolicies) => [
   {
     label: "Home Delivery",
-    detail: "Online payment",
+    detail: "Online payment · District & weight rates",
     icon: Truck,
   },
   {
@@ -57,10 +80,13 @@ const fulfillmentOptions = [
   },
   {
     label: "Reserve & Pay In-Store",
-    detail: "Held for 2 business days",
+    detail: orderPolicies?.autoCancelStorePickup
+      ? `Held for ${formatHoldHours(orderPolicies.storePickupHoldHours)}`
+      : "Reserved until counter collection",
     icon: Clock,
   },
 ];
+
 
 const linkClass =
   "flex min-h-11 items-center gap-2 rounded-sm py-2 text-sm " +
@@ -81,6 +107,29 @@ function FooterSection({ title, children }) {
 }
 
 function Footer() {
+  const [orderPolicies, setOrderPolicies] = useState(
+    DEFAULT_PUBLIC_SETTINGS.orderPolicies,
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+    getPublicStoreSettings()
+      .then((res) => {
+        if (isMounted && res?.data?.orderPolicies) {
+          setOrderPolicies(res.data.orderPolicies);
+        }
+      })
+      .catch(() => {
+        // Keep safe default policy copy if API is temporarily unreachable
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const fulfillmentOptions = buildFulfillmentOptions(orderPolicies);
+
   return (
     <footer className="bg-[#183d3d] text-white">
       <div className="mx-auto max-w-7xl px-5 pb-8 pt-8 sm:px-8 lg:px-10">

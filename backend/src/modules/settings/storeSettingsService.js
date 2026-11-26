@@ -57,25 +57,6 @@ export const getStoreSettings = async () => {
   return mergeWithDefaults(doc);
 };
 
-export const serializePublicStoreSettings = (settings) => ({
-  shipping: settings.shipping,
-  orderPolicies: settings.orderPolicies,
-  legal: {
-    termsAndConditions: settings.legal.termsAndConditions,
-    termsUpdatedAt: settings.legal.termsUpdatedAt || settings.updatedAt || null,
-  },
-});
-
-export const serializeAdminStoreSettings = (settings) => ({
-  shipping: settings.shipping,
-  orderPolicies: settings.orderPolicies,
-  legal: {
-    termsAndConditions: settings.legal.termsAndConditions,
-    termsUpdatedAt: settings.legal.termsUpdatedAt || settings.updatedAt || null,
-  },
-  updatedBy: settings.updatedBy,
-  updatedAt: settings.updatedAt,
-});
 
 export const updateStoreSettingsService = async (input, adminId) => {
   const validation = updateStoreSettingsSchema.safeParse(input);

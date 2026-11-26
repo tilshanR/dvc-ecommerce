@@ -1,10 +1,9 @@
 import express from "express";
-import { requireAdminRole } from "../../middleware/adminAuthMiddleware.js";
+import { requireAdminRole } from "../../../middleware/adminAuthMiddleware";
 import {
   getAdminStoreSettings,
   updateAdminStoreSettings,
-} from "./storeSettingsController.js";
-
+} from "./adminStoreSettingsController.js";
 const router = express.Router();
 
 // Any authenticated admin can view settings; only super_admin can edit

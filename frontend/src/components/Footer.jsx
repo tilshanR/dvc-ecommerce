@@ -16,7 +16,10 @@ import {
   Truck,
   ShoppingBag,
   ArrowUpRight,
+  Headphones,
+  Tag,
 } from "lucide-react";
+import useCategories from "../hooks/useCategories";
 
 const navigationLinks = [
   { label: "Home", to: "/" },
@@ -27,27 +30,33 @@ const navigationLinks = [
   { label: "Terms & Conditions", to: "/terms" },
 ];
 
-const productCategories = [
+const categoryIcons = {
+  "mobile-phones": Smartphone,
+  "mobile-accessories": Headphones,
+  "computer-hardware": Monitor,
+  stationery: BookOpen,
+};
+
+const MAX_FOOTER_CATEGORIES = 6;
+
+// Used only if the API fails
+const fallbackCategories = [
   {
-    label: "Mobile Phones & Accessories",
-    to: "/shop?category=mobile",
+    label: "Mobile Phones",
+    to: "/shop?category=mobile-phones",
     icon: Smartphone,
   },
   {
-    label: "New Computer Parts",
-    to: "/shop?category=computer&condition=new",
-    icon: Monitor,
+    label: "Mobile Accessories",
+    to: "/shop?category=mobile-accessories",
+    icon: Headphones,
   },
   {
-    label: "Used Computer Parts",
-    to: "/shop?category=computer&condition=used",
+    label: "Computer Hardware",
+    to: "/shop?category=computer-hardware",
     icon: Monitor,
   },
-  {
-    label: "Stationery",
-    to: "/shop?category=stationery",
-    icon: BookOpen,
-  },
+  { label: "Stationery", to: "/shop?category=stationery", icon: BookOpen },
 ];
 
 const buildFulfillmentOptions = (orderPolicies) => [
@@ -71,8 +80,9 @@ const buildFulfillmentOptions = (orderPolicies) => [
 ];
 
 const MAP_URL = import.meta.env.VITE_MAP_URL;
+
 const linkClass =
-  "flex min-h-11 items-center gap-2 rounded-sm py-2 text-sm " +
+  "group flex min-h-11 items-center gap-2 rounded-sm py-2 text-sm " +
   "text-white/80 transition-colors hover:text-white " +
   "focus-visible:outline-none focus-visible:ring-2 " +
   "focus-visible:ring-white";
@@ -110,6 +120,20 @@ function Footer() {
       isMounted = false;
     };
   }, []);
+  const { categories, isLoading, isError } = useCategories();
+
+  const footerCategories =
+    isError || categories.length === 0
+      ? fallbackCategories
+      : [...categories]
+          .filter((c) => c.status !== "archived")
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+          .slice(0, MAX_FOOTER_CATEGORIES)
+          .map((c) => ({
+            label: c.name,
+            to: `/shop?category=${c.slug}`,
+            icon: categoryIcons[c.slug] ?? Tag,
+          }));
 
   const fulfillmentOptions = buildFulfillmentOptions(orderPolicies);
 
@@ -149,25 +173,44 @@ function Footer() {
 
           {/* Column 2: Categories */}
           <FooterSection title="Product Categories">
-            <ul className="space-y-1">
-              {productCategories.map(({ label, to, icon: Icon }) => (
-                <li key={label}>
-                  <Link to={to} className={linkClass}>
-                    <Icon
-                      size={17}
-                      className="shrink-0 text-white/70"
-                      aria-hidden="true"
-                    />
-                    <span>{label}</span>
-                    <ArrowUpRight
-                      size={13}
-                      className="ml-auto shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-                      aria-hidden="true"
-                    />
+            {isLoading ? (
+              <div className="space-y-3" aria-hidden="true">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-5 w-3/4 animate-pulse rounded bg-white/10"
+                  />
+                ))}
+              </div>
+            ) : (
+              <ul className="space-y-1">
+                {footerCategories.map(({ label, to, icon: Icon }) => (
+                  <li key={to}>
+                    <Link to={to} className={linkClass}>
+                      <Icon
+                        size={17}
+                        className="shrink-0 text-white/70"
+                        aria-hidden="true"
+                      />
+                      <span>{label}</span>
+                      <ArrowUpRight
+                        size={13}
+                        className="ml-auto shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-hidden="true"
+                      />
+                    </Link>
+                  </li>
+                ))}
+                <li>
+                  <Link
+                    to="/shop"
+                    className={`${linkClass} font-medium text-white`}
+                  >
+                    View all products
                   </Link>
                 </li>
-              ))}
-            </ul>
+              </ul>
+            )}
           </FooterSection>
 
           {/* Column 3: Contact */}

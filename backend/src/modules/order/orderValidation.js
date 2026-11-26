@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SRI_LANKA_DISTRICTS } from "../shipping/sriLankaDistricts.js";
 import mongoose from "mongoose";
 
 // Reusable MongoDB ObjectId validator
@@ -24,10 +25,22 @@ export const createOrderSchema = z.object({
           .regex(/^[0-9+\s()-]{9,15}$/, "Invalid phone number."),
       }),
 
+      // shippingAddress: z
+      //   .object({
+      //     streetAddress: z.string().trim().optional(),
+      //     city: z.string().trim().optional(),
+      //     postcode: z.string().trim().optional(),
+      //   })
+      //   .optional(),
       shippingAddress: z
         .object({
           streetAddress: z.string().trim().optional(),
           city: z.string().trim().optional(),
+          district: z.preprocess(
+            (val) =>
+              typeof val === "string" && val.trim() === "" ? undefined : val,
+            z.enum(SRI_LANKA_DISTRICTS).optional(),
+          ),
           postcode: z.string().trim().optional(),
         })
         .optional(),
@@ -40,7 +53,7 @@ export const createOrderSchema = z.object({
               .number()
               .int("Quantity must be a whole number.")
               .min(1, "Quantity must be at least 1."),
-          })
+          }),
         )
         .min(1, "Order must contain at least one item."),
 
@@ -48,20 +61,22 @@ export const createOrderSchema = z.object({
         ["delivery-online", "pickup-online", "pickup-store"],
         {
           errorMap: () => ({ message: "Invalid checkout method selected." }),
-        }
+        },
       ),
     })
-    // Conditional validation: Require address ONLY if delivery is selected
+    // Conditional validation: Require full address + district ONLY if delivery is selected
     .superRefine((data, ctx) => {
       if (data.checkoutMethod === "delivery-online") {
         if (
           !data.shippingAddress?.streetAddress ||
           !data.shippingAddress?.city ||
+          !data.shippingAddress?.district ||
           !data.shippingAddress?.postcode
         ) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "A complete shipping address is required for home delivery.",
+            message:
+              "A complete shipping address including delivery district is required for home delivery.",
             path: ["shippingAddress"],
           });
         }
@@ -116,15 +131,7 @@ export const orderQuerySchema = z.object({
     orderStatus: z.string().optional(),
     paymentStatus: z.string().optional(),
     search: z.string().trim().optional(), // For searching orderNumber, email, phone
-    page: z
-      .string()
-      .regex(/^\d+$/)
-      .transform(Number)
-      .optional(),
-    limit: z
-      .string()
-      .regex(/^\d+$/)
-      .transform(Number)
-      .optional(),
+    page: z.string().regex(/^\d+$/).transform(Number).optional(),
+    limit: z.string().regex(/^\d+$/).transform(Number).optional(),
   }),
 });

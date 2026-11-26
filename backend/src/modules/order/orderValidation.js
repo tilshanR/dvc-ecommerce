@@ -24,14 +24,7 @@ export const createOrderSchema = z.object({
           .trim()
           .regex(/^[0-9+\s()-]{9,15}$/, "Invalid phone number."),
       }),
-
-      // shippingAddress: z
-      //   .object({
-      //     streetAddress: z.string().trim().optional(),
-      //     city: z.string().trim().optional(),
-      //     postcode: z.string().trim().optional(),
-      //   })
-      //   .optional(),
+      
       shippingAddress: z
         .object({
           streetAddress: z.string().trim().optional(),

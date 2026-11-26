@@ -6,7 +6,9 @@ import {
   findOrderById,
   updateOrderById,
 } from "./orderRepository.js";
-import { getOrderPolicies, calculateOrderExpiry } from "./orderPolicy.js";
+import {  calculateOrderExpiry } from "./orderPolicy.js";
+import { getStoreSettings } from "../settings/storeSettingsService.js";
+import { calculateShippingFromItems } from "../shipping/shippingService.js";
 import Product from "../catalog/product/productModel.js";
 import {
   createOrderSchema,
@@ -71,31 +73,6 @@ const reserveStockForItems = async (items, session) => {
   return reservedProducts;
 };
 
-// const releaseReservedStock = async (items, session) => {
-//   for (const item of items) {
-//     await Product.updateOne(
-//       { _id: item.product },
-//       [
-//         {
-//           $set: {
-//             "inventory.reserved": {
-//               $max: [
-//                 0,
-//                 {
-//                   $subtract: [
-//                     { $ifNull: ["$inventory.reserved", 0] },
-//                     item.quantity,
-//                   ],
-//                 },
-//               ],
-//             },
-//           },
-//         },
-//       ],
-//       { session },
-//     );
-//   }
-// };
 const releaseReservedStock = async (items, session) => {
   for (const item of items) {
     await Product.updateOne(
@@ -122,42 +99,6 @@ const releaseReservedStock = async (items, session) => {
   }
 };
 
-// const commitReservedStock = async (items, session) => {
-//   for (const item of items) {
-//     await Product.updateOne(
-//       { _id: item.product },
-//       [
-//         {
-//           $set: {
-//             "inventory.reserved": {
-//               $max: [
-//                 0,
-//                 {
-//                   $subtract: [
-//                     { $ifNull: ["$inventory.reserved", 0] },
-//                     item.quantity,
-//                   ],
-//                 },
-//               ],
-//             },
-//             "inventory.onHand": {
-//               $max: [
-//                 0,
-//                 {
-//                   $subtract: [
-//                     { $ifNull: ["$inventory.onHand", 0] },
-//                     item.quantity,
-//                   ],
-//                 },
-//               ],
-//             },
-//           },
-//         },
-//       ],
-//       { session },
-//     );
-//   }
-// };
 const commitReservedStock = async (items, session) => {
   for (const item of items) {
     await Product.updateOne(
@@ -221,8 +162,11 @@ export const createOrderService = async (input) => {
   const paymentMethod =
     checkoutMethod === "pickup-store" ? "Pay at Store" : "Online Payment";
 
-  const policies = await getOrderPolicies();
-  const expiresAt = calculateOrderExpiry(paymentMethod, policies);
+  // const policies = await getOrderPolicies();
+
+  // const expiresAt = calculateOrderExpiry(paymentMethod, policies);
+  const settings = await getStoreSettings();
+  const expiresAt = calculateOrderExpiry(paymentMethod, settings.orderPolicies);
 
   let newOrder;
   const session = await mongoose.startSession();
@@ -231,9 +175,10 @@ export const createOrderService = async (input) => {
     await session.withTransaction(async () => {
       const reservedItems = await reserveStockForItems(items, session);
 
-      let subtotal = 0;
+      // let subtotal = 0;
+
       const orderItemsSnapshot = reservedItems.map(({ product, quantity }) => {
-        subtotal += product.price * quantity;
+        // subtotal += product.price * quantity;
 
         const primaryImage =
           product.images?.find((img) => img.isPrimary)?.url ||
@@ -250,18 +195,59 @@ export const createOrderService = async (input) => {
         };
       });
 
-      const shippingCost = checkoutMethod === "delivery-online" ? 500 : 0;
-      const total = subtotal + shippingCost;
+      // const shippingCost = checkoutMethod === "delivery-online" ? 500 : 0;
+      // const total = subtotal + shippingCost;
+
+      const shippingQuote = calculateShippingFromItems({
+        itemsWithProducts: reservedItems,
+        checkoutMethod,
+        district:
+          checkoutMethod === "delivery-online"
+            ? shippingAddress?.district || null
+            : null,
+        shippingConfig: settings.shipping,
+      });
+
+      if (shippingQuote.shippingCost === null) {
+        throw createServiceError(
+          "A valid delivery district is required to calculate shipping.",
+          400,
+        );
+      }
+
+      // const orderData = {
+      //   orderNumber: generateOrderNumber(),
+      //   customer,
+      //   shippingAddress:
+      //     checkoutMethod === "delivery-online" ? shippingAddress : undefined,
+      //   items: orderItemsSnapshot,
+      //   subtotal,
+      //   shippingCost,
+      //   total,
+      //   checkoutMethod,
+      //   paymentMethod,
+      //   paymentStatus: "Pending",
+      //   orderStatus: "Pending",
+      //   inventoryState: "reserved",
+      //   expiresAt,
+      // };
 
       const orderData = {
         orderNumber: generateOrderNumber(),
         customer,
         shippingAddress:
           checkoutMethod === "delivery-online" ? shippingAddress : undefined,
+        shippingMeta: {
+          totalWeightGrams: shippingQuote.totalWeightGrams,
+          chargeableExtraKg: shippingQuote.chargeableExtraKg,
+          tier: shippingQuote.tier,
+          freeShippingApplied: shippingQuote.freeShippingApplied,
+          shopDistrict: shippingQuote.shopDistrict,
+        },
         items: orderItemsSnapshot,
-        subtotal,
-        shippingCost,
-        total,
+        subtotal: shippingQuote.subtotal,
+        shippingCost: shippingQuote.shippingCost,
+        total: shippingQuote.total,
         checkoutMethod,
         paymentMethod,
         paymentStatus: "Pending",
@@ -269,7 +255,6 @@ export const createOrderService = async (input) => {
         inventoryState: "reserved",
         expiresAt,
       };
-
       newOrder = await createOrder(orderData, session);
     });
   } finally {

@@ -1,5 +1,5 @@
 import express from "express";
-import { requireAdminRole } from "../../../middleware/adminAuthMiddleware";
+import  {requireAdminRole} from "../../../middleware/adminAuthMiddleware.js"
 import {
   getAdminStoreSettings,
   updateAdminStoreSettings,

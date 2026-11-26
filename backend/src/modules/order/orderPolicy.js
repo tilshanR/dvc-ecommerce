@@ -1,3 +1,5 @@
+import { getStoreSettings } from "../settings/storeSettingsService.js";
+
 export const DEFAULT_ORDER_POLICIES = Object.freeze({
   onlinePaymentTimeoutMinutes: 30,
   storePickupHoldHours: 72,
@@ -9,7 +11,16 @@ export const DEFAULT_ORDER_POLICIES = Object.freeze({
  * Phase 5 will read these from the StoreSettings MongoDB collection with this fallback.
  */
 export const getOrderPolicies = async () => {
-  return { ...DEFAULT_ORDER_POLICIES };
+  try {
+    const settings = await getStoreSettings();
+    return {
+      ...DEFAULT_ORDER_POLICIES,
+      ...(settings?.orderPolicies || {}),
+    };
+  } catch (error) {
+    console.error("[OrderPolicy] Falling back to defaults:", error.message);
+    return { ...DEFAULT_ORDER_POLICIES };
+  }
 };
 
 /**

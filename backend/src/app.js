@@ -17,8 +17,7 @@ import paymentRoutes from "./modules/payment/paymentRoutes.js";
 
 import storeSettingsRoutes from "./modules/settings/storeSettingsRoutes.js";
 import adminStoreSettingsRoutes from "./modules/settings/admin/adminStoreSettingsRoutes.js";
-import shippingRoutes from "./modules/shipping/shippingRoutes.js";
-
+import shippingRoutes from "./modules/shipping/shippingRoutes.js"
 const app = express();
 
 //  Security middleware

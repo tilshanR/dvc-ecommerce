@@ -50,23 +50,6 @@ const productCategories = [
   },
 ];
 
-// const fulfillmentOptions = [
-//   {
-//     label: "Home Delivery",
-//     detail: "Online payment",
-//     icon: Truck,
-//   },
-//   {
-//     label: "Prepaid In-Store Pickup",
-//     detail: "Pay online, collect in-store",
-//     icon: ShoppingBag,
-//   },
-//   {
-//     label: "Reserve & Pay In-Store",
-//     detail: "Held for 2 business days",
-//     icon: Clock,
-//   },
-// ];
 const buildFulfillmentOptions = (orderPolicies) => [
   {
     label: "Home Delivery",
@@ -87,7 +70,7 @@ const buildFulfillmentOptions = (orderPolicies) => [
   },
 ];
 
-
+const MAP_URL = import.meta.env.VITE_MAP_URL;
 const linkClass =
   "flex min-h-11 items-center gap-2 rounded-sm py-2 text-sm " +
   "text-white/80 transition-colors hover:text-white " +
@@ -206,7 +189,7 @@ function Footer() {
                   </p>
 
                   <a
-                    href="https://www.google.com/maps/search/?api=1&query=No.+8+Dambulla+Road%2C+Palapathwela%2C+Matale%2C+Sri+Lanka"
+                    href={MAP_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-1 inline-flex min-h-11 items-center text-sm font-medium text-white underline underline-offset-4 hover:text-white/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
@@ -254,9 +237,7 @@ function Footer() {
                 aria-hidden="true"
               />
               <div className="text-sm leading-6 text-white/90">
-                <p className="font-medium text-white">
-                  Monday – Saturday
-                </p>
+                <p className="font-medium text-white">Monday – Saturday</p>
                 <p>8:00 AM – 8:00 PM</p>
                 <p className="mt-2 text-white/70">
                   Sundays & public holidays: Closed.
@@ -273,9 +254,7 @@ function Footer() {
                     aria-hidden="true"
                   />
                   <div>
-                    <p className="text-sm font-medium text-white">
-                      {label}
-                    </p>
+                    <p className="text-sm font-medium text-white">{label}</p>
                     <p className="mt-1 text-xs leading-5 text-white/70">
                       {detail}
                     </p>

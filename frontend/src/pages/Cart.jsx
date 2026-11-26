@@ -9,6 +9,8 @@ import {
   formatLKR,
   formatWeightGrams,
   formatHoldHours,
+  readStoredDistrict,
+  writeStoredDistrict,
 } from "../utils/checkoutUtils";
 import {
   ArrowLeft,
@@ -54,7 +56,9 @@ export default function Cart() {
   const { cartItems, updateQuantity, removeItem } = useCart();
 
   const [selectedCheckout, setSelectedCheckout] = useState("delivery-online");
-  const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [selectedDistrict, setSelectedDistrict] = useState(() =>
+    readStoredDistrict(),
+  );
   const [settings, setSettings] = useState(DEFAULT_PUBLIC_SETTINGS);
   const [shippingQuote, setShippingQuote] = useState(null);
   const [isQuoting, setIsQuoting] = useState(false);
@@ -142,6 +146,18 @@ export default function Cart() {
   const shippingConfig = settings?.shipping || DEFAULT_PUBLIC_SETTINGS.shipping;
   const orderPolicies =
     settings?.orderPolicies || DEFAULT_PUBLIC_SETTINGS.orderPolicies;
+
+  // Keep sessionStorage in sync with the selected district
+  useEffect(() => {
+    writeStoredDistrict(selectedDistrict);
+  }, [selectedDistrict]);
+
+  // Drop a stored district that no longer exists in the live settings
+  useEffect(() => {
+    if (selectedDistrict && !districts.includes(selectedDistrict)) {
+      setSelectedDistrict("");
+    }
+  }, [districts, selectedDistrict]);
 
   const isDelivery = selectedCheckout === "delivery-online";
   const displaySubtotal = shippingQuote?.subtotal ?? subtotal;
@@ -656,7 +672,8 @@ export default function Cart() {
                         formatLKR(resolvedShippingCost)
                       ) : (
                         <span className="text-xs font-medium text-[#183d3d]">
-                          From {formatLKR(localHint)} ({shippingConfig.shopDistrict}) ·{" "}
+                          From {formatLKR(localHint)} (
+                          {shippingConfig.shopDistrict}) ·{" "}
                           {formatLKR(islandwideHint)} (Islandwide)
                         </span>
                       )}

@@ -49,6 +49,28 @@ export const DEFAULT_PUBLIC_SETTINGS = Object.freeze({
   },
   districts: SRI_LANKA_DISTRICTS,
 });
+export const DISTRICT_STORAGE_KEY = "dvc_selected_district";
+
+export const readStoredDistrict = () => {
+  try {
+    return sessionStorage.getItem(DISTRICT_STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+};
+
+export const writeStoredDistrict = (district) => {
+  try {
+    if (district) {
+      sessionStorage.setItem(DISTRICT_STORAGE_KEY, district);
+    } else {
+      sessionStorage.removeItem(DISTRICT_STORAGE_KEY);
+    }
+  } catch {
+    // sessionStorage unavailable (private mode / blocked) - fail silently
+  }
+};
+export const clearStoredDistrict = () => writeStoredDistrict("");
 
 export const checkoutSchema = z.object({
   firstName: z.string().trim().min(2, "Enter your first name."),

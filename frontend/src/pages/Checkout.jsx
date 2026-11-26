@@ -5,9 +5,16 @@ import { createOrder } from "../services/orderApi";
 import { getPublicStoreSettings } from "../services/storeSettingsApi";
 import { getShippingQuote } from "../services/shippingApi";
 // Utilities & Context
-import { checkoutSchema, checkoutOptions, DEFAULT_PUBLIC_SETTINGS,
+import {
+  checkoutSchema,
+  checkoutOptions,
+  DEFAULT_PUBLIC_SETTINGS,
   SRI_LANKA_DISTRICTS,
-  formatHoldHours, } from "../utils/checkoutUtils";
+  formatHoldHours,
+  readStoredDistrict,
+  writeStoredDistrict,
+  clearStoredDistrict,
+} from "../utils/checkoutUtils";
 import { useCart } from "../context/CartContext";
 import { getPaymentHash } from "../services/paymentApi";
 
@@ -41,7 +48,7 @@ export default function Checkout() {
     phone: "",
     streetAddress: "",
     city: "",
-    district: selectedDistrict || "",
+    district: selectedDistrict || readStoredDistrict() || "",
     postcode: "",
   });
 
@@ -61,8 +68,8 @@ export default function Checkout() {
     settings?.orderPolicies || DEFAULT_PUBLIC_SETTINGS.orderPolicies;
   const shippingSettings =
     settings?.shipping || DEFAULT_PUBLIC_SETTINGS.shipping;
-    
-    useEffect(() => {
+
+  useEffect(() => {
     let isMounted = true;
     getPublicStoreSettings()
       .then((res) => {
@@ -129,6 +136,7 @@ export default function Checkout() {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    if (name === "district") writeStoredDistrict(value);
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "", submit: "" }));
     setSubmitMessage("");
@@ -148,9 +156,9 @@ export default function Checkout() {
       const { merchantId, hash, amount, currency } =
         await getPaymentHash(orderIdString);
 
-      //  Define PayHere SDK event callbacks
       window.payhere.onCompleted = function onCompleted() {
         if (clearCart) clearCart();
+        clearStoredDistrict();
         navigate(`/order-success/${orderIdString}`, { replace: true });
       };
 
@@ -208,6 +216,7 @@ export default function Checkout() {
 
       if (errorCode === "ORDER_ALREADY_PAID") {
         if (clearCart) clearCart();
+        clearStoredDistrict();
         navigate(`/order-success/${orderIdString}`, { replace: true });
         return;
       }
@@ -260,13 +269,7 @@ export default function Checkout() {
             message: "Enter your street address.",
           });
         }
-        // if (!data.city?.trim()) {
-        //   context.addIssue({
-        //     code: "custom",
-        //     path: ["city"],
-        //     message: "Enter your town or city.",
-        //   });
-        // }
+
         if (!data.city?.trim()) {
           context.addIssue({
             code: "custom",
@@ -341,6 +344,7 @@ export default function Checkout() {
         await initiatePayHerePayment(newOrder);
       } else {
         if (clearCart) clearCart();
+        clearStoredDistrict();
         navigate(`/order-success/${newOrder._id || newOrder.id}`, {
           replace: true,
         });
@@ -468,65 +472,57 @@ export default function Checkout() {
                       error={errors.streetAddress}
                       autoComplete="street-address"
                     />
-                    {/* <CheckoutInput
+                    <CheckoutInput
                       name="city"
                       label="Town / City"
                       value={formData.city}
                       onChange={handleChange}
                       error={errors.city}
                       autoComplete="address-level2"
-                    /> */}
-                    <CheckoutInput
-                    name="city"
-                    label="Town / City"
-                    value={formData.city}
-                    onChange={handleChange}
-                    error={errors.city}
-                    autoComplete="address-level2"
-                  />
+                    />
 
-                  <div>
-                    <label
-                      htmlFor="district"
-                      className="text-sm font-medium text-gray-700"
-                    >
-                      District
-                      <span className="ml-1 text-red-500">*</span>
-                    </label>
-                    <select
-                      id="district"
-                      name="district"
-                      value={formData.district}
-                      onChange={handleChange}
-                      aria-invalid={Boolean(errors.district)}
-                      aria-describedby={
-                        errors.district ? "district-error" : undefined
-                      }
-                      className={`mt-2 w-full rounded-lg border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#183D3D] focus:ring-2 focus:ring-[#183D3D]/10 ${
-                        errors.district
-                          ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
-                          : "border-gray-300"
-                      }`}
-                    >
-                      <option value="">Select your district</option>
-                      {districts.map((district) => (
-                        <option key={district} value={district}>
-                          {district}
-                          {district === shippingSettings.shopDistrict
-                            ? " (Local Rate)"
-                            : ""}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.district && (
-                      <p
-                        id="district-error"
-                        className="mt-1 text-sm text-red-600"
+                    <div>
+                      <label
+                        htmlFor="district"
+                        className="text-sm font-medium text-gray-700"
                       >
-                        {errors.district}
-                      </p>
-                    )}
-                  </div>
+                        District
+                        <span className="ml-1 text-red-500">*</span>
+                      </label>
+                      <select
+                        id="district"
+                        name="district"
+                        value={formData.district}
+                        onChange={handleChange}
+                        aria-invalid={Boolean(errors.district)}
+                        aria-describedby={
+                          errors.district ? "district-error" : undefined
+                        }
+                        className={`mt-2 w-full rounded-lg border bg-white px-4 py-3 text-sm outline-none transition focus:border-[#183D3D] focus:ring-2 focus:ring-[#183D3D]/10 ${
+                          errors.district
+                            ? "border-red-500 focus:border-red-500 focus:ring-red-500/10"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        <option value="">Select your district</option>
+                        {districts.map((district) => (
+                          <option key={district} value={district}>
+                            {district}
+                            {district === shippingSettings.shopDistrict
+                              ? " (Local Rate)"
+                              : ""}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.district && (
+                        <p
+                          id="district-error"
+                          className="mt-1 text-sm text-red-600"
+                        >
+                          {errors.district}
+                        </p>
+                      )}
+                    </div>
                     <CheckoutInput
                       name="postcode"
                       label="Postcode / ZIP"
@@ -574,15 +570,6 @@ export default function Checkout() {
               </p>
             </div>
 
-            {/* <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`w-full rounded-xl px-6 py-4 font-semibold text-white transition focus:outline-none focus:ring-2 focus:ring-[#183d3d] focus:ring-offset-2 ${
-                isSubmitting
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-[#183d3d] hover:bg-[#245454]"
-              }`}
-            > */}
             <button
               type="submit"
               disabled={isSubmitting || isQuoting}
@@ -601,15 +588,6 @@ export default function Checkout() {
                     : "Continue to Payment"}
             </button>
           </form>
-
-          {/* <OrderSummary
-            cartItems={cartItems}
-            subtotal={subtotal}
-            shippingCost={shippingCost}
-            total={total}
-            isDelivery={isDelivery}
-            selectedOption={selectedOption}
-          /> */}
 
           <OrderSummary
             cartItems={cartItems}

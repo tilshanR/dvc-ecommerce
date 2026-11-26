@@ -30,6 +30,15 @@ export const serializeAdminOrder = (order) => {
     },
 
     shippingAddress: order.shippingAddress || null,
+    shippingMeta: order.shippingMeta?.tier
+      ? {
+          totalWeightGrams: order.shippingMeta.totalWeightGrams ?? null,
+          chargeableExtraKg: order.shippingMeta.chargeableExtraKg ?? 0,
+          tier: order.shippingMeta.tier,
+          freeShippingApplied: Boolean(order.shippingMeta.freeShippingApplied),
+          shopDistrict: order.shippingMeta.shopDistrict || null,
+        }
+      : null,
 
     items: order.items.map(serializeAdminOrderItem),
 

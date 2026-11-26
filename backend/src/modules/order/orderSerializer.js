@@ -29,11 +29,23 @@ export const serializeOrder = (order) => {
       phone: order.customer.phone,
     },
     
-    shippingAddress: order.shippingAddress ? {
-      streetAddress: order.shippingAddress.streetAddress,
-      city: order.shippingAddress.city,
-      postcode: order.shippingAddress.postcode,
-    } : null,
+    shippingAddress: order.shippingAddress
+      ? {
+          streetAddress: order.shippingAddress.streetAddress,
+          city: order.shippingAddress.city,
+          district: order.shippingAddress.district || null,
+          postcode: order.shippingAddress.postcode,
+        }
+      : null,
+
+    shippingMeta: order.shippingMeta?.tier
+      ? {
+          totalWeightGrams: order.shippingMeta.totalWeightGrams ?? null,
+          chargeableExtraKg: order.shippingMeta.chargeableExtraKg ?? 0,
+          tier: order.shippingMeta.tier,
+          freeShippingApplied: Boolean(order.shippingMeta.freeShippingApplied),
+        }
+      : null,
     
     items: order.items.map(serializeOrderItem),
     

@@ -195,6 +195,18 @@ const productSchema = new Schema(
       }),
     },
 
+    // Shipping parcel weight in grams (null = falls back to StoreSettings defaultItemWeightGrams)
+    weightGrams: {
+      type: Number,
+      default: null,
+      min: 1,
+      max: 500000,
+      validate: {
+        validator: (value) => value === null || Number.isInteger(value),
+        message: "Product weight must be a whole number in grams.",
+      },
+    },
+
     // Product condition
     condition: {
       type: String,
